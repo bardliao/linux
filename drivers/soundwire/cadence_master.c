@@ -833,33 +833,39 @@ EXPORT_SYMBOL(sdw_cdns_exit_reset);
  * sdw_cdns_enable_interrupt() - Enable SDW interrupts and update config
  * @cdns: Cadence instance
  */
-int sdw_cdns_enable_interrupt(struct sdw_cdns *cdns)
+int sdw_cdns_enable_interrupt(struct sdw_cdns *cdns, bool state)
 {
 	u32 mask;
 
-	cdns_writel(cdns, CDNS_MCP_SLAVE_INTMASK0,
-		    CDNS_MCP_SLAVE_INTMASK0_MASK);
-	cdns_writel(cdns, CDNS_MCP_SLAVE_INTMASK1,
-		    CDNS_MCP_SLAVE_INTMASK1_MASK);
+	if (state) {
+		cdns_writel(cdns, CDNS_MCP_SLAVE_INTMASK0,
+			    CDNS_MCP_SLAVE_INTMASK0_MASK);
+		cdns_writel(cdns, CDNS_MCP_SLAVE_INTMASK1,
+			    CDNS_MCP_SLAVE_INTMASK1_MASK);
 
-	/* enable detection of slave state changes */
-	mask = CDNS_MCP_INT_SLAVE_RSVD | CDNS_MCP_INT_SLAVE_ALERT |
-		CDNS_MCP_INT_SLAVE_ATTACH | CDNS_MCP_INT_SLAVE_NATTACH;
+		/* enable detection of slave state changes */
+		mask = CDNS_MCP_INT_SLAVE_RSVD | CDNS_MCP_INT_SLAVE_ALERT |
+			CDNS_MCP_INT_SLAVE_ATTACH | CDNS_MCP_INT_SLAVE_NATTACH;
 
-	/* enable detection of bus issues */
-	mask |= CDNS_MCP_INT_CTRL_CLASH | CDNS_MCP_INT_DATA_CLASH |
-		CDNS_MCP_INT_PARITY;
+		/* enable detection of bus issues */
+		mask |= CDNS_MCP_INT_CTRL_CLASH | CDNS_MCP_INT_DATA_CLASH |
+			CDNS_MCP_INT_PARITY;
 
-	/* no detection of port interrupts for now */
+		/* no detection of port interrupts for now */
 
-	/* enable detection of RX fifo level */
-	mask |= CDNS_MCP_INT_RX_WL;
+		/* enable detection of RX fifo level */
+		mask |= CDNS_MCP_INT_RX_WL;
 
-	/* now enable all of the above */
-	mask |= CDNS_MCP_INT_IRQ;
+		/* now enable all of the above */
+		mask |= CDNS_MCP_INT_IRQ;
 
-	if (interrupt_mask) /* parameter override */
-		mask = interrupt_mask;
+		if (interrupt_mask) /* parameter override */
+			mask = interrupt_mask;
+	} else {
+		cdns_writel(cdns, CDNS_MCP_SLAVE_INTMASK0, 0);
+		cdns_writel(cdns, CDNS_MCP_SLAVE_INTMASK1, 0);
+		mask = 0;
+	}
 
 	cdns_writel(cdns, CDNS_MCP_INTMASK, mask);
 
