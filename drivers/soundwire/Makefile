@@ -4,7 +4,8 @@
 #
 
 #Bus Objs
-soundwire-bus-objs := bus_type.o bus.o slave.o mipi_disco.o stream.o
+soundwire-bus-objs := bus_type.o bus.o slave.o mipi_disco.o stream.o \
+	algo_dynamic_allocation.o
 
 ifdef CONFIG_DEBUG_FS
 soundwire-bus-objs += debugfs.o
