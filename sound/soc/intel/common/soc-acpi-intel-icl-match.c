@@ -15,6 +15,7 @@ static struct skl_machine_pdata icl_pdata = {
 };
 
 struct snd_soc_acpi_mach snd_soc_acpi_intel_icl_machines[] = {
+#if 0
 	{
 		.id = "INT34C2",
 		.drv_name = "icl_rt274",
@@ -24,6 +25,15 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_icl_machines[] = {
 		.sof_tplg_filename = "intel/sof-icl-rt274.tplg",
 		.asoc_plat_name = "0000:00:1f.3",
 	},
+#else
+	{
+		.id = "INT34C2",
+		.drv_name = "icl_dummy",
+		.sof_fw_filename = "intel/sof-icl.ri",
+		.sof_tplg_filename = "intel/sof-icl-dummy.tplg",
+		.asoc_plat_name = "0000:00:1f.3",
+	},
+#endif
 	{},
 };
 EXPORT_SYMBOL_GPL(snd_soc_acpi_intel_icl_machines);
