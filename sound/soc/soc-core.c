@@ -935,6 +935,16 @@ _err_defer:
 	return -EPROBE_DEFER;
 }
 
+static void soc_cleanup_component(struct snd_soc_component *component)
+{
+	list_del(&component->card_list);
+	snd_soc_dapm_free(snd_soc_component_get_dapm(component));
+	soc_cleanup_component_debugfs(component);
+	component->card = NULL;
+	if (!component->driver->module_get_upon_open)
+		module_put(component->dev->driver->owner);
+}
+
 static void soc_remove_component(struct snd_soc_component *component)
 {
 	if (!component->card)
@@ -1328,7 +1338,8 @@ static int soc_probe_component(struct snd_soc_card *card,
 		return 0;
 	}
 
-	if (!try_module_get(component->dev->driver->owner))
+	if (!component->driver->module_get_upon_open &&
+	    !try_module_get(component->dev->driver->owner))
 		return -ENODEV;
 
 	component->card = card;
