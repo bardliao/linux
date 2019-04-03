@@ -341,6 +341,9 @@
 
 #define HDA_IDISP_CODEC(x) ((x) & BIT(2))
 
+#define HDA_STREAM_ALLOC_NORMAL		0
+#define HDA_STREAM_ALLOC_RESERVED		1
+
 struct sof_intel_dsp_bdl {
 	__le32 addr_l;
 	__le32 addr_h;
@@ -462,7 +465,7 @@ int hda_dsp_stream_setup_bdl(struct snd_sof_dev *sdev,
 			     struct hdac_stream *stream);
 
 struct hdac_ext_stream *
-	hda_dsp_stream_get(struct snd_sof_dev *sdev, int direction);
+	hda_dsp_stream_get(struct snd_sof_dev *sdev, int direction, int flag);
 int hda_dsp_stream_put(struct snd_sof_dev *sdev, int direction, int stream_tag);
 int hda_dsp_stream_spib_config(struct snd_sof_dev *sdev,
 			       struct hdac_ext_stream *stream,

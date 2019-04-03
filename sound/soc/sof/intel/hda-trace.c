@@ -43,7 +43,8 @@ int hda_dsp_trace_init(struct snd_sof_dev *sdev, u32 *stream_tag)
 	int ret;
 
 	hda->dtrace_stream = hda_dsp_stream_get(sdev,
-						SNDRV_PCM_STREAM_CAPTURE);
+						SNDRV_PCM_STREAM_CAPTURE,
+						HDA_STREAM_ALLOC_RESERVED);
 
 	if (!hda->dtrace_stream) {
 		dev_err(sdev->dev,

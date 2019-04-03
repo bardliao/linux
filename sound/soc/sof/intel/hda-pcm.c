@@ -208,7 +208,8 @@ int hda_dsp_pcm_open(struct snd_sof_dev *sdev,
 	struct hdac_ext_stream *dsp_stream;
 	int direction = substream->stream;
 
-	dsp_stream = hda_dsp_stream_get(sdev, direction);
+	dsp_stream = hda_dsp_stream_get(sdev, direction,
+					HDA_STREAM_ALLOC_NORMAL);
 
 	if (!dsp_stream) {
 		dev_err(sdev->dev, "error: no stream available\n");
