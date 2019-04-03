@@ -152,7 +152,7 @@ int hda_dsp_stream_spib_config(struct snd_sof_dev *sdev,
 
 /* get next unused stream */
 struct hdac_ext_stream *
-hda_dsp_stream_get(struct snd_sof_dev *sdev, int direction)
+hda_dsp_stream_get(struct snd_sof_dev *sdev, int direction, int flag)
 {
 	struct hdac_bus *bus = sof_to_bus(sdev);
 	struct hdac_ext_stream *stream = NULL;
@@ -160,12 +160,31 @@ hda_dsp_stream_get(struct snd_sof_dev *sdev, int direction)
 
 	spin_lock_irq(&bus->reg_lock);
 
-	/* get an unused stream */
-	list_for_each_entry(s, &bus->stream_list, list) {
-		if (s->direction == direction && !s->opened) {
-			s->opened = true;
-			stream = stream_to_hdac_ext_stream(s);
-			break;
+	/*
+	 * Reserved host dma only stream needs to be allocated from tail of
+	 * list which is organized with stream tag value increased from one to
+	 * max, so that normal capture stream could get the same stream tag
+	 * from host and link dma allocator, otherwise, when applying coupled
+	 * and decoupled mode with the mismatched host and link dma stream
+	 * tag, a capture stream could break another capture stream for it would
+	 * couple link dma channel with host dma channel used by different
+	 * catpure streams.
+	 */
+	if (flag & HDA_STREAM_ALLOC_RESERVED) {
+		list_for_each_entry_reverse(s, &bus->stream_list, list) {
+			if (s->direction == direction && !s->opened) {
+				s->opened = true;
+				stream = stream_to_hdac_ext_stream(s);
+				break;
+			}
+		}
+	} else {
+		list_for_each_entry(s, &bus->stream_list, list) {
+			if (s->direction == direction && !s->opened) {
+				s->opened = true;
+				stream = stream_to_hdac_ext_stream(s);
+				break;
+			}
 		}
 	}
 
