@@ -155,6 +155,11 @@ int snd_sof_parse_module_memcpy(struct snd_sof_dev *sdev,
 			return -EINVAL;
 		}
 
+		if (remaining < block->size) {
+			dev_err(sdev->dev, "error: not enough data remaining\n");
+			return -EINVAL;
+		}
+
 		/* minus body size of block */
 		remaining -= block->size;
 		/* next block */
