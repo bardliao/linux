@@ -102,7 +102,7 @@ struct snd_soc_dai_link skl_hda_be_dai_links[HDA_DSP_MAX_BE_DAI_LINKS] = {
 		.no_pcm = 1,
 	},
 	{
-		.name = "dmic16k",
+		.name = "dmic02",
 		.id = 7,
 		.cpu_dai_name = "DMIC16k Pin",
 		.codec_name = "dmic-codec",
