@@ -434,6 +434,9 @@ struct snd_sof_dev {
 
 	u32 msi_enabled;
 
+	/* sdw instance */
+	void *sdw;
+
 	void *private;			/* core does not touch this */
 };
 
