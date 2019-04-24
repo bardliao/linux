@@ -802,14 +802,6 @@ struct snd_soc_component_driver {
 	int probe_order;
 	int remove_order;
 
-	/*
-	 * signal if the module handling the component should not be removed
-	 * if a pcm is open. Setting this would prevent the module
-	 * refcount being incremented in probe() but allow it be incremented
-	 * when a pcm is opened and decremented when it is closed.
-	 */
-	unsigned int module_get_upon_open:1;
-
 	/* bits */
 	unsigned int idle_bias_on:1;
 	unsigned int suspend_bias_off:1;
