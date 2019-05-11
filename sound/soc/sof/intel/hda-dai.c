@@ -77,7 +77,7 @@ hda_link_stream_assign(struct hdac_bus *bus,
 		hda_stream = container_of(hstream, struct sof_intel_hda_stream,
 					  hda_stream);
 
-		/* check if available */
+		/* check if link is available */
 		if (!hstream->link_locked) {
 			if (stream->opened) {
 				/*
@@ -91,6 +91,12 @@ hda_link_stream_assign(struct hdac_bus *bus,
 				}
 			} else {
 				res = hstream;
+
+				/*
+				 * This must be a hostless stream.
+				 * So reserve the host DMA channel.
+				 */
+				hda_stream->host_reserved = 1;
 				break;
 			}
 		}
@@ -373,6 +379,9 @@ static int hda_link_hw_free(struct snd_pcm_substream *substream,
 	snd_hdac_ext_link_clear_stream_id(link, stream_tag);
 	snd_hdac_ext_stream_release(link_dev, HDAC_EXT_STREAM_TYPE_LINK);
 	link_dev->link_prepared = 0;
+
+	/* free the host DMA channel reserved by hostless streams */
+	hda_stream->host_reserved = 0;
 
 	return 0;
 }
