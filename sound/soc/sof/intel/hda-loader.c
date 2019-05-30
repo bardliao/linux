@@ -139,7 +139,7 @@ static int cl_dsp_init(struct snd_sof_dev *sdev, const void *fwdata,
 
 	/* step 6: enable IPC interrupts */
 	hda_dsp_ipc_int_enable(sdev);
-
+	
 	/* step 7: wait for ROM init */
 	ret = snd_sof_dsp_read_poll_timeout(sdev, HDA_DSP_BAR,
 					HDA_DSP_SRAM_REG_ROM_STATUS, status,
@@ -336,6 +336,12 @@ int hda_dsp_cl_boot_firmware(struct snd_sof_dev *sdev)
 	else
 		dev_err(sdev->dev, "error: load fw failed ret: %d\n", ret);
 
+#if 0
+	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR,
+					HDA_DSP_REG_ADSPIC2,
+					HDA_DSP_ADSPIC2_SNDW,
+					HDA_DSP_ADSPIC2_SNDW);
+#endif
 cleanup:
 	/*
 	 * Perform codeloader stream cleanup.
@@ -377,6 +383,14 @@ int hda_dsp_pre_fw_run(struct snd_sof_dev *sdev)
 /* post fw run operations */
 int hda_dsp_post_fw_run(struct snd_sof_dev *sdev)
 {
+#if 1
+  pr_err("plb: now updating bits \n");
+	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR,
+				0x10, //HDA_DSP_REG_ADSPIC2,
+				0x20, //	HDA_DSP_ADSPIC2_SNDW,
+				0x20); // HDA_DSP_ADSPIC2_SNDW);
+#endif
+
 	/* re-enable clock gating and power gating */
 	return hda_dsp_ctrl_clock_power_gating(sdev, true);
 }

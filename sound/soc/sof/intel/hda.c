@@ -37,6 +37,68 @@
 #define IS_CFL(pci) ((pci)->vendor == 0x8086 && (pci)->device == 0xa348)
 #define IS_CNL(pci) ((pci)->vendor == 0x8086 && (pci)->device == 0x9dc8)
 
+#if IS_ENABLED(CONFIG_SOUNDWIRE_INTEL)
+
+static void hda_sdw_int_enable(struct snd_sof_dev *sdev, bool enable)
+{
+	if (enable)
+		snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR,
+					HDA_DSP_REG_ADSPIC2,
+					HDA_DSP_ADSPIC2_SNDW,
+					HDA_DSP_ADSPIC2_SNDW);
+	else
+		snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR,
+					HDA_DSP_REG_ADSPIC2,
+					HDA_DSP_ADSPIC2_SNDW,
+					0);
+}
+
+static int hda_sdw_init(struct snd_sof_dev *sdev)
+{
+	acpi_handle handle;
+	struct sdw_intel_res res;
+
+	handle = ACPI_HANDLE(sdev->dev);
+
+	res.mmio_base = sdev->bar[HDA_DSP_BAR];
+	res.irq = sdev->ipc_irq;
+	res.parent = sdev->dev;
+	//res.ops = &sdw_callback;
+	//res.arg = cnl;
+
+	hda_sdw_int_enable(sdev, true);
+	//hda_sdw_int_enable(sdev, false);
+
+	sdev->sdw = sdw_intel_init(handle, &res);
+	if (!sdev->sdw) {
+		dev_err(sdev->dev, "SDW Init failed\n");
+		return -EIO;
+	}
+
+	return 0;
+}
+
+static int hda_sdw_exit(struct snd_sof_dev *sdev)
+{
+	hda_sdw_int_enable(sdev, false);
+
+	if (sdev->sdw)
+		sdw_intel_exit(sdev->sdw);
+
+	return 0;
+}
+#else
+static int hda_sdw_init(struct snd_sof_dev *sdev)
+{
+	return 0;
+}
+
+static int hda_sdw_exit(struct snd_sof_dev *sdev)
+{
+	return 0;
+}
+#endif
+
 /*
  * Debug
  */
