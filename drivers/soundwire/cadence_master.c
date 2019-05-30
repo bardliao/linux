@@ -93,6 +93,16 @@
 
 #define CDNS_MCP_INTSET				0x4C
 
+#define CDNS_MCP_INT_WAKEUP_SET			BIT(16)
+#define CDNS_MCP_INT_CTRL_CLASH_SET		BIT(10)
+#define CDNS_MCP_INT_DATA_CLASH_SET		BIT(9)
+#define CDNS_MCP_INT_PARITY_SET			BIT(8)
+#define CDNS_MCP_INT_CMD_ERR_SET		BIT(7)
+#define CDNS_MCP_INT_RX_NE_SET			BIT(3)
+#define CDNS_MCP_INT_RX_WL_SET			BIT(2)
+#define CDNS_MCP_INT_TXE_SET			BIT(1)
+#define CDNS_MCP_INT_TXF_SET			BIT(0)
+
 #define CDNS_SDW_SLAVE_STAT			0x50
 #define CDNS_MCP_SLAVE_STAT_MASK		BIT(1, 0)
 
@@ -364,6 +374,38 @@ static int cdns_cmdctrl(void *data, u64 value)
 
 DEFINE_DEBUGFS_ATTRIBUTE(cdns_cmdctrl_fops, NULL, cdns_cmdctrl, "%llu\n");
 
+static int cdns_intset(void *data, u64 value)
+{
+	struct sdw_cdns *cdns = data;
+	u32 cmd = value;
+
+	if (cmd & CDNS_MCP_INT_WAKEUP_SET)
+		dev_dbg(cdns->dev, "generating WakeUp interrupt\n");
+	if (cmd & CDNS_MCP_INT_CTRL_CLASH_SET)
+		dev_dbg(cdns->dev, "generating Control Bus Clash interrupt\n");
+	if (cmd & CDNS_MCP_INT_DATA_CLASH_SET)
+		dev_dbg(cdns->dev, "generating Data Bus Clash interrupt\n");
+	if (cmd & CDNS_MCP_INT_PARITY_SET)
+		dev_dbg(cdns->dev, "generating Parity interrupt\n");
+	if (cmd & CDNS_MCP_INT_CMD_ERR_SET)
+		dev_dbg(cdns->dev, "generating CmdErr interrupt\n");
+	if (cmd & CDNS_MCP_INT_RX_NE_SET)
+		dev_dbg(cdns->dev, "generating Fifo RX NE interrupt\n");
+	if (cmd & CDNS_MCP_INT_RX_WL_SET)
+		dev_dbg(cdns->dev, "generating Fifo RX WL interrupt\n");
+	if (cmd & CDNS_MCP_INT_TXE_SET)
+		dev_dbg(cdns->dev, "generating Fifo TXE interrupt\n");
+	if (cmd & CDNS_MCP_INT_TXF_SET)
+		dev_dbg(cdns->dev, "generating Fifo TXF interrupt\n");
+
+	cdns_writel(cdns, CDNS_MCP_INTSET, cmd);
+	/* not required to call cdns_update_config() */
+
+	return 0;
+}
+
+DEFINE_DEBUGFS_ATTRIBUTE(cdns_intset_fops, NULL, cdns_intset, "%llu\n");
+
 /**
  * sdw_cdns_debugfs_init() - Cadence debugfs init
  * @cdns: Cadence instance
@@ -375,6 +417,10 @@ void sdw_cdns_debugfs_init(struct sdw_cdns *cdns, struct dentry *root)
 
 	debugfs_create_file_unsafe("cdns-cmdctrl", 0200, root, cdns,
 				   &cdns_cmdctrl_fops);
+
+	debugfs_create_file_unsafe("cdns-intset", 0200, root, cdns,
+				   &cdns_intset_fops);
+
 }
 EXPORT_SYMBOL_GPL(sdw_cdns_debugfs_init);
 
