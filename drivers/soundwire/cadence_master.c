@@ -45,6 +45,14 @@
 #define CDNS_MCP_CONTROL_BLOCK_WAKEUP		BIT(0)
 
 #define CDNS_MCP_CMDCTRL			0x8
+
+#define CDNS_MCP_CMDCTRL_SSP_ENABLE		BIT(5)
+#define CDNS_MCP_CMDCTRL_DSYNC_ENABLE		BIT(4)
+#define CDNS_MCP_CMDCTRL_SSYNC_ENABLE		BIT(3)
+#define CDNS_MCP_CMDCTRL_INS_PARITY_ERR		BIT(2)
+#define CDNS_MCP_CMDCTRL_INS_NAK		BIT(1)
+#define CDNS_MCP_CMDCTRL_INS_ACK		BIT(0)
+
 #define CDNS_MCP_SSPSTAT			0xC
 #define CDNS_MCP_FRAME_SHAPE			0x10
 #define CDNS_MCP_FRAME_SHAPE_INIT		0x14
@@ -329,6 +337,33 @@ static const struct file_operations cdns_reg_fops = {
 	.llseek = default_llseek,
 };
 
+static int cdns_cmdctrl(void *data, u64 value)
+{
+	struct sdw_cdns *cdns = data;
+	u32 cmd = value;
+	int ret;
+
+	if (cmd & CDNS_MCP_CMDCTRL_SSP_ENABLE)
+		dev_dbg(cdns->dev, "enabling SSP control from software-generated PING\n");
+	if (cmd & CDNS_MCP_CMDCTRL_DSYNC_ENABLE)
+		dev_dbg(cdns->dev, "enabling DSYNC control from software-generated PING\n");
+	if (cmd & CDNS_MCP_CMDCTRL_SSYNC_ENABLE)
+		dev_dbg(cdns->dev, "enabling SSYNC control from software-generated PING\n");
+	if (cmd & CDNS_MCP_CMDCTRL_INS_PARITY_ERR)
+		dev_dbg(cdns->dev, "Inserting parity error\n");
+	if (cmd & CDNS_MCP_CMDCTRL_INS_NAK)
+		dev_dbg(cdns->dev, "Inserting NAK\n");
+	if (cmd & CDNS_MCP_CMDCTRL_INS_ACK)
+		dev_dbg(cdns->dev, "Inserting ACK\n");
+
+	cdns_writel(cdns, CDNS_MCP_CMDCTRL, cmd);
+	ret = cdns_update_config(cdns);
+
+	return ret;
+}
+
+DEFINE_DEBUGFS_ATTRIBUTE(cdns_cmdctrl_fops, NULL, cdns_cmdctrl, "%llu\n");
+
 /**
  * sdw_cdns_debugfs_init() - Cadence debugfs init
  * @cdns: Cadence instance
@@ -337,6 +372,9 @@ static const struct file_operations cdns_reg_fops = {
 void sdw_cdns_debugfs_init(struct sdw_cdns *cdns, struct dentry *root)
 {
 	debugfs_create_file("cdns-registers", 0400, root, cdns, &cdns_reg_fops);
+
+	debugfs_create_file_unsafe("cdns-cmdctrl", 0200, root, cdns,
+				   &cdns_cmdctrl_fops);
 }
 EXPORT_SYMBOL_GPL(sdw_cdns_debugfs_init);
 
