@@ -988,6 +988,16 @@ static int intel_probe(struct platform_device *pdev)
 	}
 
 	ret = sdw_cdns_enable_interrupt(&sdw->cdns);
+	if (ret < 0) {
+		dev_err(sdw->cdns.dev, "cannot enable interrupts\n");
+		goto err_init;
+	}
+
+	ret = sdw_cdns_exit_reset(&sdw->cdns);
+	if (ret < 0) {
+		dev_err(sdw->cdns.dev, "unable to exit bus reset sequence\n");
+		goto err_init;
+	}
 
 	/* Register DAIs */
 	ret = intel_register_dai(sdw);
