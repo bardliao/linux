@@ -377,6 +377,65 @@ static int cdns_cmdctrl(void *data, u64 value)
 
 DEFINE_DEBUGFS_ATTRIBUTE(cdns_cmdctrl_fops, NULL, cdns_cmdctrl, "%llu\n");
 
+static int cdns_cmd(void *data, u64 value)
+{
+	struct sdw_cdns *cdns = data;
+	u32 cmd = value;
+	int cmd_type;
+	int dev_number;
+	int addr_h;
+	int addr_l;
+	int byte_data;
+	bool rw_command = false;
+
+	dev_dbg(cdns->dev, "command 0x%x\n", cmd);
+
+	/*
+	 * cheat sheet for frame shapes in bank 0:
+	 * 0x3F006030 -> broadcast write, shape 125 rows 2 cols
+	 * 0xBF006000 -> SSP broadcast write, shape 48 rows 2 cols
+	 * 0x3F006030 -> broadcast write, shape 125 rows 2 cols
+	 * 0xBF006000 -> SSP broadcast write, shape 48 rows 2 cols
+	 */
+
+	cmd_type = (cmd & CDNS_MCP_CMD_COMMAND) >> 28;
+	switch (cmd_type) {
+	case 0:
+		dev_dbg(cdns->dev, "PING cmd\n");
+		break;
+	case 1:
+		dev_dbg(cdns->dev, "ILLEGAL cmd\n");
+		break;
+	case 2:
+		dev_dbg(cdns->dev, "READ cmd\n");
+		rw_command = true;
+		break;
+	case 3:
+		dev_dbg(cdns->dev, "WRITE cmd\n");
+		rw_command = true;
+		break;
+	}
+
+	if (rw_command) {
+		dev_number = (cmd & CDNS_MCP_CMD_DEV_ADDR) >> 24;
+		dev_dbg(cdns->dev, "Device %d\n", dev_number);
+
+		addr_h = (cmd & CDNS_MCP_CMD_REG_ADDR_H) >> 16;
+		dev_dbg(cdns->dev, "Addr_h 0x%02x\n", addr_h);
+
+		addr_l = (cmd & CDNS_MCP_CMD_REG_ADDR_L) >> 8;
+		dev_dbg(cdns->dev, "Addr_l 0x%02x\n", addr_l);
+
+		byte_data = cmd & CDNS_MCP_CMD_REG_DATA;
+		dev_dbg(cdns->dev, "Data 0x%02x\n", byte_data);
+	}
+
+	cdns_writel(cdns, CDNS_MCP_CMD_BASE, cmd);
+	return 0;
+}
+
+DEFINE_DEBUGFS_ATTRIBUTE(cdns_cmd_fops, NULL, cdns_cmd, "%llu\n");
+
 static int cdns_intset(void *data, u64 value)
 {
 	struct sdw_cdns *cdns = data;
@@ -451,6 +510,9 @@ void sdw_cdns_debugfs_init(struct sdw_cdns *cdns, struct dentry *root)
 
 	debugfs_create_file_unsafe("cdns-cmdctrl", 0200, root, cdns,
 				   &cdns_cmdctrl_fops);
+
+	debugfs_create_file_unsafe("cdns-cmd", 0200, root, cdns,
+				   &cdns_cmd_fops);
 
 	debugfs_create_file_unsafe("cdns-intset", 0200, root, cdns,
 				   &cdns_intset_fops);
