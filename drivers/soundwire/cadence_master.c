@@ -56,6 +56,8 @@
 #define CDNS_MCP_SSPSTAT			0xC
 #define CDNS_MCP_FRAME_SHAPE			0x10
 #define CDNS_MCP_FRAME_SHAPE_INIT		0x14
+#define CDNS_MCP_FRAME_SHAPE_ROW_INDEX		GENMASK(7, 3)
+#define CDNS_MCP_FRAME_SHAPE_COL_INDEX		GENMASK(2, 0)
 
 #define CDNS_MCP_CONFIG_UPDATE			0x18
 #define CDNS_MCP_CONFIG_UPDATE_BIT		BIT(0)
@@ -407,6 +409,37 @@ static int cdns_intset(void *data, u64 value)
 
 DEFINE_DEBUGFS_ATTRIBUTE(cdns_intset_fops, NULL, cdns_intset, "%llu\n");
 
+static int cdns_frame_shape(void *data, u64 value)
+{
+	struct sdw_cdns *cdns = data;
+	u32 shape = value;
+	int row_index;
+	int col_index;
+	int ret = 0;
+
+	row_index = (shape & CDNS_MCP_FRAME_SHAPE_ROW_INDEX) >> 3;
+	col_index = shape & CDNS_MCP_FRAME_SHAPE_COL_INDEX;
+
+	dev_dbg(cdns->dev, "Frame shape row index %d\n", row_index);
+	dev_dbg(cdns->dev, "Frame shape col index %d\n", col_index);
+
+	if (row_index >= SDW_FRAME_ROWS) {
+		dev_dbg(cdns->dev, "Illegal frame shape row index, ignored\n");
+		return ret;
+	}
+	if (col_index >= SDW_FRAME_COLS) {
+		dev_dbg(cdns->dev, "Illegal frame shape col index, ignored\n");
+		return ret;
+	}
+
+	cdns_writel(cdns, CDNS_MCP_FRAME_SHAPE, shape);
+	ret = cdns_update_config(cdns);
+
+	return ret;
+}
+
+DEFINE_DEBUGFS_ATTRIBUTE(cdns_frame_shape_fops, NULL, cdns_frame_shape, "%llu\n");
+
 /**
  * sdw_cdns_debugfs_init() - Cadence debugfs init
  * @cdns: Cadence instance
@@ -421,6 +454,9 @@ void sdw_cdns_debugfs_init(struct sdw_cdns *cdns, struct dentry *root)
 
 	debugfs_create_file_unsafe("cdns-intset", 0200, root, cdns,
 				   &cdns_intset_fops);
+
+	debugfs_create_file_unsafe("cdns-frame-shape", 0200, root, cdns,
+				   &cdns_frame_shape_fops);
 
 }
 EXPORT_SYMBOL_GPL(sdw_cdns_debugfs_init);
