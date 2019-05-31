@@ -193,7 +193,8 @@
 /* Driver defaults */
 
 #define CDNS_DEFAULT_CLK_DIVIDER		0
-#define CDNS_DEFAULT_FRAME_SHAPE		0x30
+//#define CDNS_DEFAULT_FRAME_SHAPE		0x30 /* 125 rows, 2 columns */
+#define CDNS_DEFAULT_FRAME_SHAPE		0x08 /* 50 rows, 2 columns */
 #define CDNS_DEFAULT_SSP_INTERVAL		0x18
 #define CDNS_TX_TIMEOUT				2000
 
