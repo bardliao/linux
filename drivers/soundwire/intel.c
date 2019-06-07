@@ -981,8 +981,6 @@ static int intel_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_init;
 
-	ret = sdw_cdns_enable_interrupt(&sdw->cdns);
-
 	/* Read the PDI config and initialize cadence PDI */
 	intel_pdi_init(sdw, &config);
 	ret = sdw_cdns_pdi_init(&sdw->cdns, config);
@@ -999,6 +997,8 @@ static int intel_probe(struct platform_device *pdev)
 			sdw->res->irq);
 		goto err_init;
 	}
+
+	ret = sdw_cdns_enable_interrupt(&sdw->cdns);
 
 	/* Register DAIs */
 	ret = intel_register_dai(sdw);
