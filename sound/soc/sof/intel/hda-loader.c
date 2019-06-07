@@ -383,7 +383,7 @@ int hda_dsp_pre_fw_run(struct snd_sof_dev *sdev)
 /* post fw run operations */
 int hda_dsp_post_fw_run(struct snd_sof_dev *sdev)
 {
-#if 1
+#if 0
   pr_err("plb: now updating bits \n");
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR,
 				0x10, //HDA_DSP_REG_ADSPIC2,
