@@ -1454,7 +1454,7 @@ int rt700_init(struct device *dev, struct regmap *regmap,
 int rt700_io_init(struct device *dev, struct sdw_slave *slave)
 {
 	struct rt700_priv *rt700 = dev_get_drvdata(dev);
-	int ret;
+	int ret = 0;
 
 	if (rt700->hw_init)
 		return 0;
@@ -1508,6 +1508,7 @@ int rt700_io_init(struct device *dev, struct sdw_slave *slave)
 
 	/* Mark Slave initialization complete */
 	rt700->hw_init = true;
+
 	return ret;
 }
 
