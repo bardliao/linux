@@ -400,6 +400,9 @@ static int cdns_cmd(void *data, u64 value)
 	 * 0xBF006000 -> SSP broadcast write, shape 48 rows 2 cols
 	 * 0x3F006030 -> broadcast write, shape 125 rows 2 cols
 	 * 0xBF006000 -> SSP broadcast write, shape 48 rows 2 cols
+	 *
+	 * in-band broadcast write to ForceReset
+	 * 0x3F004480
 	 */
 
 	cmd_type = (cmd & CDNS_MCP_CMD_COMMAND) >> 28;
