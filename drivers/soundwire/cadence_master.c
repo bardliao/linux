@@ -278,7 +278,7 @@ static ssize_t cdns_sprintf(struct sdw_cdns *cdns,
 			    char *buf, size_t pos, unsigned int reg)
 {
 	return scnprintf(buf + pos, RD_BUF - pos,
-			 "%4x\t%4x\n", reg, cdns_readl(cdns, reg));
+			 "%4x\t%8x\n", reg, cdns_readl(cdns, reg));
 }
 
 static ssize_t cdns_reg_read(struct file *file, char __user *user_buf,
