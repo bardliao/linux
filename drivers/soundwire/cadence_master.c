@@ -391,8 +391,12 @@ static int cdns_cmd(void *data, u64 value)
 	int addr_l;
 	int byte_data;
 	bool rw_command = false;
+	bool rd_command = false;
 
 	dev_dbg(cdns->dev, "command 0x%x\n", cmd);
+
+	/* set FIFO level */
+	cdns_writel(cdns, CDNS_MCP_FIFOLEVEL, 1);
 
 	/*
 	 * cheat sheet for frame shapes in bank 0:
@@ -416,6 +420,7 @@ static int cdns_cmd(void *data, u64 value)
 	case 2:
 		dev_dbg(cdns->dev, "READ cmd\n");
 		rw_command = true;
+		rd_command = true;
 		break;
 	case 3:
 		dev_dbg(cdns->dev, "WRITE cmd\n");
@@ -433,15 +438,57 @@ static int cdns_cmd(void *data, u64 value)
 		addr_l = (cmd & CDNS_MCP_CMD_REG_ADDR_L) >> 8;
 		dev_dbg(cdns->dev, "Addr_l 0x%02x\n", addr_l);
 
-		byte_data = cmd & CDNS_MCP_CMD_REG_DATA;
-		dev_dbg(cdns->dev, "Data 0x%02x\n", byte_data);
+		if (!rd_command) {
+			byte_data = cmd & CDNS_MCP_CMD_REG_DATA;
+			dev_dbg(cdns->dev, "Data 0x%02x\n", byte_data);
+		}
 	}
 
 	cdns_writel(cdns, CDNS_MCP_CMD_BASE, cmd);
+	usleep_range(500, 1500); /* this should be enough for most cases */
 	return 0;
 }
 
-DEFINE_DEBUGFS_ATTRIBUTE(cdns_cmd_fops, NULL, cdns_cmd, "%llu\n");
+static int cdns_cmd_rsp(void *data, u64 *value)
+{
+	struct sdw_cdns *cdns = data;
+	u32 cmd;
+	bool rd_command = false;
+
+	cmd = cdns_readl(cdns, CDNS_MCP_CMD_BASE);
+
+	switch ((cmd >> 4) & 0x7) {
+	case 0:
+		dev_dbg(cdns->dev, "PING response\n");
+		break;
+	case 1:
+		dev_dbg(cdns->dev, "ILLEGAL response\n");
+		break;
+	case 2:
+		dev_dbg(cdns->dev, "READ response\n");
+		rd_command = true;
+		break;
+	case 3:
+		dev_dbg(cdns->dev, "WRITE response\n");
+		break;
+	}
+
+	if (cmd & BIT(0))
+		dev_dbg(cdns->dev, "ACK received\n");
+	if (cmd & BIT(1))
+		dev_dbg(cdns->dev, "NAK received\n");
+	if (rd_command)
+		dev_dbg(cdns->dev, "READ value %x\n", (cmd >> 8) & 0xff);
+
+	*value = cmd;
+
+	/* clear FIFO WL status */
+	cdns_updatel(cdns, CDNS_MCP_INTSTAT, CDNS_MCP_INT_RX_WL,
+		     CDNS_MCP_INT_RX_WL);
+
+	return 0;
+}
+DEFINE_DEBUGFS_ATTRIBUTE(cdns_cmd_fops, cdns_cmd_rsp, cdns_cmd, "0x%08llx\n");
 
 static int cdns_intset(void *data, u64 value)
 {
@@ -518,7 +565,7 @@ void sdw_cdns_debugfs_init(struct sdw_cdns *cdns, struct dentry *root)
 	debugfs_create_file_unsafe("cdns-cmdctrl", 0200, root, cdns,
 				   &cdns_cmdctrl_fops);
 
-	debugfs_create_file_unsafe("cdns-cmd", 0200, root, cdns,
+	debugfs_create_file_unsafe("cdns-cmd", 0600, root, cdns,
 				   &cdns_cmd_fops);
 
 	debugfs_create_file_unsafe("cdns-intset", 0200, root, cdns,
