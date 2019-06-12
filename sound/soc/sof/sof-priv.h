@@ -413,6 +413,8 @@ struct snd_sof_dev {
 	int ipc_timeout;
 	int boot_timeout;
 
+	int ipc_enabled;
+
 	/* Wait queue for code loading */
 	wait_queue_head_t waitq;
 	int code_loading;

@@ -266,6 +266,8 @@ void hda_dsp_ipc_int_enable(struct snd_sof_dev *sdev)
 	/* enable IPC interrupt */
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR, HDA_DSP_REG_ADSPIC,
 				HDA_DSP_ADSPIC_IPC, HDA_DSP_ADSPIC_IPC);
+
+	sdev->ipc_enabled = 1;
 }
 
 void hda_dsp_ipc_int_disable(struct snd_sof_dev *sdev)
@@ -280,6 +282,8 @@ void hda_dsp_ipc_int_disable(struct snd_sof_dev *sdev)
 	/* disable IPC BUSY and DONE interrupt */
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR, chip->ipc_ctl,
 			HDA_DSP_REG_HIPCCTL_BUSY | HDA_DSP_REG_HIPCCTL_DONE, 0);
+
+	sdev->ipc_enabled = 0;
 }
 
 static int hda_suspend(struct snd_sof_dev *sdev, int state,
