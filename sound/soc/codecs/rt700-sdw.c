@@ -142,6 +142,9 @@ static const struct regmap_config rt700_sdw_regmap = {
 	.reg_defaults = rt700_reg_defaults, /* Defaults */
 	.num_reg_defaults = ARRAY_SIZE(rt700_reg_defaults),
 	.cache_type = REGCACHE_RBTREE,
+
+	.use_single_read = true,
+	.use_single_write = true,
 };
 
 int hda_to_sdw(unsigned int nid, unsigned int verb, unsigned int payload,
