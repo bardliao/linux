@@ -67,7 +67,7 @@ static int hda_sdw_init(struct snd_sof_dev *sdev)
 	//res.ops = &sdw_callback;
 	//res.arg = cnl;
 
-	//hda_sdw_int_enable(sdev, true);
+	hda_sdw_int_enable(sdev, true);
 	//hda_sdw_int_enable(sdev, false);
 
 	sdev->sdw = sdw_intel_init(handle, &res);
