@@ -15,6 +15,7 @@
 #include <linux/soundwire/sdw_type.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/acpi.h>
 #include <linux/regmap.h>
 #include <sound/soc.h>
 #include "rt700.h"
@@ -365,9 +366,18 @@ static const struct sdw_device_id rt700_id[] = {
 };
 MODULE_DEVICE_TABLE(sdw, rt700_id);
 
+#ifdef CONFIG_ACPI
+static const struct acpi_device_id rt700_acpi_match[] = {
+	{"10EC0700", 0},
+	{},
+};
+MODULE_DEVICE_TABLE(acpi, rt700_acpi_match);
+#endif
+
 static struct sdw_driver rt700_sdw_driver = {
 	.driver = {
 		   .name = "rt700",
+		   .acpi_match_table = ACPI_PTR(rt700_acpi_match),
 		   .owner = THIS_MODULE,
 		   },
 	.probe = rt700_sdw_probe,
