@@ -1418,19 +1418,10 @@ int rt700_init(struct device *dev, struct regmap *regmap,
 	 */
 	rt700->hw_init = false;
 
-	/*
-	 * TODO: The BIOS used currently has multiple entries
-	 * for Slave(s). Ideally for a given platform, BIOS should
-	 * hold entries of actual Slave(s) present on board. So
-	 * to handle this, only register codec if it is actually
-	 * present on board, adding check accordingly
-	 */
-	if (slave->bus->link_id == 1) {
-		ret =  snd_soc_register_component(dev,
-						  &soc_codec_dev_rt700,
-						  rt700_dai,
-						  ARRAY_SIZE(rt700_dai));
-	}
+	ret =  snd_soc_register_component(dev,
+					  &soc_codec_dev_rt700,
+					  rt700_dai,
+					  ARRAY_SIZE(rt700_dai));
 
 	dev_info(&slave->dev, "%s\n", __func__);
 
