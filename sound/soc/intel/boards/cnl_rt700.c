@@ -290,7 +290,6 @@ static const struct platform_device_id cnl_board_ids[] = {
 
 static struct platform_driver snd_cnl_rt700_mc_driver = {
 	.driver = {
-		.owner = THIS_MODULE,
 		.name = "cnl_rt700",
 	},
 	.probe = snd_cnl_rt700_mc_probe,
