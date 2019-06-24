@@ -159,9 +159,9 @@ static int cnl_rt700_codec_fixup(struct snd_soc_pcm_runtime *rtd,
 	return ret;
 }
 
-SND_SOC_DAILINK_DEF(sdw1_pin,
-	DAILINK_COMP_ARRAY(COMP_CPU("SDW1 Pin0")));
-SND_SOC_DAILINK_DEF(sdw1_codec,
+SND_SOC_DAILINK_DEF(sdw0_pin,
+	DAILINK_COMP_ARRAY(COMP_CPU("SDW0 Pin0")));
+SND_SOC_DAILINK_DEF(sdw0_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:1:25d:700:0:0", "rt700-aif1")));
 
 #if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
@@ -194,7 +194,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 		.dpcm_playback = 1,
 		.dpcm_capture = 1,
 		.nonatomic = true,
-		SND_SOC_DAILINK_REG(sdw1_pin, sdw1_codec, platform),
+		SND_SOC_DAILINK_REG(sdw0_pin, sdw0_codec, platform),
 	},
 #if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
 	{
