@@ -164,6 +164,15 @@ SND_SOC_DAILINK_DEF(sdw0_pin,
 SND_SOC_DAILINK_DEF(sdw0_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:700:0:0", "rt700-aif1")));
 
+SND_SOC_DAILINK_DEF(dmic_pin,
+	DAILINK_COMP_ARRAY(COMP_CPU("DMIC01 Pin")));
+
+SND_SOC_DAILINK_DEF(dmic16k_pin,
+	DAILINK_COMP_ARRAY(COMP_CPU("DMIC16k Pin")));
+
+SND_SOC_DAILINK_DEF(dmic_codec,
+	DAILINK_COMP_ARRAY(COMP_CODEC("dmic-codec", "dmic-hifi")));
+
 #if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
 SND_SOC_DAILINK_DEF(idisp1_pin,
 	DAILINK_COMP_ARRAY(COMP_CPU("iDisp1 Pin")));
@@ -196,10 +205,25 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 		.nonatomic = true,
 		SND_SOC_DAILINK_REG(sdw0_pin, sdw0_codec, platform),
 	},
+	{
+		.name = "dmic01",
+		.id = 1,
+		.ignore_suspend = 1,
+		.dpcm_capture = 1,
+		.no_pcm = 1,
+		SND_SOC_DAILINK_REG(dmic_pin, dmic_codec, platform),
+	},
+	{
+		.name = "dmic16k",
+		.id = 2,
+		.dpcm_capture = 1,
+		.no_pcm = 1,
+		SND_SOC_DAILINK_REG(dmic16k_pin, dmic_codec, platform),
+	},
 #if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
 	{
 		.name = "iDisp1",
-		.id = 1,
+		.id = 3,
 		.init = cnl_hdmi_init,
 		.no_pcm = 1,
 		.dpcm_playback = 1,
@@ -207,7 +231,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 	},
 	{
 		.name = "iDisp2",
-		.id = 2,
+		.id = 4,
 		.init = cnl_hdmi_init,
 		.no_pcm = 1,
 		.dpcm_playback = 1,
@@ -215,7 +239,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 	},
 	{
 		.name = "iDisp3",
-		.id = 3,
+		.id = 5,
 		.init = cnl_hdmi_init,
 		.no_pcm = 1,
 		.dpcm_playback = 1,
