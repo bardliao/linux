@@ -509,7 +509,7 @@ static int intel_config_stream(struct sdw_intel *sdw,
 			       struct snd_soc_dai *dai,
 			       struct snd_pcm_hw_params *hw_params, int link_id)
 {
-	if (sdw->res->ops && sdw->res->ops->config_stream)
+	if (sdw->res->ops && sdw->res->ops->config_stream && sdw->res->arg)
 		return sdw->res->ops->config_stream(sdw->res->arg,
 				substream, dai, hw_params, link_id);
 
