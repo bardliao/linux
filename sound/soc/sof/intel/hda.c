@@ -62,6 +62,8 @@ static int hda_sdw_init(struct snd_sof_dev *sdev)
 
 	handle = ACPI_HANDLE(sdev->dev);
 
+	memset(&res, 0, sizeof(res));
+
 	res.mmio_base = sdev->bar[HDA_DSP_BAR];
 	res.irq = sdev->ipc_irq;
 	res.parent = sdev->dev;
