@@ -218,11 +218,6 @@ int hda_dsp_pcm_open(struct snd_sof_dev *sdev,
 
 	pr_err("plb: in %s dai_link->name %s dai_link->cpus->dai_name %s no pcm %d\n", __func__, dai_link->name, dai_link->cpus->dai_name, dai_link->no_pcm);
 	
-	if (runtime->private_data) {
-		dev_warn(rtd->cpu_dai->dev, " In %s: private data already defined\n", __func__);
-		return 0;
-	}
-
 	if (rtd->cpu_dai->id < SDW_DAI_ID_RANGE_START) {
 
 		pr_err("plb: in hdaudio handling\n");
@@ -243,6 +238,10 @@ int hda_dsp_pcm_open(struct snd_sof_dev *sdev,
 	if (rtd->cpu_dai->id >= SDW_DAI_ID_RANGE_START &&
 	    rtd->cpu_dai->id <= SDW_DAI_ID_RANGE_END) {
 		
+		if (runtime->private_data) {
+			dev_warn(rtd->cpu_dai->dev, " In %s: private data already defined\n", __func__);
+			return 0;
+		}
 		pr_err("plb: in %s sdw handling cpu_dai->id %d\n", __func__, rtd->cpu_dai->id);
 		
 		name = kzalloc(32, GFP_KERNEL);
