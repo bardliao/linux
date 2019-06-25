@@ -16,6 +16,7 @@
  */
 
 #include <linux/pm_runtime.h>
+#include <linux/soundwire/sdw.h>
 #include <sound/hdaudio_ext.h>
 #include <sound/hda_register.h>
 #include <sound/sof.h>
@@ -485,13 +486,23 @@ int hda_dsp_stream_hw_params(struct snd_sof_dev *sdev,
 int hda_dsp_stream_hw_free(struct snd_sof_dev *sdev,
 			   struct snd_pcm_substream *substream)
 {
-	struct hdac_stream *stream = substream->runtime->private_data;
+	struct hdac_stream *stream = NULL;
 	struct hdac_ext_stream *link_dev = container_of(stream,
 							struct hdac_ext_stream,
 							hstream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct sdw_stream_runtime *sdw_stream = NULL;
 	struct hdac_bus *bus = sof_to_bus(sdev);
+	struct device *dev;
+	int ret = 0;
+
 	u32 mask = 0x1 << stream->index;
 
+	if (rtd->dai_link->no_pcm)
+		goto be;
+
+	stream = runtime->private_data;
 	spin_lock_irq(&bus->reg_lock);
 	/* couple host and link DMA if link DMA channel is idle */
 	if (!link_dev->link_locked)
@@ -500,6 +511,17 @@ int hda_dsp_stream_hw_free(struct snd_sof_dev *sdev,
 	spin_unlock_irq(&bus->reg_lock);
 
 	return 0;
+be:
+	sdw_stream = runtime->private_data;
+	if (!sdw_stream)
+		return -EINVAL;
+
+	dev = rtd->cpu_dai->dev;
+	ret = sdw_deprepare_stream(sdw_stream);
+	if (ret)
+		dev_err(dev, "sdw_deprepare_stream: %s failed: %d",
+			sdw_stream->name, ret);
+	return ret;
 }
 
 irqreturn_t hda_dsp_stream_interrupt(int irq, void *context)
