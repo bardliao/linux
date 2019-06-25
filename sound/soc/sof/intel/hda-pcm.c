@@ -128,13 +128,95 @@ int hda_dsp_pcm_hw_params(struct snd_sof_dev *sdev,
 	return 0;
 }
 
+static int sof_sdw_stream_trigger(struct snd_pcm_substream *substream, int cmd)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	//struct snd_soc_dai_link *dai_link = rtd->dai_link;
+	struct sdw_stream_runtime *sdw_stream = runtime->private_data;
+	int ret;
+
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+	case SNDRV_PCM_TRIGGER_RESUME:
+
+		/*
+		 * Workaround to fix first playback/capture noise issue
+		 * TODO: Remove this when fix is done in firmware.
+		 */
+#if 0
+		if (dma->stream_type == SDW_STREAM_PCM) {
+			for (i = 0; i < dma->nr_ports; i++) {
+				port = dma->port[i];
+				intel_pdi_alh_configure(sdw, port->pdi);
+			}
+		}
+#endif
+		ret = sdw_enable_stream(sdw_stream);
+		if (ret) {
+			dev_err(rtd->cpu_dai->dev,
+				"sdw_enable_stream: %s failed: %d",
+				sdw_stream->name, ret);
+			return ret;
+		}
+		break;
+
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+	case SNDRV_PCM_TRIGGER_STOP:
+		ret = sdw_disable_stream(sdw_stream);
+		if (ret) {
+			dev_err(rtd->cpu_dai->dev,
+				"sdw_disable_stream: %s failed: %d",
+				sdw_stream->name, ret);
+			return ret;
+		}
+		break;
+
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 int hda_dsp_pcm_trigger(struct snd_sof_dev *sdev,
 			struct snd_pcm_substream *substream, int cmd)
 {
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct hdac_stream *hstream = substream->runtime->private_data;
 	struct hdac_ext_stream *stream = stream_to_hdac_ext_stream(hstream);
 
+	if (rtd->dai_link->no_pcm)
+		return sof_sdw_stream_trigger(substream, cmd);
+
 	return hda_dsp_stream_trigger(sdev, stream, cmd);
+}
+
+int sdw_pcm_prepare(struct snd_sof_dev *sdev,
+		    struct snd_pcm_substream *substream)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct sdw_stream_runtime *sdw_stream = runtime->private_data;
+	struct device *dev;
+	int ret = 0;
+
+	if (rtd->cpu_dai->id >= SDW_DAI_ID_RANGE_START &&
+	    rtd->cpu_dai->id <= SDW_DAI_ID_RANGE_END) {
+
+		if (!sdw_stream)
+			return -EINVAL;
+
+		dev = rtd->cpu_dai->dev;
+		ret = sdw_prepare_stream(sdw_stream);
+		if (ret)
+			dev_err(dev, "sdw_prepare_stream: %s failed: %d",
+				sdw_stream->name, ret);
+	}
+
+	return ret;
 }
 
 snd_pcm_uframes_t hda_dsp_pcm_pointer(struct snd_sof_dev *sdev,
@@ -286,10 +368,17 @@ error:
 int hda_dsp_pcm_close(struct snd_sof_dev *sdev,
 		      struct snd_pcm_substream *substream)
 {
-	struct hdac_stream *hstream = substream->runtime->private_data;
+	struct hdac_stream *hstream = NULL;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct sdw_stream_runtime *sdw_stream = NULL;
 	int direction = substream->stream;
 	int ret;
 
+	if (rtd->dai_link->no_pcm)
+		goto be;
+
+	hstream = runtime->private_data;
 	ret = hda_dsp_stream_put(sdev, direction, hstream->stream_tag);
 
 	if (ret) {
@@ -299,5 +388,14 @@ int hda_dsp_pcm_close(struct snd_sof_dev *sdev,
 
 	/* unbinding pcm substream to hda stream */
 	substream->runtime->private_data = NULL;
+
+	return 0;
+be:
+	sdw_stream = runtime->private_data;
+	if (!sdw_stream)
+		return -EINVAL;
+
+	sdw_release_stream(sdw_stream);
+
 	return 0;
 }
