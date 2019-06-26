@@ -21,6 +21,9 @@
 #include "../ops.h"
 #include "hda.h"
 
+/* HACK */
+struct sdw_stream_runtime *sdw_pdata;
+
 #define SDnFMT_BASE(x)	((x) << 14)
 #define SDnFMT_MULT(x)	(((x) - 1) << 11)
 #define SDnFMT_DIV(x)	(((x) - 1) << 8)
@@ -131,9 +134,9 @@ int hda_dsp_pcm_hw_params(struct snd_sof_dev *sdev,
 static int sof_sdw_stream_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_pcm_runtime *runtime = substream->runtime;
+	//struct snd_pcm_runtime *runtime = substream->runtime;
 	//struct snd_soc_dai_link *dai_link = rtd->dai_link;
-	struct sdw_stream_runtime *sdw_stream = runtime->private_data;
+	struct sdw_stream_runtime *sdw_stream = sdw_pdata;
 	int ret;
 
 	switch (cmd) {
@@ -156,8 +159,7 @@ static int sof_sdw_stream_trigger(struct snd_pcm_substream *substream, int cmd)
 		ret = sdw_enable_stream(sdw_stream);
 		if (ret) {
 			dev_err(rtd->cpu_dai->dev,
-				"sdw_enable_stream: %s failed: %d",
-				sdw_stream->name, ret);
+				"sdw_enable_stream: failed: %d", ret);
 			return ret;
 		}
 		break;
@@ -168,8 +170,7 @@ static int sof_sdw_stream_trigger(struct snd_pcm_substream *substream, int cmd)
 		ret = sdw_disable_stream(sdw_stream);
 		if (ret) {
 			dev_err(rtd->cpu_dai->dev,
-				"sdw_disable_stream: %s failed: %d",
-				sdw_stream->name, ret);
+				"sdw_disable_stream: failed: %d", ret);
 			return ret;
 		}
 		break;
@@ -197,9 +198,9 @@ int hda_dsp_pcm_trigger(struct snd_sof_dev *sdev,
 int sdw_pcm_prepare(struct snd_sof_dev *sdev,
 		    struct snd_pcm_substream *substream)
 {
-	struct snd_pcm_runtime *runtime = substream->runtime;
+	//struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct sdw_stream_runtime *sdw_stream = runtime->private_data;
+	struct sdw_stream_runtime *sdw_stream = sdw_pdata;
 	struct device *dev;
 	int ret = 0;
 
@@ -212,8 +213,7 @@ int sdw_pcm_prepare(struct snd_sof_dev *sdev,
 		dev = rtd->cpu_dai->dev;
 		ret = sdw_prepare_stream(sdw_stream);
 		if (ret)
-			dev_err(dev, "sdw_prepare_stream: %s failed: %d",
-				sdw_stream->name, ret);
+			dev_err(dev, "sdw_prepare_stream: failed: %d", ret);
 	}
 
 	return ret;
@@ -356,7 +356,7 @@ int hda_dsp_pcm_open(struct snd_sof_dev *sdev,
 						   substream->stream);
 	}
 
-	runtime->private_data = sdw_stream;
+	sdw_pdata = sdw_stream;
 	return 0;
 
 error:
@@ -391,7 +391,7 @@ int hda_dsp_pcm_close(struct snd_sof_dev *sdev,
 
 	return 0;
 be:
-	sdw_stream = runtime->private_data;
+	sdw_stream = sdw_pdata;
 	if (!sdw_stream)
 		return -EINVAL;
 
