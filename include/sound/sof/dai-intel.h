@@ -183,6 +183,9 @@ struct sof_ipc_dai_dmic_params {
 struct sof_ipc_dai_alh_params {
 	struct sof_ipc_hdr hdr;
 	uint32_t stream_id;
+
+	/* reserved for future use */
+	uint32_t reserved[15];
 } __packed;
 
 #endif
