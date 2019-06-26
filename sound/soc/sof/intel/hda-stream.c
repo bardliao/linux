@@ -494,15 +494,15 @@ int hda_dsp_stream_hw_free(struct snd_sof_dev *sdev,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct sdw_stream_runtime *sdw_stream = NULL;
 	struct hdac_bus *bus = sof_to_bus(sdev);
-	struct device *dev;
 	int ret = 0;
-
-	u32 mask = 0x1 << stream->index;
+	u32 mask;
 
 	if (rtd->dai_link->no_pcm)
 		goto be;
 
 	stream = runtime->private_data;
+	mask = 0x1 << stream->index;
+
 	spin_lock_irq(&bus->reg_lock);
 	/* couple host and link DMA if link DMA channel is idle */
 	if (!link_dev->link_locked)
@@ -512,15 +512,14 @@ int hda_dsp_stream_hw_free(struct snd_sof_dev *sdev,
 
 	return 0;
 be:
-	sdw_stream = runtime->private_data;
+
+	sdw_stream = sdw_pdata;
 	if (!sdw_stream)
 		return -EINVAL;
 
-	dev = rtd->cpu_dai->dev;
 	ret = sdw_deprepare_stream(sdw_stream);
 	if (ret)
-		dev_err(dev, "sdw_deprepare_stream: %s failed: %d",
-			sdw_stream->name, ret);
+		dev_err(sdev->dev, "sdw_deprepare_stream: failed %d", ret);
 	return ret;
 }
 
