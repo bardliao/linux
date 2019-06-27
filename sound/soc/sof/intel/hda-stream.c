@@ -495,6 +495,9 @@ int hda_dsp_stream_hw_free(struct snd_sof_dev *sdev,
 	struct hdac_bus *bus = sof_to_bus(sdev);
 	u32 mask = 0x1 << stream->index;
 	int ret;
+	struct sof_ipc_dai_config config;
+	struct sof_ipc_reply reply;
+	u32 size = sizeof(config);
 
 	if (rtd->dai_link->no_pcm)
 		goto be;
@@ -516,6 +519,22 @@ be:
 	ret = sdw_deprepare_stream(sdw_stream);
 	if (ret)
 		dev_err(sdev->dev, "sdw_deprepare_stream: failed %d", ret);
+
+	memset(&config, 0, size);
+	config.hdr.size = size;
+	config.hdr.cmd = SOF_IPC_GLB_DAI_MSG | SOF_IPC_DAI_CONFIG;
+	config.type = SOF_DAI_INTEL_ALH;
+	config.dai_index = 0; /* FIXME: make this dynamic */
+	config.alh.stream_id = 0xFFFFFFFF;
+
+	/* send message to DSP */
+	ret = sof_ipc_tx_message(sdev->ipc,
+				 config.hdr.cmd, &config, size, &reply,
+				 sizeof(reply));
+	if (ret < 0) {
+		dev_err(sdev->dev, "error: failed to set DAI hw_free for ALH %d\n",
+			config.dai_index);
+	}
 	return ret;
 }
 
