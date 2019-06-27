@@ -143,19 +143,6 @@ static int sof_sdw_stream_trigger(struct snd_pcm_substream *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 	case SNDRV_PCM_TRIGGER_RESUME:
-
-		/*
-		 * Workaround to fix first playback/capture noise issue
-		 * TODO: Remove this when fix is done in firmware.
-		 */
-#if 0
-		if (dma->stream_type == SDW_STREAM_PCM) {
-			for (i = 0; i < dma->nr_ports; i++) {
-				port = dma->port[i];
-				intel_pdi_alh_configure(sdw, port->pdi);
-			}
-		}
-#endif
 		ret = sdw_enable_stream(sdw_stream);
 		if (ret) {
 			dev_err(rtd->cpu_dai->dev,
