@@ -13,7 +13,8 @@
 #include "bus.h"
 
 /* TODO: Remove below Intel related hardcoding */
-#define SDW_INTEL_DEFAULT_ROW		125
+//#define SDW_INTEL_DEFAULT_ROW		125
+#define SDW_INTEL_DEFAULT_ROW		50
 #define SDW_INTEL_DEFAULT_COL		2
 #define SDW_STRM_RATE_GROUPING		1
 
