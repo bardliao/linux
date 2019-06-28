@@ -636,6 +636,18 @@ int sdw_configure_dpn_intr(struct sdw_slave *slave,
 		val &= ~SDW_DPN_INT_PORT_READY;
 	}
 
+	/* Enable test fail interrupt */
+	if (enable) {
+		val |= SDW_DPN_INT_TEST_FAIL;
+		mask |= SDW_DPN_INT_TEST_FAIL;
+	}
+	/* else { */
+	/* 	val &= ~(SDW_DPN_INT_TEST_FAIL); */
+	/* 	mask &= ~(SDW_DPN_INT_TEST_FAIL); */
+	/* } */
+
+	pr_err("plb: writing %x mask %x in port %d\n", val, mask, port);
+
 	ret = sdw_update(slave, addr, (mask | SDW_DPN_INT_PORT_READY), val);
 	if (ret < 0)
 		dev_err(slave->bus->dev,
@@ -649,6 +661,11 @@ static int sdw_initialize_slave(struct sdw_slave *slave)
 	struct sdw_slave_prop *prop = &slave->prop;
 	int ret;
 	u8 val;
+
+	/* HACK: enable DP1 TEST_FAIL interrupt */
+	ret = sdw_configure_dpn_intr(slave, 1, true, 1);
+	if (ret < 0)
+		pr_err("plb: error in %s\n", __func__);
 
 	/*
 	 * Set SCP implementation
