@@ -185,6 +185,7 @@ MODULE_PARM_DESC(cdns_mcp_int_mask, "Cadence MCP IntMask");
 #define CDNS_DPN_HCTRL_LCTRL			GENMASK(10, 8)
 
 #define CDNS_PORTCTRL				0x130
+#define CDNS_PORTCTRL_XRUN_MASK			BIT(0)
 #define CDNS_PORTCTRL_DIRN			BIT(7)
 #define CDNS_PORTCTRL_BANK_INVERT		BIT(8)
 
@@ -1466,15 +1467,23 @@ void sdw_cdns_config_stream(struct sdw_cdns *cdns,
 			    u32 ch, u32 dir, struct sdw_cdns_pdi *pdi)
 {
 	u32 offset, val = 0;
+	u32 mask;
 
 	if (dir == SDW_DATA_DIR_RX)
 		val = CDNS_PORTCTRL_DIRN;
 
 	offset = CDNS_PORTCTRL + port->num * CDNS_PORT_OFFSET;
-	cdns_updatel(cdns, offset, CDNS_PORTCTRL_DIRN, val);
+
+	/* enable port Xrun interrupt */
+	val |= CDNS_PORTCTRL_XRUN_MASK;
+
+	mask = CDNS_PORTCTRL_XRUN_MASK | CDNS_PORTCTRL_DIRN;
+
+	cdns_updatel(cdns, offset, mask, val);
 
 	val = port->num;
 	val |= ((1 << ch) - 1) << SDW_REG_SHIFT(CDNS_PDI_CONFIG_CHANNEL);
+
 	cdns_writel(cdns, CDNS_PDI_CONFIG(pdi->num), val);
 }
 EXPORT_SYMBOL(sdw_cdns_config_stream);
