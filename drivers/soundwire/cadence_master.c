@@ -201,7 +201,8 @@ MODULE_PARM_DESC(cdns_mcp_int_mask, "Cadence MCP IntMask");
 
 #define CDNS_DEFAULT_CLK_DIVIDER		2
 //#define CDNS_DEFAULT_FRAME_SHAPE		0x30 /* 125 rows, 2 columns */
-#define CDNS_DEFAULT_FRAME_SHAPE		0x08 /* 50 rows, 2 columns */
+//#define CDNS_DEFAULT_FRAME_SHAPE		0x08 /* 50 rows, 2 columns */
+#define CDNS_DEFAULT_FRAME_SHAPE		0x09 /* 50 rows, 4 columns */
 #define CDNS_DEFAULT_SSP_INTERVAL		0x18
 #define CDNS_TX_TIMEOUT				2000
 
