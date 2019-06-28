@@ -23,6 +23,8 @@
 /* Intel SHIM Registers Definition */
 #define SDW_SHIM_LCAP			0x0
 #define SDW_SHIM_LCTL			0x4
+#define SDW_SHIM_LCTL_ICGD 		BIT(31)
+#define SDW_SHIM_LCTL_DCGD 		BIT(30)
 #define SDW_SHIM_IPPTR			0x8
 #define SDW_SHIM_SYNC			0xC
 
@@ -289,6 +291,8 @@ static int intel_link_power_up(struct sdw_intel *sdw)
 	spa_mask = (SDW_SHIM_LCTL_SPA << link_id);
 	cpa_mask = (SDW_SHIM_LCTL_CPA << link_id);
 	link_control |=  spa_mask;
+	link_control |= SDW_SHIM_LCTL_ICGD;
+	link_control |= SDW_SHIM_LCTL_DCGD;
 
 	ret = intel_set_bit(shim, SDW_SHIM_LCTL, link_control, cpa_mask);
 	if (ret < 0)
