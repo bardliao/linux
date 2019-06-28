@@ -69,6 +69,7 @@ static void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 					     p_rt->num, bps,
 					     SDW_PORT_FLOW_MODE_ISOCH,
 					     SDW_PORT_DATA_MODE_NORMAL);
+					     //SDW_PORT_DATA_MODE_PRBS);
 
 			port_bo += bps * ch;
 		}
@@ -109,6 +110,8 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 				     p_rt->num, bps,
 				     SDW_PORT_FLOW_MODE_ISOCH,
 				     SDW_PORT_DATA_MODE_NORMAL);
+				     //SDW_PORT_DATA_MODE_PRBS);
+				     //SDW_PORT_DATA_MODE_STATIC_1);
 
 		/* Check for first entry */
 		if (!(p_rt == list_first_entry(&m_rt->port_list,
