@@ -1062,7 +1062,7 @@ int sdw_cdns_enable_interrupt(struct sdw_cdns *cdns)
 		CDNS_MCP_INT_PARITY;
 
 	/* enable detection of port interrupts */
-	mask |= CDNS_MCP_INT_DPINT;
+//	mask |= CDNS_MCP_INT_DPINT;
 
 	/* enable detection of RX fifo level */
 	mask |= CDNS_MCP_INT_RX_WL;
