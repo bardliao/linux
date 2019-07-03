@@ -134,10 +134,13 @@ int hda_dsp_pcm_hw_params(struct snd_sof_dev *sdev,
 static int sof_sdw_stream_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	//struct snd_pcm_runtime *runtime = substream->runtime;
-	//struct snd_soc_dai_link *dai_link = rtd->dai_link;
-	struct sdw_stream_runtime *sdw_stream = sdw_pdata;
+	struct sof_stream_ctx *ctx = substream->runtime->private_data;
+	struct sdw_stream_runtime *sdw_stream = ctx_to_sdw_stream(ctx);
 	int ret;
+
+	if (rtd->cpu_dai->id < SDW_DAI_ID_RANGE_START ||
+	    rtd->cpu_dai->id > SDW_DAI_ID_RANGE_END)
+		return 0;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
