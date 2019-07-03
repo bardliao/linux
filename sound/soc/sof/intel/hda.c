@@ -429,13 +429,6 @@ static int hda_init_caps(struct snd_sof_dev *sdev)
 	if (bus->ppcap)
 		dev_dbg(sdev->dev, "PP capability, will probe DSP later.\n");
 
-	ret = hda_dsp_ctrl_init_chip(sdev, true);
-	if (ret < 0) {
-		dev_err(bus->dev, "error: init chip failed with ret: %d\n",
-			ret);
-		return ret;
-	}
-
 #if IS_ENABLED(CONFIG_SND_SOC_SOF_HDA)
 	if (bus->mlcap)
 		snd_hdac_ext_bus_get_ml_capabilities(bus);
@@ -446,7 +439,17 @@ static int hda_init_caps(struct snd_sof_dev *sdev)
 		dev_err(sdev->dev, "error: no HDMI audio devices found\n");
 		return ret;
 	}
+#endif
 
+	/* Init HDA controller after i915 init */
+	ret = hda_dsp_ctrl_init_chip(sdev, true);
+	if (ret < 0) {
+		dev_err(bus->dev, "error: init chip failed with ret: %d\n",
+			ret);
+		return ret;
+	}
+
+#if IS_ENABLED(CONFIG_SND_SOC_SOF_HDA)
 	/* codec detection */
 	if (!bus->codec_mask) {
 		dev_info(bus->dev, "no hda codecs found!\n");
