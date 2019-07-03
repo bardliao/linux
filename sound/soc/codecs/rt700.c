@@ -1284,6 +1284,9 @@ static ssize_t rt700_hda_cmd_store(struct device *dev,
 	unsigned int sdw_data_3, sdw_data_2, sdw_data_1, sdw_data_0;
 	int i;
 
+	rt700->dbg_nid = 0;
+	rt700->dbg_vid = 0;
+	rt700->dbg_payload = 0;
 	for (i = 0; i < count; i++) {	/*rt700->dbg_nidess */
 		if (*(buf + i) <= '9' && *(buf + i) >= '0')
 			rt700->dbg_nid = (rt700->dbg_nid << 4) |
