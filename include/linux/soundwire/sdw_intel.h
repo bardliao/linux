@@ -26,6 +26,7 @@ struct sdw_intel_ops {
 struct sdw_intel_res {
 	void __iomem *mmio_base;
 	int irq;
+	unsigned int sdw_clk_min;
 	acpi_handle handle;
 	struct device *parent;
 	const struct sdw_intel_ops *ops;
