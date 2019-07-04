@@ -126,6 +126,7 @@ static struct sdw_intel_ctx
 		}
 
 		link->res.irq = res->irq;
+		link->res.sdw_clk_min = res->sdw_clk_min;
 		link->res.registers = res->mmio_base + SDW_LINK_BASE
 					+ (SDW_LINK_SIZE * i);
 		link->res.shim = res->mmio_base + SDW_SHIM_BASE;

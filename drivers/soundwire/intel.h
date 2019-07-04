@@ -20,6 +20,7 @@ struct sdw_intel_link_res {
 	void __iomem *shim;
 	void __iomem *alh;
 	int irq;
+	unsigned int sdw_clk_min;
 	const struct sdw_intel_ops *ops;
 	void *arg;
 };

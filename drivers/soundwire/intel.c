@@ -923,18 +923,51 @@ static int intel_register_dai(struct sdw_intel *sdw)
 
 static int intel_prop_read(struct sdw_bus *bus)
 {
+	struct sdw_intel *sdw;
+	struct platform_device *pdev;
+	int n, div, max_num;
+
+	pdev = container_of(bus->dev, struct platform_device, dev);
+	sdw = platform_get_drvdata(pdev);
+
 	/* Initialize with default handler to read all DisCo properties */
 	sdw_master_read_prop(bus);
 
-	/* BIOS is not giving some values correctly. So, lets override them */
-	bus->prop.num_clk_freq = 1;
+	/* No need to overwrite clock value if sdw_clk_min is not set */
+	if (!sdw->res->sdw_clk_min)
+		goto set_err_threshold; 
+	/*
+	 * BIOS only provide max_clk_freq value, there are also many clocks
+	 * available and we should present them to clk_freq.
+	 */
+	n = 0;
+	max_num = bus->prop.max_clk_freq / sdw->res->sdw_clk_min;
+	for (div = max_num; div > 0; div--) {
+		if (bus->prop.max_clk_freq % div)
+			continue;
+		n++;
+	}
+	bus->prop.num_clk_freq = n;
+	dev_dbg(bus->dev, "num_clk_freq: %d\n", bus->prop.num_clk_freq);
 	bus->prop.clk_freq = devm_kcalloc(bus->dev, bus->prop.num_clk_freq,
 					  sizeof(*bus->prop.clk_freq),
 					  GFP_KERNEL);
 	if (!bus->prop.clk_freq)
 		return -ENOMEM;
 
-	bus->prop.clk_freq[0] = bus->prop.max_clk_freq;
+	for (div = max_num, n = 0; n < bus->prop.num_clk_freq && div > 0;
+	     div--) {
+		/* The order should be from low to high */
+		if (bus->prop.max_clk_freq % div)
+			continue;
+		bus->prop.clk_freq[n] = bus->prop.max_clk_freq / div;
+		n++;
+	}
+
+set_err_threshold:
+
+	/* BIOS is not giving some values correctly. So, lets override them */
+
 	bus->prop.err_threshold = 5;
 
 	return 0;
