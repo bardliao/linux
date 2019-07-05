@@ -100,6 +100,7 @@ static int hda_sdw_init(struct snd_sof_dev *sdev)
 	res.irq = sdev->ipc_irq;
 	res.parent = sdev->dev;
 	res.ops = &sdw_callback;
+	res.sdw_clk_min = 2400000;
 	res.arg = sdev;
 
 	hda_sdw_int_enable(sdev, true);
