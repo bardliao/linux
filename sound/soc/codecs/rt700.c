@@ -1458,6 +1458,15 @@ int rt700_io_init(struct device *dev, struct sdw_slave *slave)
 	pm_runtime_use_autosuspend(&slave->dev);
 	pm_runtime_enable(&slave->dev);
 
+	/* reset */
+	regmap_write(rt700->regmap, 0xff01, 0x00);
+	regmap_write(rt700->regmap, 0x7520, 0x00);
+	regmap_write(rt700->regmap, 0x85a0, 0x1a);
+	regmap_write(rt700->regmap, 0x7420, 0xc0);
+	regmap_write(rt700->regmap, 0x84a0, 0x03);
+
+	/* power on */
+	regmap_write(rt700->regmap, RT700_SET_AUDIO_POWER_STATE, AC_PWRST_D0);
 	/* Set Pin Widget */
 	regmap_write(rt700->regmap, RT700_SET_PIN_HP, 0x40);
 	regmap_write(rt700->regmap, RT700_SET_PIN_SPK, 0x40);
