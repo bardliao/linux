@@ -35,6 +35,7 @@
 #include <sound/initval.h>
 #include <sound/tlv.h>
 #include <sound/hda_verbs.h>
+#include <sound/jack.h>
 
 #include "rt700.h"
 
@@ -575,16 +576,80 @@ static int rt700_hda_read(struct regmap *regmap, unsigned int vid,
 	return 0;
 }
 
+static unsigned int rt700_button_detect(struct rt700_priv *rt700)
+{
+	unsigned int btn_type = 0, val80, val81;
+
+	rt700_index_read(rt700->regmap, RT700_IRQ_FLAG_TABLE1, &val80);
+	rt700_index_read(rt700->regmap, RT700_IRQ_FLAG_TABLE2, &val81);
+
+	switch (val80) {
+	case 0x0200:
+	case 0x0100:
+	case 0x0080:
+		btn_type |= SND_JACK_BTN_0;
+		break;
+	case 0x0001:
+		btn_type |= SND_JACK_BTN_3;
+		break;
+	}
+	switch (val81) {
+	case 0x8000:
+	case 0x4000:
+	case 0x2000:
+		btn_type |= SND_JACK_BTN_1;
+		break;
+	case 0x1000:
+	case 0x0800:
+	case 0x0400:
+		btn_type |= SND_JACK_BTN_2;
+		break;
+	case 0x0200:
+	case 0x0100:
+		btn_type |= SND_JACK_BTN_3;
+		break;
+	}
+	return btn_type;
+}
+
 int rt700_jack_detect(struct rt700_priv *rt700, bool *hp, bool *mic)
 {
-	unsigned int buf;
+	unsigned int buf, jack_status, reg, btn_type, loop = 0;
 
-	rt700_index_read(rt700->regmap, 0x82, &buf);
-	*hp = buf & 0x10;
-	if (*hp)
-		*mic = buf & 0x40; /* FIXME: PLB: this isn't a boolean */
-	else
+	reg = RT700_VERB_GET_PIN_SENSE | RT700_HP_OUT;
+	regmap_write(rt700->regmap, reg, 0x00);
+	regmap_read(rt700->regmap, RT700_READ_HDA_3, &jack_status);
+
+	/* pin attached */
+	if (jack_status & 0x80) {
+		rt700_index_read(rt700->regmap, RT700_COMBO_JACK_AUTO_CTL2, &buf);
+
+		while ((buf & RT700_COMBOJACK_AUTO_DET_STATUS) == 0) {
+			if (loop >= 10) {
+				pr_debug("%s, jack auto detection time-out!\n",
+								__func__);
+				return 0;
+			}
+			loop++;
+
+			usleep_range(9000, 10000);
+			rt700_index_read(rt700->regmap, RT700_COMBO_JACK_AUTO_CTL2, &buf);
+		}
+
+		if (buf & RT700_COMBOJACK_AUTO_DET_TRS) {
+			*hp = true;
+			*mic = false;
+		} else if ((buf & RT700_COMBOJACK_AUTO_DET_CTIA) ||
+			(buf & RT700_COMBOJACK_AUTO_DET_OMTP)) {
+			*hp = true;
+			*mic = true;
+			btn_type = rt700_button_detect(rt700);
+			pr_debug("%s, btn_type=0x%x\n",	__func__, btn_type);
+		}
+	} else {
+		*hp = false;
 		*mic = false;
+	}
 
 	/* Clear IRQ */
 	rt700_index_read(rt700->regmap, 0x10, &buf);
@@ -1497,10 +1562,14 @@ int rt700_io_init(struct device *dev, struct sdw_slave *slave)
 
 	/* Set index */
 	rt700_index_write(rt700->regmap, 0x4a, 0x201b);
+	rt700_index_write(rt700->regmap, 0x45, 0x5089);
+	rt700_index_write(rt700->regmap, 0x6b, 0x5064);
+	rt700_index_write(rt700->regmap, 0x48, 0xd249);
 
 	/* Enable Jack Detection */
 	regmap_write(rt700->regmap,  RT700_SET_MIC2_UNSOLICITED_ENABLE, 0x82);
 	regmap_write(rt700->regmap,  RT700_SET_HP_UNSOLICITED_ENABLE, 0x81);
+	regmap_write(rt700->regmap, RT700_SET_INLINE_UNSOLICITED_ENABLE, 0x83);
 	rt700_index_write(rt700->regmap, 0x10, 0x2420);
 	rt700_index_write(rt700->regmap, 0x19, 0x2e11);
 
