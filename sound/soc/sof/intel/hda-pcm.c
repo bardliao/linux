@@ -21,9 +21,6 @@
 #include "../ops.h"
 #include "hda.h"
 
-/* HACK */
-struct sdw_stream_runtime *sdw_pdata;
-
 #define SDnFMT_BASE(x)	((x) << 14)
 #define SDnFMT_MULT(x)	(((x) - 1) << 11)
 #define SDnFMT_DIV(x)	(((x) - 1) << 8)
@@ -134,13 +131,20 @@ int hda_dsp_pcm_hw_params(struct snd_sof_dev *sdev,
 static int sof_sdw_stream_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct sof_stream_ctx *ctx = substream->runtime->private_data;
-	struct sdw_stream_runtime *sdw_stream = ctx_to_sdw_stream(ctx);
+	struct hdac_stream *hstream = substream->runtime->private_data;
+	struct sof_intel_hda_stream *hda_stream;
+	struct sdw_stream_runtime *sdw_stream;
 	int ret;
 
 	if (rtd->cpu_dai->id < SDW_DAI_ID_RANGE_START ||
 	    rtd->cpu_dai->id > SDW_DAI_ID_RANGE_END)
 		return 0;
+
+	hda_stream = container_of(hstream,
+				  struct sof_intel_hda_stream,
+				  hda_stream.hstream);
+
+	sdw_stream = hda_stream->sdw_stream;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -190,12 +194,20 @@ int sdw_pcm_prepare(struct snd_sof_dev *sdev,
 {
 	//struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct sdw_stream_runtime *sdw_stream = sdw_pdata;
+	struct hdac_stream *hstream = substream->runtime->private_data;
+	struct sof_intel_hda_stream *hda_stream;
+	struct sdw_stream_runtime *sdw_stream;
 	struct device *dev;
 	int ret = 0;
 
 	if (rtd->cpu_dai->id >= SDW_DAI_ID_RANGE_START &&
 	    rtd->cpu_dai->id <= SDW_DAI_ID_RANGE_END) {
+
+		hda_stream = container_of(hstream,
+					  struct sof_intel_hda_stream,
+					  hda_stream.hstream);
+
+		sdw_stream = hda_stream->sdw_stream;
 
 		if (!sdw_stream)
 			return -EINVAL;
@@ -283,39 +295,49 @@ int hda_dsp_pcm_open(struct snd_sof_dev *sdev,
 	int direction = substream->stream;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct hdac_stream *hstream;
+	struct sof_intel_hda_stream *hda_stream;
 	struct sdw_stream_runtime *sdw_stream = NULL;
 	struct snd_soc_dai_link *dai_link = rtd->dai_link;
 	int i, ret = 0;
 	char *name;
 
 	pr_err("plb: in %s dai_link->name %s dai_link->cpus->dai_name %s no pcm %d\n", __func__, dai_link->name, dai_link->cpus->dai_name, dai_link->no_pcm);
-	
-	if (rtd->cpu_dai->id < SDW_DAI_ID_RANGE_START) {
 
-		pr_err("plb: in hdaudio handling\n");
-		
-		dsp_stream = hda_dsp_stream_get(sdev, direction);
-	
-		if (!dsp_stream) {
-			dev_err(sdev->dev, "error: no stream available\n");
-			return -ENODEV;
+	if (runtime->private_data) {
+		hstream = runtime->private_data;
+		if (hstream->opened) {
+			pr_err("bard: hstream is already used\n");
+			return 0;
 		}
-
-		/* binding pcm substream to hda stream */
-		substream->runtime->private_data = &dsp_stream->hstream;
-		return 0;
 	}
+
+	dsp_stream = hda_dsp_stream_get(sdev, direction);
+
+	if (!dsp_stream) {
+		dev_err(sdev->dev, "error: no stream available\n");
+		return -ENODEV;
+	}
+
+	/* binding pcm substream to hda stream */
+	substream->runtime->private_data = &dsp_stream->hstream;
 
 	/* SoundWire handling: THIS IS A HACK */    
 	if (rtd->cpu_dai->id >= SDW_DAI_ID_RANGE_START &&
 	    rtd->cpu_dai->id <= SDW_DAI_ID_RANGE_END) {
-		
-		if (runtime->private_data) {
-			dev_warn(rtd->cpu_dai->dev, " In %s: private data already defined\n", __func__);
+
+		pr_err("plb: in %s sdw handling cpu_dai->id %d\n", __func__, rtd->cpu_dai->id);
+
+		hstream = substream->runtime->private_data;
+		hda_stream = container_of(hstream,
+					  struct sof_intel_hda_stream,
+					  hda_stream.hstream);
+
+		if (hda_stream->sdw_stream) {
+			pr_err("bard: sdw_stream is already allocated\n");
 			return 0;
 		}
-		pr_err("plb: in %s sdw handling cpu_dai->id %d\n", __func__, rtd->cpu_dai->id);
-		
+
 		name = kzalloc(32, GFP_KERNEL);
 		if (!name)
 			return -ENOMEM;
@@ -344,9 +366,10 @@ int hda_dsp_pcm_open(struct snd_sof_dev *sdev,
 			snd_soc_dai_set_sdw_stream(rtd->codec_dais[i],
 						   sdw_stream,
 						   substream->stream);
+
+		hda_stream->sdw_stream = sdw_stream;
 	}
 
-	sdw_pdata = sdw_stream;
 	return 0;
 
 error:
@@ -361,14 +384,19 @@ int hda_dsp_pcm_close(struct snd_sof_dev *sdev,
 	struct hdac_stream *hstream = NULL;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct sof_intel_hda_stream *hda_stream;
 	struct sdw_stream_runtime *sdw_stream = NULL;
 	int direction = substream->stream;
 	int ret;
 
+	hstream = runtime->private_data;
+
 	if (rtd->dai_link->no_pcm)
 		goto be;
 
-	hstream = runtime->private_data;
+	if (!hstream->opened)
+		goto free;
+
 	ret = hda_dsp_stream_put(sdev, direction, hstream->stream_tag);
 
 	if (ret) {
@@ -376,16 +404,23 @@ int hda_dsp_pcm_close(struct snd_sof_dev *sdev,
 		return -ENODEV;
 	}
 
-	/* unbinding pcm substream to hda stream */
-	substream->runtime->private_data = NULL;
+	goto free;
 
-	return 0;
 be:
-	sdw_stream = sdw_pdata;
+	hda_stream = container_of(hstream,
+				  struct sof_intel_hda_stream,
+				  hda_stream.hstream);
+	sdw_stream = hda_stream->sdw_stream;
 	if (!sdw_stream)
 		return -EINVAL;
 
 	sdw_release_stream(sdw_stream);
+	hda_stream->sdw_stream = NULL;
+
+free:
+	/* unbinding pcm substream to hda stream */
+	if (!hstream->opened && !hda_stream->sdw_stream)
+		substream->runtime->private_data = NULL;
 
 	return 0;
 }
