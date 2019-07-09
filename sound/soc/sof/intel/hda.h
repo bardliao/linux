@@ -419,6 +419,7 @@ static inline struct hda_bus *sof_to_hbus(struct snd_sof_dev *s)
 struct sof_intel_hda_stream {
 	struct snd_sof_dev *sdev;
 	struct hdac_ext_stream hda_stream;
+	struct sdw_stream_runtime *sdw_stream;
 	struct sof_intel_stream stream;
 	int host_reserved; /* reserve host DMA channel */
 };
@@ -601,8 +602,5 @@ extern const struct sof_intel_dsp_desc apl_chip_info;
 extern const struct sof_intel_dsp_desc cnl_chip_info;
 extern const struct sof_intel_dsp_desc skl_chip_info;
 extern const struct sof_intel_dsp_desc icl_chip_info;
-
-/* HACK */
-extern struct sdw_stream_runtime *sdw_pdata;
 
 #endif

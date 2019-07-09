@@ -491,6 +491,8 @@ int hda_dsp_stream_hw_free(struct snd_sof_dev *sdev,
 							struct hdac_ext_stream,
 							hstream);
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct hdac_stream *hstream = substream->runtime->private_data;
+	struct sof_intel_hda_stream *hda_stream;
 	struct sdw_stream_runtime *sdw_stream;
 	struct hdac_bus *bus = sof_to_bus(sdev);
 	u32 mask = 0x1 << stream->index;
@@ -512,7 +514,10 @@ int hda_dsp_stream_hw_free(struct snd_sof_dev *sdev,
 	return 0;
 be:
 
-	sdw_stream = sdw_pdata;
+	hda_stream = container_of(hstream,
+				  struct sof_intel_hda_stream,
+				  hda_stream.hstream);
+	sdw_stream = hda_stream->sdw_stream;
 	if (!sdw_stream)
 		return -EINVAL;
 
