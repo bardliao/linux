@@ -941,6 +941,8 @@ static int intel_prop_read(struct sdw_bus *bus)
 	 * available and we should present them to clk_freq.
 	 */
 	n = 0;
+	// [HACK]: for ICL;
+	bus->prop.max_clk_freq  = 38400000;
 	max_num = bus->prop.max_clk_freq / sdw->res->sdw_clk_min;
 	for (div = max_num; div > 0; div--) {
 		if (bus->prop.max_clk_freq % div)
