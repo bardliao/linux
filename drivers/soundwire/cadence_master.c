@@ -351,9 +351,52 @@ static ssize_t cdns_reg_read(struct file *file, char __user *user_buf,
 	return ret;
 }
 
+static ssize_t cdns_reg_write(struct file *file, const char *user_buf,
+			     size_t count, loff_t *ppos)
+{
+	struct sdw_cdns *cdns = file->private_data;
+	u32 offset = 0, value = 0;
+	char *buf;
+	int i;
+
+	buf = kzalloc(count, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	copy_from_user( buf, user_buf, count );
+
+	for (i = 0; i < count; i++) {
+		if (*(buf + i) <= '9' && *(buf + i) >= '0')
+			offset = (offset << 4) | (*(buf + i) - '0');
+		else if (*(buf + i) <= 'f' && *(buf + i) >= 'a')
+			offset = (offset << 4) | ((*(buf + i) - 'a') + 0xa);
+		else if (*(buf + i) <= 'F' && *(buf + i) >= 'A')
+			offset = (offset << 4) | ((*(buf + i) - 'A') + 0xa);
+		else
+			break;
+	}
+	for (i = i + 1; i < count; i++) {
+		if (*(buf + i) <= '9' && *(buf + i) >= '0')
+			value = (value << 4) | (*(buf + i) - '0');
+		else if (*(buf + i) <= 'f' && *(buf + i) >= 'a')
+			value = (value << 4) | ((*(buf + i) - 'a') + 0xa);
+		else if (*(buf + i) <= 'F' && *(buf + i) >= 'A')
+			value = (value << 4) | ((*(buf + i) - 'A') + 0xa);
+		else
+			break;
+	}
+
+	dev_info(cdns->dev, "%s %x %x\n", __func__, offset, value);
+	cdns_writel(cdns, offset, value);
+
+	kfree(buf);
+	return count;
+}
+
 static const struct file_operations cdns_reg_fops = {
 	.open = simple_open,
 	.read = cdns_reg_read,
+	.write = cdns_reg_write,
 	.llseek = default_llseek,
 };
 
@@ -563,7 +606,7 @@ DEFINE_DEBUGFS_ATTRIBUTE(cdns_frame_shape_fops, NULL, cdns_frame_shape, "%llu\n"
  */
 void sdw_cdns_debugfs_init(struct sdw_cdns *cdns, struct dentry *root)
 {
-	debugfs_create_file("cdns-registers", 0400, root, cdns, &cdns_reg_fops);
+	debugfs_create_file("cdns-registers", 0600, root, cdns, &cdns_reg_fops);
 
 	debugfs_create_file_unsafe("cdns-cmdctrl", 0200, root, cdns,
 				   &cdns_cmdctrl_fops);
