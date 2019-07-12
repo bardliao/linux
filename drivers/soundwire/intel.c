@@ -117,6 +117,7 @@ static inline int intel_readl(void __iomem *base, int offset)
 
 static inline void intel_writel(void __iomem *base, int offset, int value)
 {
+	pr_err("%s %x %x\n", __func__, offset, value);
 	writel(value, base + offset);
 }
 
@@ -127,6 +128,7 @@ static inline u16 intel_readw(void __iomem *base, int offset)
 
 static inline void intel_writew(void __iomem *base, int offset, u16 value)
 {
+	pr_err("%s %x %x\n", __func__, offset, value);
 	writew(value, base + offset);
 }
 
@@ -135,6 +137,7 @@ static int intel_clear_bit(void __iomem *base, int offset, u32 value, u32 mask)
 	int timeout = 10;
 	u32 reg_read;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	writel(value, base + offset);
 	do {
 		reg_read = readl(base + offset);
@@ -153,6 +156,7 @@ static int intel_set_bit(void __iomem *base, int offset, u32 value, u32 mask)
 	int timeout = 10;
 	u32 reg_read;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	writel(value, base + offset);
 	do {
 		reg_read = readl(base + offset);
@@ -286,6 +290,7 @@ static int intel_link_power_up(struct sdw_intel *sdw)
 	int spa_mask, cpa_mask;
 	int link_control, ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Link power up sequence */
 	link_control = intel_readl(shim, SDW_SHIM_LCTL);
 	spa_mask = (SDW_SHIM_LCTL_SPA << link_id);
@@ -309,6 +314,7 @@ static int intel_shim_init(struct sdw_intel *sdw)
 	int sync_reg, ret;
 	u16 ioctl = 0, act = 0;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Initialize Shim */
 	ioctl |= SDW_SHIM_IOCTL_BKE;
 	intel_writew(shim, SDW_SHIM_IOCTL(link_id), ioctl);
@@ -369,6 +375,7 @@ static void intel_pdi_init(struct sdw_intel *sdw,
 	unsigned int link_id = sdw->instance;
 	int pcm_cap, pdm_cap;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* PCM Stream Capability */
 	pcm_cap = intel_readw(shim, SDW_SHIM_PCMSCAP(link_id));
 
@@ -403,6 +410,7 @@ intel_pdi_get_ch_cap(struct sdw_intel *sdw, unsigned int pdi_num, bool pcm)
 	unsigned int link_id = sdw->instance;
 	int count;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (pcm) {
 		count = intel_readw(shim, SDW_SHIM_PCMSYCHC(link_id, pdi_num));
 
@@ -433,6 +441,7 @@ static int intel_pdi_get_ch_update(struct sdw_intel *sdw,
 {
 	int i, ch_count = 0;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	for (i = 0; i < num_pdi; i++) {
 		pdi->ch_count = intel_pdi_get_ch_cap(sdw, pdi->num, pcm);
 		ch_count += pdi->ch_count;
@@ -446,6 +455,7 @@ static int intel_pdi_get_ch_update(struct sdw_intel *sdw,
 static int intel_pdi_stream_ch_update(struct sdw_intel *sdw,
 				      struct sdw_cdns_streams *stream, bool pcm)
 {
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	intel_pdi_get_ch_update(sdw, stream->bd, stream->num_bd,
 				&stream->num_ch_bd, pcm);
 
@@ -460,6 +470,7 @@ static int intel_pdi_stream_ch_update(struct sdw_intel *sdw,
 
 static int intel_pdi_ch_update(struct sdw_intel *sdw)
 {
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* First update PCM streams followed by PDM streams */
 	intel_pdi_stream_ch_update(sdw, &sdw->cdns.pcm, true);
 	intel_pdi_stream_ch_update(sdw, &sdw->cdns.pdm, false);
@@ -474,6 +485,7 @@ intel_pdi_shim_configure(struct sdw_intel *sdw, struct sdw_cdns_pdi *pdi)
 	unsigned int link_id = sdw->instance;
 	int pdi_conf = 0;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	pdi->intel_alh_id = (link_id * 16) + pdi->num + 5;
 
 	/*
@@ -503,6 +515,7 @@ intel_pdi_alh_configure(struct sdw_intel *sdw, struct sdw_cdns_pdi *pdi)
 	unsigned int link_id = sdw->instance;
 	unsigned int conf;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	pdi->intel_alh_id = (link_id * 16) + pdi->num + 5;
 
 	/* Program Stream config ALH register */
@@ -522,6 +535,7 @@ static int intel_config_stream(struct sdw_intel *sdw,
 			       struct snd_soc_dai *dai,
 			       struct snd_pcm_hw_params *hw_params, int link_id)
 {
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (sdw->res->ops && sdw->res->ops->config_stream && sdw->res->arg)
 		return sdw->res->ops->config_stream(sdw->res->arg,
 				substream, dai, hw_params, link_id);
@@ -540,6 +554,7 @@ static int intel_pre_bank_switch(struct sdw_bus *bus)
 	void __iomem *shim = sdw->res->shim;
 	int sync_reg;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Write to register only for multi-link */
 	if (!bus->multi_link)
 		return 0;
@@ -559,6 +574,7 @@ static int intel_post_bank_switch(struct sdw_bus *bus)
 	void __iomem *shim = sdw->res->shim;
 	int sync_reg, ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Write to register only for multi-link */
 	if (!bus->multi_link)
 		return 0;
@@ -603,6 +619,7 @@ static struct sdw_cdns_port *intel_alloc_port(struct sdw_intel *sdw,
 	struct sdw_cdns_port *port = NULL;
 	int i, ret = 0;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	for (i = 0; i < cdns->num_ports; i++) {
 		if (cdns->ports[i].assigned)
 			continue;
@@ -646,6 +663,7 @@ static void intel_port_cleanup(struct sdw_cdns_dma_data *dma)
 {
 	int i;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	for (i = 0; i < dma->nr_ports; i++) {
 		if (dma->port[i]) {
 			dma->port[i]->pdi->assigned = false;
@@ -668,6 +686,7 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 	int ret, i, ch, dir;
 	bool pcm = true;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	dma = snd_soc_dai_get_dma_data(dai, substream);
 	if (!dma)
 		return -EIO;
@@ -760,6 +779,7 @@ intel_hw_free(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 	struct sdw_cdns_dma_data *dma;
 	int ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	dma = snd_soc_dai_get_dma_data(dai, substream);
 	if (!dma)
 		return -EIO;
@@ -777,12 +797,14 @@ intel_hw_free(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 static int intel_pcm_set_sdw_stream(struct snd_soc_dai *dai,
 				    void *stream, int direction)
 {
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	return cdns_set_sdw_stream(dai, stream, true, direction);
 }
 
 static int intel_pdm_set_sdw_stream(struct snd_soc_dai *dai,
 				    void *stream, int direction)
 {
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	return cdns_set_sdw_stream(dai, stream, false, direction);
 }
 
@@ -811,6 +833,7 @@ static int intel_create_dai(struct sdw_cdns *cdns,
 {
 	int i;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (num == 0)
 		return 0;
 
@@ -870,6 +893,7 @@ static int intel_register_dai(struct sdw_intel *sdw)
 	struct snd_soc_dai_driver *dais;
 	int num_dai, ret, off = 0;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* DAIs are created based on total number of PDIs supported */
 	num_dai = cdns->pcm.num_pdi + cdns->pdm.num_pdi;
 
@@ -927,6 +951,7 @@ static int intel_prop_read(struct sdw_bus *bus)
 	struct platform_device *pdev;
 	int n, div, max_num;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	pdev = container_of(bus->dev, struct platform_device, dev);
 	sdw = platform_get_drvdata(pdev);
 
@@ -994,6 +1019,7 @@ static int intel_probe(struct platform_device *pdev)
 	struct sdw_intel *sdw;
 	int ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	sdw = devm_kzalloc(&pdev->dev, sizeof(*sdw), GFP_KERNEL);
 	if (!sdw)
 		return -ENOMEM;
@@ -1072,6 +1098,7 @@ static int intel_remove(struct platform_device *pdev)
 {
 	struct sdw_intel *sdw;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	sdw = platform_get_drvdata(pdev);
 
 	intel_debugfs_exit(sdw);

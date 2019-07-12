@@ -230,6 +230,7 @@ static inline void cdns_updatel(struct sdw_cdns *cdns,
 {
 	u32 tmp;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	tmp = cdns_readl(cdns, offset);
 	tmp = (tmp & ~mask) | val;
 	cdns_writel(cdns, offset, tmp);
@@ -240,6 +241,7 @@ static int cdns_clear_bit(struct sdw_cdns *cdns, int offset, u32 value)
 	int timeout = 10;
 	u32 reg_read;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	writel(value, cdns->registers + offset);
 
 	/* Wait for bit to be self cleared */
@@ -263,6 +265,7 @@ static int cdns_update_config(struct sdw_cdns *cdns)
 {
 	int ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	ret = cdns_clear_bit(cdns, CDNS_MCP_CONFIG_UPDATE,
 			     CDNS_MCP_CONFIG_UPDATE_BIT);
 	if (ret < 0)
@@ -576,6 +579,7 @@ static int cdns_frame_shape(void *data, u64 value)
 	int col_index;
 	int ret = 0;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	row_index = (shape & CDNS_MCP_FRAME_SHAPE_ROW_INDEX) >> 3;
 	col_index = shape & CDNS_MCP_FRAME_SHAPE_COL_INDEX;
 
@@ -633,6 +637,7 @@ cdns_fill_msg_resp(struct sdw_cdns *cdns,
 	int nack = 0, no_ack = 0;
 	int i;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* check message response */
 	for (i = 0; i < count; i++) {
 		if (!(cdns->response_buf[i] & CDNS_MCP_RESP_ACK)) {
@@ -669,6 +674,7 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	u32 base, i, data;
 	u16 addr;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Program the watermark level for RX FIFO */
 	if (cdns->msg_count != count) {
 		cdns_writel(cdns, CDNS_MCP_FIFOLEVEL, count);
@@ -714,6 +720,7 @@ cdns_program_scp_addr(struct sdw_cdns *cdns, struct sdw_msg *msg)
 	u32 data[2], base;
 	int i;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Program the watermark level for RX FIFO */
 	if (cdns->msg_count != CDNS_SCP_RX_FIFOLEVEL) {
 		cdns_writel(cdns, CDNS_MCP_FIFOLEVEL, CDNS_SCP_RX_FIFOLEVEL);
@@ -773,6 +780,7 @@ static int cdns_prep_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int *cmd)
 {
 	int ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (msg->page) {
 		ret = cdns_program_scp_addr(cdns, msg);
 		if (ret) {
@@ -804,6 +812,7 @@ cdns_xfer_msg(struct sdw_bus *bus, struct sdw_msg *msg)
 	struct sdw_cdns *cdns = bus_to_cdns(bus);
 	int cmd = 0, ret, i;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	ret = cdns_prep_msg(cdns, msg, &cmd);
 	if (ret)
 		return SDW_CMD_FAIL_OTHER;
@@ -833,6 +842,7 @@ cdns_xfer_msg_defer(struct sdw_bus *bus,
 	struct sdw_cdns *cdns = bus_to_cdns(bus);
 	int cmd = 0, ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* for defer only 1 message is supported */
 	if (msg->len > 1)
 		return -ENOTSUPP;
@@ -854,6 +864,7 @@ cdns_reset_page_addr(struct sdw_bus *bus, unsigned int dev_num)
 	struct sdw_cdns *cdns = bus_to_cdns(bus);
 	struct sdw_msg msg;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Create dummy message with valid device number */
 	memset(&msg, 0, sizeof(msg));
 	msg.dev_num = dev_num;
@@ -871,6 +882,7 @@ static void cdns_read_response(struct sdw_cdns *cdns)
 	u32 num_resp, cmd_base;
 	int i;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	num_resp = cdns_readl(cdns, CDNS_MCP_FIFOSTAT);
 	num_resp &= CDNS_MCP_RX_FIFO_AVAIL;
 
@@ -891,6 +903,7 @@ static int cdns_update_slave_status(struct sdw_cdns *cdns,
 	u32 mask;
 	int i, set_status;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* combine the two status */
 	slave = ((u64)slave1 << 32) | slave0;
 	memset(status, 0, sizeof(status));
@@ -975,6 +988,7 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 	u32 int_status;
 	int ret = IRQ_HANDLED;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Check if the link is up */
 	if (!cdns->link_up)
 		return IRQ_NONE;
@@ -1039,6 +1053,7 @@ irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
 	struct sdw_cdns *cdns = dev_id;
 	u32 slave0, slave1;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	dev_dbg_ratelimited(cdns->dev, "Slave status change\n");
 
 	slave0 = cdns_readl(cdns, CDNS_MCP_SLAVE_INTSTAT0);
@@ -1066,6 +1081,7 @@ static int do_reset(struct sdw_cdns *cdns)
 	int ret;
 	u32 val;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* program maximum length reset to be safe */
 	val = CDNS_MCP_CONTROL_RST_DELAY;
 
@@ -1091,6 +1107,7 @@ int sdw_cdns_enable_interrupt(struct sdw_cdns *cdns)
 {
 	u32 mask;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	cdns_writel(cdns, CDNS_MCP_SLAVE_INTMASK0,
 		    CDNS_MCP_SLAVE_INTMASK0_MASK);
 	cdns_writel(cdns, CDNS_MCP_SLAVE_INTMASK1,
@@ -1129,6 +1146,7 @@ static int cdns_allocate_pdi(struct sdw_cdns *cdns,
 	struct sdw_cdns_pdi *pdi;
 	int i;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (!num)
 		return 0;
 
@@ -1157,6 +1175,7 @@ int sdw_cdns_pdi_init(struct sdw_cdns *cdns,
 	struct sdw_cdns_streams *stream;
 	int offset, i, ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	cdns->pcm.num_bd = config.pcm_bd;
 	cdns->pcm.num_in = config.pcm_in;
 	cdns->pcm.num_out = config.pcm_out;
@@ -1247,6 +1266,7 @@ int sdw_cdns_init(struct sdw_cdns *cdns)
 	u32 val;
 	int ret;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/* Exit clock stop */
 	ret = cdns_clear_bit(cdns, CDNS_MCP_CONTROL,
 			     CDNS_MCP_CONTROL_CLK_STOP_CLR);
@@ -1308,6 +1328,7 @@ int cdns_bus_conf(struct sdw_bus *bus, struct sdw_bus_params *params)
 	int mcp_clkctrl_off, mcp_clkctrl;
 	int divider;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (!params->curr_dr_freq) {
 		dev_err(cdns->dev, "NULL curr_dr_freq\n");
 		return -EINVAL;
@@ -1334,6 +1355,7 @@ static int cdns_port_params(struct sdw_bus *bus,
 	struct sdw_cdns *cdns = bus_to_cdns(bus);
 	int dpn_config = 0, dpn_config_off;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (bank)
 		dpn_config_off = CDNS_DPN_B1_CONFIG(p_params->num);
 	else
@@ -1364,6 +1386,7 @@ static int cdns_transport_params(struct sdw_bus *bus,
 	int num = t_params->port_num;
 	int dpn_samplectrl_off;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	/*
 	 * Note: Only full data port is supported on the Master side for
 	 * both PCM and PDM ports.
@@ -1413,6 +1436,7 @@ static int cdns_port_enable(struct sdw_bus *bus,
 	struct sdw_cdns *cdns = bus_to_cdns(bus);
 	int dpn_chnen_off, ch_mask;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (bank)
 		dpn_chnen_off = CDNS_DPN_B1_CH_EN(enable_ch->port_num);
 	else
@@ -1436,6 +1460,7 @@ static const struct sdw_master_port_ops cdns_port_ops = {
  */
 int sdw_cdns_probe(struct sdw_cdns *cdns)
 {
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	init_completion(&cdns->tx_complete);
 	cdns->bus.port_ops = &cdns_port_ops;
 
@@ -1449,6 +1474,7 @@ int cdns_set_sdw_stream(struct snd_soc_dai *dai,
 	struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
 	struct sdw_cdns_dma_data *dma;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	dma = kzalloc(sizeof(*dma), GFP_KERNEL);
 	if (!dma)
 		return -ENOMEM;
@@ -1487,6 +1513,7 @@ static struct sdw_cdns_pdi *cdns_find_pdi(struct sdw_cdns *cdns,
 {
 	int i;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	for (i = 0; i < num; i++) {
 		if (pdi[i].assigned)
 			continue;
@@ -1513,6 +1540,7 @@ void sdw_cdns_config_stream(struct sdw_cdns *cdns,
 	u32 offset, val = 0;
 	u32 mask;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (dir == SDW_DATA_DIR_RX)
 		val = CDNS_PORTCTRL_DIRN;
 
@@ -1546,6 +1574,7 @@ static int cdns_get_num_pdi(struct sdw_cdns *cdns,
 {
 	int i, pdis = 0;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	for (i = 0; i < num; i++) {
 		if (pdi[i].assigned)
 			continue;
@@ -1581,6 +1610,7 @@ int sdw_cdns_get_stream(struct sdw_cdns *cdns,
 {
 	int pdis = 0;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (dir == SDW_DATA_DIR_RX)
 		pdis = cdns_get_num_pdi(cdns, stream->in, stream->num_in, ch);
 	else
@@ -1609,6 +1639,7 @@ int sdw_cdns_alloc_stream(struct sdw_cdns *cdns,
 {
 	struct sdw_cdns_pdi *pdi = NULL;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	if (dir == SDW_DATA_DIR_RX)
 		pdi = cdns_find_pdi(cdns, stream->num_in, stream->in);
 	else
@@ -1636,6 +1667,7 @@ void sdw_cdns_shutdown(struct snd_pcm_substream *substream,
 {
 	struct sdw_cdns_dma_data *dma;
 
+	pr_err("bard: %s %s %d\n", __FILE__, __func__, __LINE__);
 	dma = snd_soc_dai_get_dma_data(dai, substream);
 	if (!dma)
 		return;
