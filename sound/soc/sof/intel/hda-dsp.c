@@ -396,6 +396,8 @@ int hda_dsp_resume(struct snd_sof_dev *sdev)
 
 int hda_dsp_runtime_resume(struct snd_sof_dev *sdev)
 {
+	dev_dbg(sdev->dev, "in %s\n", __func__);
+
 	/* init hda controller. DSP cores will be powered up during fw boot */
 	return hda_resume(sdev, true);
 }
@@ -415,6 +417,8 @@ int hda_dsp_runtime_idle(struct snd_sof_dev *sdev)
 
 int hda_dsp_runtime_suspend(struct snd_sof_dev *sdev)
 {
+	dev_dbg(sdev->dev, "in %s\n", __func__);
+
 	/* stop hda controller and power dsp off */
 	return hda_suspend(sdev, true);
 }
