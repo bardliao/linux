@@ -6,6 +6,28 @@
 
 #include <linux/mod_devicetable.h>
 
+#include <linux/device.h>
+#include <linux/notifier.h>
+#include <linux/pm.h>
+
+#include <linux/jiffies.h>
+#include <linux/pm_runtime.h>
+
+#ifdef CONFIG_PM
+static inline void pm_runtime_usage_count(struct device *dev, char *s)
+{
+	int count = atomic_read(&dev->power.usage_count);
+
+	dev_dbg(dev, "pm_runtime %s usage_count %d status %d\n", s, count,
+		dev->power.runtime_status);
+}
+#else
+static inline void pm_runtime_usage_count(struct device *dev, char *s)
+{
+	return;
+}
+#endif
+
 struct sdw_bus;
 struct sdw_slave;
 
