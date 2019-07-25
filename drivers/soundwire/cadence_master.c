@@ -59,6 +59,7 @@
 #define CDNS_MCP_SSP_CTRL1			0x28
 #define CDNS_MCP_CLK_CTRL0			0x30
 #define CDNS_MCP_CLK_CTRL1			0x38
+#define CDNS_MCP_CLK_MCLKD_MASK		GENMASK(7, 0)
 
 #define CDNS_MCP_STAT				0x40
 
@@ -1013,9 +1014,11 @@ int sdw_cdns_init(struct sdw_cdns *cdns)
 	/* Set clock divider */
 	divider	= (prop->mclk_freq / prop->max_clk_freq) - 1;
 	val = cdns_readl(cdns, CDNS_MCP_CLK_CTRL0);
-	val |= divider;
-	cdns_writel(cdns, CDNS_MCP_CLK_CTRL0, val);
-	cdns_writel(cdns, CDNS_MCP_CLK_CTRL1, val);
+
+	cdns_updatel(cdns, CDNS_MCP_CLK_CTRL0,
+		     CDNS_MCP_CLK_MCLKD_MASK, divider);
+	cdns_updatel(cdns, CDNS_MCP_CLK_CTRL1,
+		     CDNS_MCP_CLK_MCLKD_MASK, divider);
 
 	pr_err("plb: mclk %d max_freq %d divider %d register %x\n",
 	       prop->mclk_freq,
@@ -1090,8 +1093,7 @@ int cdns_bus_conf(struct sdw_bus *bus, struct sdw_bus_params *params)
 		mcp_clkctrl_off = CDNS_MCP_CLK_CTRL0;
 
 	mcp_clkctrl = cdns_readl(cdns, mcp_clkctrl_off);
-	mcp_clkctrl |= divider;
-	cdns_writel(cdns, mcp_clkctrl_off, mcp_clkctrl);
+	cdns_updatel(cdns, mcp_clkctrl_off, CDNS_MCP_CLK_MCLKD_MASK, divider);
 
 	pr_err("plb: mclk * 2 %d curr_dr_freq %d divider %d register %x\n",
 	       prop->mclk_freq * SDW_DOUBLE_RATE_FACTOR,
