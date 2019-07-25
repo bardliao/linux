@@ -996,8 +996,10 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+	/* slave interrupt is handled by sdw_cdns_slave_irq */
+	int_status &= ~CDNS_MCP_INT_SLAVE_MASK;
 
-	if (!(int_status & CDNS_MCP_INT_IRQ))
+	if (!(int_status & ~CDNS_MCP_INT_IRQ))
 		return IRQ_NONE;
 
 	if (int_status & CDNS_MCP_INT_RX_WL) {
@@ -1031,26 +1033,17 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 		dev_err_ratelimited(cdns->dev, "Bus clash for data word\n");
 	}
 
-	if (int_status & CDNS_MCP_INT_SLAVE_MASK) {
-		/* Mask the Slave interrupt and wake thread */
-		cdns_updatel(cdns, CDNS_MCP_INTMASK,
-			     CDNS_MCP_INT_SLAVE_MASK, 0);
-
-		int_status &= ~CDNS_MCP_INT_SLAVE_MASK;
-		ret = IRQ_WAKE_THREAD;
-	}
-
 	cdns_writel(cdns, CDNS_MCP_INTSTAT, int_status);
 	return ret;
 }
 EXPORT_SYMBOL(sdw_cdns_irq);
 
 /**
- * sdw_cdns_thread() - Cadence irq thread handler
+ * sdw_cdns_slave_thread() - Cadence irq thread handler
  * @irq: irq number
  * @dev_id: irq context
  */
-irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
+irqreturn_t sdw_cdns_slave_thread(int irq, void *dev_id)
 {
 	struct sdw_cdns *cdns = dev_id;
 	u32 slave0, slave1;
@@ -1071,7 +1064,28 @@ irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
 
 	return IRQ_HANDLED;
 }
-EXPORT_SYMBOL(sdw_cdns_thread);
+EXPORT_SYMBOL(sdw_cdns_slave_thread);
+
+irqreturn_t sdw_cdns_slave_irq(int irq, void *dev_id)
+{
+	struct sdw_cdns *cdns = dev_id;
+	u32 int_status;
+
+	/* Check if the link is up */
+	if (!cdns->link_up)
+		return IRQ_NONE;
+
+	int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+	if (int_status & CDNS_MCP_INT_SLAVE_MASK) {
+		/* Mask the Slave interrupt and wake thread */
+		cdns_updatel(cdns, CDNS_MCP_INTMASK,
+			     CDNS_MCP_INT_SLAVE_MASK, 0);
+		return IRQ_WAKE_THREAD;
+	}
+
+	return IRQ_NONE;
+}
+EXPORT_SYMBOL(sdw_cdns_slave_irq);
 
 /*
  * init routines

@@ -1136,10 +1136,19 @@ static int intel_probe(struct platform_device *pdev)
 	intel_pdi_ch_update(sdw);
 
 	/* Acquire IRQ */
-	ret = request_threaded_irq(sdw->res->irq, sdw_cdns_irq, sdw_cdns_thread,
-				   IRQF_SHARED, KBUILD_MODNAME, &sdw->cdns);
+	ret = request_irq(sdw->res->irq, sdw_cdns_irq,
+			  IRQF_SHARED, KBUILD_MODNAME, &sdw->cdns);
 	if (ret < 0) {
 		dev_err(sdw->cdns.dev, "unable to grab IRQ %d, disabling device\n",
+			sdw->res->irq);
+		goto err_init;
+	}
+
+	ret = request_threaded_irq(sdw->res->irq, sdw_cdns_slave_irq,
+				   sdw_cdns_slave_thread, IRQF_SHARED,
+				   "intel-sdw-slave", &sdw->cdns);
+	if (ret < 0) {
+		dev_err(sdw->cdns.dev, "unable to grab slave IRQ %d, disabling device\n",
 			sdw->res->irq);
 		goto err_init;
 	}
