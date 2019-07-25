@@ -708,6 +708,7 @@ static int intel_startup(struct snd_pcm_substream *substream,
 	struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
 	int ret;
 
+	pm_runtime_usage_count(cdns->dev, "start intel_startup");
 	ret = pm_runtime_get_sync(cdns->dev);
 	if (ret < 0) {
 		dev_err_ratelimited(cdns->dev,
@@ -715,7 +716,7 @@ static int intel_startup(struct snd_pcm_substream *substream,
 				    __func__, ret);
 		pm_runtime_put_noidle(cdns->dev);
 	}
-
+	pm_runtime_usage_count(cdns->dev, "end intel_startup");
 	return ret;
 }
 
@@ -851,12 +852,14 @@ static void intel_shutdown(struct snd_pcm_substream *substream,
 	snd_soc_dai_set_dma_data(dai, substream, NULL);
 	kfree(dma);
 
+	pm_runtime_usage_count(cdns->dev, "start intel_shutdown");
 	pm_runtime_mark_last_busy(cdns->dev);
 	ret = pm_runtime_put_autosuspend(cdns->dev);
 	if (ret < 0)
 		dev_err_ratelimited(cdns->dev,
 				    "pM_runtime_put_autosuspend failed in %s:, ret %d\n",
 				    __func__, ret);
+	pm_runtime_usage_count(cdns->dev, "end intel_shutdown");
 }
 
 static int intel_pcm_set_sdw_stream(struct snd_soc_dai *dai,
@@ -1155,13 +1158,16 @@ static int intel_probe(struct platform_device *pdev)
 	intel_debugfs_init(sdw);
 
 	/* Enable PM */
+	pm_runtime_usage_count(&pdev->dev, "intel_probe");
 	pm_runtime_set_autosuspend_delay(&pdev->dev, 3000);
 	pm_runtime_use_autosuspend(&pdev->dev);
 
 	pm_runtime_mark_last_busy(&pdev->dev); /* FIXME: needed? */
 
 	pm_runtime_set_active(&pdev->dev);
+	pm_runtime_usage_count(&pdev->dev, "intel_probe set_active");
 	pm_runtime_enable(&pdev->dev);
+	pm_runtime_usage_count(&pdev->dev, "intel_probe enable");
 
 	return 0;
 
