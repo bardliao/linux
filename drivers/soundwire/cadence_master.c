@@ -989,17 +989,19 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 {
 	struct sdw_cdns *cdns = dev_id;
 	u32 int_status;
-	int ret = IRQ_HANDLED;
+	int ret = IRQ_NONE;
 
 	/* Check if the link is up */
 	if (!cdns->link_up)
 		return IRQ_NONE;
 
+repeat:
 	int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
 
 	if (!(int_status & CDNS_MCP_INT_IRQ))
-		return IRQ_NONE;
+		goto out;
 
+	ret = IRQ_HANDLED;
 	if (int_status & CDNS_MCP_INT_RX_WL) {
 		cdns_read_response(cdns);
 
@@ -1041,6 +1043,8 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 	}
 
 	cdns_writel(cdns, CDNS_MCP_INTSTAT, int_status);
+
+out:
 	return ret;
 }
 EXPORT_SYMBOL(sdw_cdns_irq);
