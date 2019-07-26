@@ -959,7 +959,6 @@ static const struct snd_soc_dapm_widget rt700_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("MIC2"),
 	SND_SOC_DAPM_INPUT("LINE1"),
 	SND_SOC_DAPM_INPUT("LINE2"),
-	SND_SOC_DAPM_INPUT("Dummy Input"),
 	SND_SOC_DAPM_DAC("DAC Front", NULL, RT700_SET_STREAMID_DAC1, 4, 0),
 	SND_SOC_DAPM_DAC("DAC Surround", NULL, RT700_SET_STREAMID_DAC2, 4, 0),
 	SND_SOC_DAPM_MUX("HPO Mux", SND_SOC_NOPM, 0, 0, &rt700_hp_mux),
@@ -978,9 +977,7 @@ static const struct snd_soc_dapm_widget rt700_dapm_widgets[] = {
 
 static const struct snd_soc_dapm_route rt700_audio_map[] = {
 	{"DAC Front", NULL, "DP1RX"},
-	{"DAC Front", NULL, "Dummy Input"},
 	{"DAC Surround", NULL, "DP3RX"},
-	{"DAC Surround", NULL, "Dummy Input"},
 	{"DP2TX", NULL, "ADC 09"},
 	{"DP4TX", NULL, "ADC 08"},
 	{"ADC 09", NULL, "ADC 22 Mux"},
