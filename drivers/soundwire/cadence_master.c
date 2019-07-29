@@ -989,7 +989,6 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 {
 	struct sdw_cdns *cdns = dev_id;
 	u32 int_status;
-	int ret = IRQ_HANDLED;
 
 	/* Check if the link is up */
 	if (!cdns->link_up)
@@ -999,8 +998,30 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 	/* slave interrupt is handled by sdw_cdns_slave_irq */
 	int_status &= ~CDNS_MCP_INT_SLAVE_MASK;
 
+	if (int_status & ~CDNS_MCP_INT_IRQ)
+		return IRQ_WAKE_THREAD;
+
+	return IRQ_NONE;
+}
+EXPORT_SYMBOL(sdw_cdns_irq);
+
+/**
+ * sdw_cdns_thread() - Cadence irq thread handler
+ * @irq: irq number
+ * @dev_id: irq context
+ */
+irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
+{
+	struct sdw_cdns *cdns = dev_id;
+	u32 int_status;
+
+repeat:
+	int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+	/* slave interrupt is handled by sdw_cdns_slave_irq */
+	int_status &= ~CDNS_MCP_INT_SLAVE_MASK;
+
 	if (!(int_status & ~CDNS_MCP_INT_IRQ))
-		return IRQ_NONE;
+		return IRQ_HANDLED;
 
 	if (int_status & CDNS_MCP_INT_RX_WL) {
 		cdns_read_response(cdns);
@@ -1034,9 +1055,10 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 	}
 
 	cdns_writel(cdns, CDNS_MCP_INTSTAT, int_status);
-	return ret;
+
+	goto repeat;
 }
-EXPORT_SYMBOL(sdw_cdns_irq);
+EXPORT_SYMBOL(sdw_cdns_thread);
 
 /**
  * sdw_cdns_slave_thread() - Cadence irq thread handler
