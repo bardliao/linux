@@ -17,6 +17,7 @@
 #include <linux/soundwire/sdw.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
+#include <linux/workqueue.h>
 #include "bus.h"
 #include "cadence_master.h"
 
@@ -945,7 +946,6 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 {
 	struct sdw_cdns *cdns = dev_id;
 	u32 int_status;
-	int ret = IRQ_HANDLED;
 
 	/* Check if the link is up */
 	if (!cdns->link_up)
@@ -953,8 +953,28 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 
 	int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
 
-	if (!(int_status & CDNS_MCP_INT_IRQ))
-		return IRQ_NONE;
+	if ((int_status & CDNS_MCP_INT_IRQ) && int_status != 0xffffffff)
+		return IRQ_WAKE_THREAD;
+
+	return IRQ_NONE;
+}
+EXPORT_SYMBOL(sdw_cdns_irq);
+
+/**
+ * sdw_cdns_thread() - Cadence irq thread handler
+ * @irq: irq number
+ * @dev_id: irq context
+ */
+irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
+{
+	struct sdw_cdns *cdns = dev_id;
+	u32 int_status;
+
+repeat:
+	int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+
+	if (!(int_status & CDNS_MCP_INT_IRQ) || int_status == 0xffffffff)
+		return IRQ_HANDLED;
 
 	if (int_status & CDNS_MCP_INT_RX_WL) {
 		cdns_read_response(cdns);
@@ -993,22 +1013,21 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 			     CDNS_MCP_INT_SLAVE_MASK, 0);
 
 		int_status &= ~CDNS_MCP_INT_SLAVE_MASK;
-		ret = IRQ_WAKE_THREAD;
+		queue_delayed_work(system_power_efficient_wq,
+				   &cdns->work,
+				   msecs_to_jiffies(2));
 	}
 
 	cdns_writel(cdns, CDNS_MCP_INTSTAT, int_status);
-	return ret;
-}
-EXPORT_SYMBOL(sdw_cdns_irq);
 
-/**
- * sdw_cdns_thread() - Cadence irq thread handler
- * @irq: irq number
- * @dev_id: irq context
- */
-irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
+	goto repeat;
+}
+EXPORT_SYMBOL(sdw_cdns_thread);
+
+static void cdns_update_slave_status_work(struct work_struct *work)
 {
-	struct sdw_cdns *cdns = dev_id;
+	struct sdw_cdns *cdns =
+		container_of(work, struct sdw_cdns, work.work);
 	u32 slave0, slave1;
 	u32 slave0_new, slave1_new;
 
@@ -1042,10 +1061,7 @@ irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
 		     CDNS_MCP_INT_SLAVE_MASK, CDNS_MCP_INT_SLAVE_MASK);
 
 	dev_dbg_ratelimited(cdns->dev, "%s: end\n", __func__);
-
-	return IRQ_HANDLED;
 }
-EXPORT_SYMBOL(sdw_cdns_thread);
 
 /*
  * init routines
@@ -1482,6 +1498,7 @@ int sdw_cdns_probe(struct sdw_cdns *cdns)
 	init_completion(&cdns->tx_complete);
 	cdns->bus.port_ops = &cdns_port_ops;
 
+	INIT_DELAYED_WORK(&cdns->work, cdns_update_slave_status_work);
 	return 0;
 }
 EXPORT_SYMBOL(sdw_cdns_probe);
