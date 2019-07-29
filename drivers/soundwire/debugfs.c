@@ -44,11 +44,9 @@ static ssize_t sdw_sprintf(struct sdw_slave *slave,
 				"%3x\t%2x\n", reg, value);
 }
 
-static ssize_t sdw_slave_reg_read(struct file *file, char __user *user_buf,
-				  size_t count, loff_t *ppos)
+static int sdw_slave_reg_show(struct seq_file *s_file, void *data)
 {
-	struct sdw_slave *slave = file->private_data;
-	unsigned int reg;
+	struct sdw_slave *slave = s_file->private;
 	char *buf;
 	ssize_t ret;
 	int i, j;
@@ -58,16 +56,19 @@ static ssize_t sdw_slave_reg_read(struct file *file, char __user *user_buf,
 		return -ENOMEM;
 
 	ret = scnprintf(buf, RD_BUF, "Register  Value\n");
-	ret += scnprintf(buf + ret, RD_BUF - ret, "\nDP0\n");
 
-	for (i = 0; i < 6; i++)
+	/* DP0 non-banked registers */
+	ret += scnprintf(buf + ret, RD_BUF - ret, "\nDP0\n");
+	for (i = SDW_DP0_INT; i <= SDW_DP0_PREPARECTRL; i++)
 		ret += sdw_sprintf(slave, buf, ret, i);
 
+	/* DP0 Bank 0 registers */
 	ret += scnprintf(buf + ret, RD_BUF - ret, "Bank0\n");
 	ret += sdw_sprintf(slave, buf, ret, SDW_DP0_CHANNELEN);
 	for (i = SDW_DP0_SAMPLECTRL1; i <= SDW_DP0_LANECTRL; i++)
 		ret += sdw_sprintf(slave, buf, ret, i);
 
+	/* DP1 Bank 1 registers */
 	ret += scnprintf(buf + ret, RD_BUF - ret, "Bank1\n");
 	ret += sdw_sprintf(slave, buf, ret,
 			SDW_DP0_CHANNELEN + SDW_BANK1_OFFSET);
@@ -75,48 +76,47 @@ static ssize_t sdw_slave_reg_read(struct file *file, char __user *user_buf,
 			i <= SDW_DP0_LANECTRL + SDW_BANK1_OFFSET; i++)
 		ret += sdw_sprintf(slave, buf, ret, i);
 
+	/* SCP registers */
 	ret += scnprintf(buf + ret, RD_BUF - ret, "\nSCP\n");
 	for (i = SDW_SCP_INT1; i <= SDW_SCP_BANKDELAY; i++)
 		ret += sdw_sprintf(slave, buf, ret, i);
 	for (i = SDW_SCP_DEVID_0; i <= SDW_SCP_DEVID_5; i++)
 		ret += sdw_sprintf(slave, buf, ret, i);
 
-	ret += scnprintf(buf + ret, RD_BUF - ret, "Bank0\n");
-	ret += sdw_sprintf(slave, buf, ret, SDW_SCP_FRAMECTRL_B0);
-	ret += sdw_sprintf(slave, buf, ret, SDW_SCP_NEXTFRAME_B0);
+	/*
+	 * SCP Bank 0/1 registers are read-only and cannot be
+	 * retrieved from the Slave. The Master typically keeps track
+	 * of the current frame size so the information can be found
+	 * in other places
+	 */
 
-	ret += scnprintf(buf + ret, RD_BUF - ret, "Bank1\n");
-	ret += sdw_sprintf(slave, buf, ret, SDW_SCP_FRAMECTRL_B1);
-	ret += sdw_sprintf(slave, buf, ret, SDW_SCP_NEXTFRAME_B1);
+	/* DP1..14 registers */
+	for (i = 1; SDW_VALID_PORT_RANGE(i); i++) {
 
-	for (i = 1; i < 14; i++) {
+		/* DPi registers */
 		ret += scnprintf(buf + ret, RD_BUF - ret, "\nDP%d\n", i);
-		reg = SDW_DPN_INT(i);
-		for (j = 0; j < 6; j++)
-			ret += sdw_sprintf(slave, buf, ret, reg + j);
+		for (j = SDW_DPN_INT(i); j <= SDW_DPN_PREPARECTRL(i); j++)
+			ret += sdw_sprintf(slave, buf, ret, j);
 
+		/* DPi Bank0 registers */
 		ret += scnprintf(buf + ret, RD_BUF - ret, "Bank0\n");
-		reg = SDW_DPN_CHANNELEN_B0(i);
-		for (j = 0; j < 9; j++)
-			ret += sdw_sprintf(slave, buf, ret, reg + j);
+		for (j = SDW_DPN_CHANNELEN_B0(i);
+		     j <= SDW_DPN_LANECTRL_B0(i); j++)
+			ret += sdw_sprintf(slave, buf, ret, j);
 
+		/* DPi Bank1 registers */
 		ret += scnprintf(buf + ret, RD_BUF - ret, "Bank1\n");
-		reg = SDW_DPN_CHANNELEN_B1(i);
-		for (j = 0; j < 9; j++)
-			ret += sdw_sprintf(slave, buf, ret, reg + j);
+		for (j = SDW_DPN_CHANNELEN_B1(i);
+		     j <= SDW_DPN_LANECTRL_B1(i); j++)
+			ret += sdw_sprintf(slave, buf, ret, j);
 	}
 
-	ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
+	seq_printf(s_file, "%s", buf);
 	kfree(buf);
 
-	return ret;
+	return 0;
 }
-
-static const struct file_operations sdw_slave_reg_fops = {
-	.open = simple_open,
-	.read = sdw_slave_reg_read,
-	.llseek = default_llseek,
-};
+DEFINE_SHOW_ATTRIBUTE(sdw_slave_reg);
 
 struct dentry *sdw_slave_debugfs_init(struct sdw_slave *slave)
 {
