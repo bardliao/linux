@@ -237,10 +237,9 @@ static ssize_t cdns_sprintf(struct sdw_cdns *cdns,
 			 "%4x\t%8x\n", reg, cdns_readl(cdns, reg));
 }
 
-static ssize_t cdns_reg_read(struct file *file, char __user *user_buf,
-			     size_t count, loff_t *ppos)
+static int cdns_reg_show(struct seq_file *s, void *data)
 {
-	struct sdw_cdns *cdns = file->private_data;
+	struct sdw_cdns *cdns = s->private;
 	char *buf;
 	ssize_t ret;
 	int i, j;
@@ -298,17 +297,12 @@ static ssize_t cdns_reg_read(struct file *file, char __user *user_buf,
 	for (i = 0; i < 7; i++)
 		ret += cdns_sprintf(cdns, buf, ret, CDNS_PDI_CONFIG(i));
 
-	ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
+	seq_printf(s, "%s", buf);
 	kfree(buf);
 
-	return ret;
+	return 0;
 }
-
-static const struct file_operations cdns_reg_fops = {
-	.open = simple_open,
-	.read = cdns_reg_read,
-	.llseek = default_llseek,
-};
+DEFINE_SHOW_ATTRIBUTE(cdns_reg);
 
 /**
  * sdw_cdns_debugfs_init() - Cadence debugfs init
