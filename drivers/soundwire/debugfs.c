@@ -15,7 +15,6 @@ struct dentry *sdw_debugfs_root;
 
 struct dentry *sdw_bus_debugfs_init(struct sdw_bus *bus)
 {
-	struct dentry *d;
 	char name[16];
 
 	if (!sdw_debugfs_root)
@@ -23,9 +22,7 @@ struct dentry *sdw_bus_debugfs_init(struct sdw_bus *bus)
 
 	/* create the debugfs master-N */
 	snprintf(name, sizeof(name), "master-%d", bus->link_id);
-	d = debugfs_create_dir(name, sdw_debugfs_root);
-
-	return d;
+	return debugfs_create_dir(name, sdw_debugfs_root);
 }
 
 void sdw_bus_debugfs_exit(struct dentry *d)

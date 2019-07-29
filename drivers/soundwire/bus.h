@@ -26,19 +26,19 @@ void sdw_slave_debugfs_exit(struct dentry *d);
 void sdw_debugfs_init(void);
 void sdw_debugfs_exit(void);
 #else
-struct dentry *sdw_bus_debugfs_init(struct sdw_bus *bus)
+static inline struct dentry *sdw_bus_debugfs_init(struct sdw_bus *bus)
 { return NULL; }
 
-void sdw_bus_debugfs_exit(struct dentry *d) {}
+static inline void sdw_bus_debugfs_exit(struct dentry *d) {}
 
-struct dentry *sdw_slave_debugfs_init(struct sdw_slave *slave)
+static inline struct dentry *sdw_slave_debugfs_init(struct sdw_slave *slave)
 { return NULL; }
 
-void sdw_slave_debugfs_exit(struct dentry *d) {}
+static inline void sdw_slave_debugfs_exit(struct dentry *d) {}
 
-void sdw_debugfs_init(void) {}
+static inline void sdw_debugfs_init(void) {}
 
-void sdw_debugfs_exit(void) {}
+static inline void sdw_debugfs_exit(void) {}
 
 #endif
 
