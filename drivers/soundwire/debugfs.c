@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: (GPL-2.0 OR BSD-3-Clause)
-// Copyright(c) 2017-19 Intel Corporation.
+// SPDX-License-Identifier: GPL-2.0
+// Copyright(c) 2017-2019 Intel Corporation.
 
 #include <linux/device.h>
 #include <linux/debugfs.h>
@@ -9,9 +9,7 @@
 #include <linux/soundwire/sdw_registers.h>
 #include "bus.h"
 
-#ifdef CONFIG_DEBUG_FS
-struct dentry *sdw_debugfs_root;
-#endif
+static struct dentry *sdw_debugfs_root;
 
 struct dentry *sdw_bus_debugfs_init(struct sdw_bus *bus)
 {
