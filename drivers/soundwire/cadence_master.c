@@ -643,7 +643,7 @@ static int cdns_update_slave_status(struct sdw_cdns *cdns,
 					     "Slave %d reported multiple Status: %d\n",
 					     i, mask);
 
-			/* re-check latest status extracted from PING commands */
+			/* check latest status extracted from PING commands */
 			val = cdns_readl(cdns, CDNS_MCP_SLAVE_STAT);
 			val >>= (i * 2);
 
@@ -657,6 +657,7 @@ static int cdns_update_slave_status(struct sdw_cdns *cdns,
 			case 2:
 				status[i] = SDW_SLAVE_ALERT;
 				break;
+			case 3:
 			default:
 				status[i] = SDW_SLAVE_RESERVED;
 				break;
