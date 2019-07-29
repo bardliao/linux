@@ -183,10 +183,9 @@ static ssize_t intel_sprintf(void __iomem *mem, bool l,
 	return scnprintf(buf + pos, RD_BUF - pos, "%4x\t%4x\n", reg, value);
 }
 
-static ssize_t intel_reg_read(struct file *file, char __user *user_buf,
-			      size_t count, loff_t *ppos)
+static int intel_reg_show(struct seq_file *s_file, void *data)
 {
-	struct sdw_intel *sdw = file->private_data;
+	struct sdw_intel *sdw = s_file->private;
 	void __iomem *s = sdw->res->shim;
 	void __iomem *a = sdw->res->alh;
 	char *buf;
@@ -236,17 +235,12 @@ static ssize_t intel_reg_read(struct file *file, char __user *user_buf,
 	for (i = 0; i < 8; i++)
 		ret += intel_sprintf(a, true, buf, ret, SDW_ALH_STRMZCFG(i));
 
-	ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
+	seq_printf(s_file, "%s", buf);
 	kfree(buf);
 
-	return ret;
+	return 0;
 }
-
-static const struct file_operations intel_reg_fops = {
-	.open = simple_open,
-	.read = intel_reg_read,
-	.llseek = default_llseek,
-};
+DEFINE_SHOW_ATTRIBUTE(intel_reg);
 
 static void intel_debugfs_init(struct sdw_intel *sdw)
 {
@@ -256,11 +250,6 @@ static void intel_debugfs_init(struct sdw_intel *sdw)
 		return;
 
 	sdw->fs = debugfs_create_dir("intel-sdw", root);
-	if (IS_ERR_OR_NULL(sdw->fs)) {
-		dev_err(sdw->cdns.dev, "debugfs root creation failed\n");
-		sdw->fs = NULL;
-		return;
-	}
 
 	debugfs_create_file("intel-registers", 0400, sdw->fs, sdw,
 			    &intel_reg_fops);
