@@ -627,12 +627,7 @@ int rt700_jack_detect(struct rt700_priv *rt700, bool *hp, bool *mic)
 	if (jack_status & 0x80) {
 		rt700_index_read(rt700->regmap, RT700_COMBO_JACK_AUTO_CTL2, &buf);
 
-		while ((buf & RT700_COMBOJACK_AUTO_DET_STATUS) == 0) {
-			if (loop >= 200) {
-				pr_debug("%s, jack auto detection time-out!\n",
-								__func__);
-				return 0;
-			}
+		while (loop < 500) {
 			loop++;
 
 			usleep_range(9000, 10000);
