@@ -59,14 +59,17 @@ static int sdw_config_stream(void *arg, void *s, void *dai,
 	struct snd_sof_dev *sdev = arg;
 	struct sof_ipc_dai_config config;
 	struct sof_ipc_reply reply;
+	struct snd_soc_dai *d = dai;
 	int ret;
+	int dai_index = 0;
 	u32 size = sizeof(config);
 
+	sscanf(d->name, "SDW%d", &dai_index);
 	memset(&config, 0, size);
 	config.hdr.size = size;
 	config.hdr.cmd = SOF_IPC_GLB_DAI_MSG | SOF_IPC_DAI_CONFIG;
 	config.type = SOF_DAI_INTEL_ALH;
-	config.dai_index = 0; /* FIXME: make this dynamic */
+	config.dai_index = dai_index;
 	config.alh.stream_id = alh_stream_id;
 
 	/* send message to DSP */
