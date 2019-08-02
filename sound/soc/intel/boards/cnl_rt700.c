@@ -105,8 +105,8 @@ static const struct snd_soc_dapm_widget cnl_rt700_widgets[] = {
 static const struct snd_soc_dapm_route cnl_rt700_map[] = {
 	/*Headphones*/
 	{ "Headphones", NULL, "HP" },
-	{ "Speaker", NULL, "SPOL" },
-	{ "Speaker", NULL, "SPOR" },
+	{ "Speaker", NULL, "rt1308 SPOL" },
+	{ "Speaker", NULL, "rt1308 SPOR" },
 	{ "MIC2", NULL, "AMIC" },
 };
 
@@ -184,7 +184,6 @@ SND_SOC_DAILINK_DEF(platform,
 		DAILINK_COMP_ARRAY(COMP_PLATFORM("0000:00:1f.3")));
 
 struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
-#if 1
 	{
 		.name = "SDW0-Codec",
 		.id = 0,
@@ -196,7 +195,6 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 		.nonatomic = true,
 		SND_SOC_DAILINK_REG(sdw0_pin, sdw0_codec, platform),
 	},
-#endif
 	{
 		.name = "SDW2-Codec",
 		.id = 2,
@@ -250,6 +248,13 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 #endif
 };
 
+static struct snd_soc_codec_conf rt1308_codec_conf[] = {
+	{
+		.dev_name = "sdw:2:25d:1308:0:0",
+		.name_prefix = "rt1308",
+	},
+};
+
 /* SoC card */
 static struct snd_soc_card snd_soc_card_cnl_rt700 = {
 	.name = "cnl_rt700-audio",
@@ -262,6 +267,8 @@ static struct snd_soc_card snd_soc_card_cnl_rt700 = {
 	.dapm_routes = cnl_rt700_map,
 	.num_dapm_routes = ARRAY_SIZE(cnl_rt700_map),
 	.late_probe = cnl_card_late_probe,
+	.codec_conf = rt1308_codec_conf,
+	.num_configs = ARRAY_SIZE(rt1308_codec_conf),
 };
 
 static int snd_cnl_rt700_mc_probe(struct platform_device *pdev)
