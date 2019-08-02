@@ -4145,7 +4145,10 @@ int snd_soc_dapm_new_dai_widgets(struct snd_soc_dapm_context *dapm,
 			return PTR_ERR(w);
 
 		w->priv = dai;
-		dai->playback_widget = w;
+		if (dai->playback_widget)
+			dev_warn(dai->dev, "playback_widget already exists!\n");
+		else
+			dai->playback_widget = w;
 	}
 
 	if (dai->driver->capture.stream_name) {
@@ -4161,7 +4164,10 @@ int snd_soc_dapm_new_dai_widgets(struct snd_soc_dapm_context *dapm,
 			return PTR_ERR(w);
 
 		w->priv = dai;
-		dai->capture_widget = w;
+		if (dai->capture_widget)
+			dev_warn(dai->dev, "capture_widget already exists!\n");
+		else
+			dai->capture_widget = w;
 	}
 
 	return 0;
