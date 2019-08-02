@@ -105,7 +105,8 @@ static const struct snd_soc_dapm_widget cnl_rt700_widgets[] = {
 static const struct snd_soc_dapm_route cnl_rt700_map[] = {
 	/*Headphones*/
 	{ "Headphones", NULL, "HP" },
-	{ "Speaker", NULL, "SPK" },
+	{ "Speaker", NULL, "SPOL" },
+	{ "Speaker", NULL, "SPOR" },
 	{ "MIC2", NULL, "AMIC" },
 };
 
@@ -148,6 +149,11 @@ SND_SOC_DAILINK_DEF(sdw0_pin,
 SND_SOC_DAILINK_DEF(sdw0_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:700:0:0", "rt700-aif1")));
 
+SND_SOC_DAILINK_DEF(sdw2_pin,
+	DAILINK_COMP_ARRAY(COMP_CPU("SDW2 Pin0")));
+SND_SOC_DAILINK_DEF(sdw2_codec,
+	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:2:25d:1308:0:0", "rt1308-aif")));
+
 SND_SOC_DAILINK_DEF(dmic_pin,
 	DAILINK_COMP_ARRAY(COMP_CPU("DMIC01 Pin")));
 
@@ -178,6 +184,7 @@ SND_SOC_DAILINK_DEF(platform,
 		DAILINK_COMP_ARRAY(COMP_PLATFORM("0000:00:1f.3")));
 
 struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
+#if 1
 	{
 		.name = "SDW0-Codec",
 		.id = 0,
@@ -189,9 +196,20 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 		.nonatomic = true,
 		SND_SOC_DAILINK_REG(sdw0_pin, sdw0_codec, platform),
 	},
+#endif
+	{
+		.name = "SDW2-Codec",
+		.id = 2,
+		.be_hw_params_fixup = cnl_rt700_codec_fixup,
+		.ignore_suspend = 1,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.nonatomic = true,
+		SND_SOC_DAILINK_REG(sdw2_pin, sdw2_codec, platform),
+	},
 	{
 		.name = "dmic01",
-		.id = 1,
+		.id = 4,
 		.ignore_suspend = 1,
 		.dpcm_capture = 1,
 		.no_pcm = 1,
@@ -199,7 +217,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 	},
 	{
 		.name = "dmic16k",
-		.id = 2,
+		.id = 5,
 		.dpcm_capture = 1,
 		.no_pcm = 1,
 		SND_SOC_DAILINK_REG(dmic16k_pin, dmic_codec, platform),
@@ -207,7 +225,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 #if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
 	{
 		.name = "iDisp1",
-		.id = 3,
+		.id = 6,
 		.init = cnl_hdmi_init,
 		.no_pcm = 1,
 		.dpcm_playback = 1,
@@ -215,7 +233,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 	},
 	{
 		.name = "iDisp2",
-		.id = 4,
+		.id = 7,
 		.init = cnl_hdmi_init,
 		.no_pcm = 1,
 		.dpcm_playback = 1,
@@ -223,7 +241,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 	},
 	{
 		.name = "iDisp3",
-		.id = 5,
+		.id = 8,
 		.init = cnl_hdmi_init,
 		.no_pcm = 1,
 		.dpcm_playback = 1,
