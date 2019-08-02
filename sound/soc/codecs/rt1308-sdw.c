@@ -152,7 +152,7 @@ int rt1308_io_init(struct device *dev, struct sdw_slave *slave)
 	msleep(20);
 	regmap_write(rt1308->regmap, 0xc240, 0x10);
 
-#if 1
+	/* initial settings */
 	regmap_write(rt1308->regmap, 0xc103, 0xc0);
 	regmap_write(rt1308->regmap, 0xc030, 0x17);
 	regmap_write(rt1308->regmap, 0xc031, 0x81);
@@ -171,7 +171,7 @@ int rt1308_io_init(struct device *dev, struct sdw_slave *slave)
 	regmap_write(rt1308->regmap, 0xc900, 0x90);
 	regmap_write(rt1308->regmap, 0xc1a0, 0x84);
 	regmap_write(rt1308->regmap, 0xc1a1, 0x01);
-	regmap_write(rt1308->regmap, 0xc360, 0x79);
+	regmap_write(rt1308->regmap, 0xc360, 0x78);
 	regmap_write(rt1308->regmap, 0xc361, 0x87);
 	regmap_write(rt1308->regmap, 0xc0a1, 0x71);
 	regmap_write(rt1308->regmap, 0xc210, 0x00);
@@ -179,22 +179,7 @@ int rt1308_io_init(struct device *dev, struct sdw_slave *slave)
 	regmap_write(rt1308->regmap, 0xc100, 0xaf);
 	regmap_write(rt1308->regmap, 0xc101, 0xaf);
 	regmap_write(rt1308->regmap, 0xc310, 0x24);
-#else
-	regmap_write(rt1308->regmap, 0x03, 0x17812600);
-	regmap_write(rt1308->regmap, 0x04, 0x80800600);
-	regmap_write(rt1308->regmap, 0x05, 0x0aaa0a0a);
-	regmap_write(rt1308->regmap, 0x08, 0x0a600000);
-	regmap_write(rt1308->regmap, 0x06, 0x02750500);
-	regmap_write(rt1308->regmap, 0x17, 0x0107400d);
-	regmap_write(rt1308->regmap, 0x31, 0x247f5501);
-	regmap_write(rt1308->regmap, 0x90, 0x90250905);
-	regmap_write(rt1308->regmap, 0x1a, 0x84010000);
-	regmap_write(rt1308->regmap, 0x36, 0x79870000);
-	regmap_write(rt1308->regmap, 0x0a, 0x00710000);
-	regmap_write(rt1308->regmap, 0x21, 0x00ffff00);
-	regmap_write(rt1308->regmap, 0x07, 0x00000000);
-	regmap_write(rt1308->regmap, 0x10, 0xafaf0700);
-#endif
+
 	pm_runtime_put_sync_autosuspend(&slave->dev);
 
 	/* Mark Slave initialization complete */
@@ -376,28 +361,17 @@ static int rt1308_classd_event(struct snd_soc_dapm_widget *w,
 	struct snd_soc_component *component =
 		snd_soc_dapm_to_component(w->dapm);
 
-	printk("%s, event=%d\n", __func__, event);
-
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
-		//snd_soc_component_update_bits(component, RT1308_SDW_OFFSET_BYTE3 | (RT1308_DAC_SET << 4),
-		//	(0x1 << RT1308_DVOL_MUTE_R_EN_SFT) | (0x1 << RT1308_DVOL_MUTE_L_EN_SFT),
-		//	0x0);
-
 		msleep(30);
-		snd_soc_component_update_bits(component, RT1308_SDW_OFFSET | (RT1308_POWER_STATUS << 4),
-			0x3,
-			0x3);
+		snd_soc_component_update_bits(component,
+			RT1308_SDW_OFFSET | (RT1308_POWER_STATUS << 4), 0x3,	0x3);
 		msleep(40);
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
-		snd_soc_component_update_bits(component, RT1308_SDW_OFFSET | (RT1308_POWER_STATUS << 4),
-			0x3, 0);
+		snd_soc_component_update_bits(component,
+			RT1308_SDW_OFFSET | (RT1308_POWER_STATUS << 4), 0x3, 0);
 		usleep_range(150000, 200000);
-
-		//snd_soc_component_update_bits(component, RT1308_SDW_OFFSET_BYTE3 | (RT1308_DAC_SET << 4),
-		//	(0x1 << RT1308_DVOL_MUTE_R_EN_SFT) | (0x1 << RT1308_DVOL_MUTE_L_EN_SFT),
-		//	(0x1 << RT1308_DVOL_MUTE_R_EN_SFT) | (0x1 << RT1308_DVOL_MUTE_L_EN_SFT));
 		break;
 
 	default:
@@ -439,44 +413,44 @@ static const struct snd_soc_dapm_widget rt1308_dapm_widgets[] = {
 	SND_SOC_DAPM_AIF_IN("AIF1RX", "DP1 Playback", 0, SND_SOC_NOPM, 0, 0),
 
 	/* Supply Widgets */
-	SND_SOC_DAPM_SUPPLY("MBIAS20U", RT1308_SDW_OFFSET | (RT1308_POWER << 4),
-		7, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("ALDO", RT1308_SDW_OFFSET | (RT1308_POWER << 4),
-		6, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("DBG", RT1308_SDW_OFFSET | (RT1308_POWER << 4),
-		5, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("DACL", RT1308_SDW_OFFSET | (RT1308_POWER << 4),
-		4, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("CLK25M", RT1308_SDW_OFFSET | (RT1308_POWER << 4),
-		2, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("ADC_R", RT1308_SDW_OFFSET | (RT1308_POWER << 4),
-		1, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("ADC_L", RT1308_SDW_OFFSET | (RT1308_POWER << 4),
-		0, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("DAC Power", RT1308_SDW_OFFSET | (RT1308_POWER << 4),
-		3, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("MBIAS20U",
+		RT1308_SDW_OFFSET | (RT1308_POWER << 4),	7, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("ALDO",
+		RT1308_SDW_OFFSET | (RT1308_POWER << 4),	6, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("DBG",
+		RT1308_SDW_OFFSET | (RT1308_POWER << 4),	5, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("DACL",
+		RT1308_SDW_OFFSET | (RT1308_POWER << 4),	4, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("CLK25M",
+		RT1308_SDW_OFFSET | (RT1308_POWER << 4),	2, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("ADC_R",
+		RT1308_SDW_OFFSET | (RT1308_POWER << 4),	1, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("ADC_L",
+		RT1308_SDW_OFFSET | (RT1308_POWER << 4),	0, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("DAC Power",
+		RT1308_SDW_OFFSET | (RT1308_POWER << 4),	3, 0, NULL, 0),
 
-	SND_SOC_DAPM_SUPPLY("DLDO", RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),
-		5, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("VREF", RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),
-		4, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("MIXER_R", RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),
-		2, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("MIXER_L", RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),
-		1, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("MBIAS4U", RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),
-		0, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("DLDO",
+		RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),	5, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("VREF",
+		RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),	4, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("MIXER_R",
+		RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),	2, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("MIXER_L",
+		RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),	1, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("MBIAS4U",
+		RT1308_SDW_OFFSET_BYTE1 | (RT1308_POWER << 4),	0, 0, NULL, 0),
 
-	SND_SOC_DAPM_SUPPLY("PLL2_LDO", RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4),
-		4, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("PLL2B", RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4),
-		3, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("PLL2F", RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4),
-		2, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("PLL2F2", RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4),
-		1, 0, NULL, 0),
-	SND_SOC_DAPM_SUPPLY("PLL2B2", RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4),
-		0, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("PLL2_LDO",
+		RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4), 4, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("PLL2B",
+		RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4), 3, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("PLL2F",
+		RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4), 2, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("PLL2F2",
+		RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4), 1, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("PLL2B2",
+		RT1308_SDW_OFFSET_BYTE2 | (RT1308_POWER << 4), 0, 0, NULL, 0),
 
 	/* Digital Interface */
 
@@ -722,7 +696,6 @@ static int rt1308_sdw_probe(struct sdw_slave *slave,
 	slave->ops = &rt1308_slave_ops;
 
 	/* Regmap Initialization */
-	//regmap = devm_regmap_init(&slave->dev, NULL, slave, &rt1308_sdw_regmap);
 	regmap = devm_regmap_init_sdw(slave, &rt1308_sdw_regmap);
 	if (!regmap)
 		return -EINVAL;
