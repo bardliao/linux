@@ -23,6 +23,8 @@
 #include <sound/soc-acpi.h>
 #include "../../codecs/hdac_hdmi.h"
 
+#define USE1308 0
+
 struct cnl_rt700_mc_private {
 	struct list_head hdmi_pcm_list;
 };
@@ -99,14 +101,18 @@ static int cnl_card_late_probe(struct snd_soc_card *card)
 static const struct snd_soc_dapm_widget cnl_rt700_widgets[] = {
 	SND_SOC_DAPM_HP("Headphones", NULL),
 	SND_SOC_DAPM_MIC("AMIC", NULL),
+#if USE1308
 	SND_SOC_DAPM_SPK("Speaker", NULL),
+#endif
 };
 
 static const struct snd_soc_dapm_route cnl_rt700_map[] = {
 	/*Headphones*/
 	{ "Headphones", NULL, "HP" },
+#if USE1308
 	{ "Speaker", NULL, "rt1308 SPOL" },
 	{ "Speaker", NULL, "rt1308 SPOR" },
+#endif
 	{ "MIC2", NULL, "AMIC" },
 };
 
@@ -149,10 +155,12 @@ SND_SOC_DAILINK_DEF(sdw0_pin,
 SND_SOC_DAILINK_DEF(sdw0_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:700:0:0", "rt700-aif1")));
 
+#if USE1308
 SND_SOC_DAILINK_DEF(sdw2_pin,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW2 Pin0")));
 SND_SOC_DAILINK_DEF(sdw2_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:2:25d:1308:0:0", "rt1308-aif")));
+#endif
 
 SND_SOC_DAILINK_DEF(dmic_pin,
 	DAILINK_COMP_ARRAY(COMP_CPU("DMIC01 Pin")));
@@ -195,6 +203,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 		.nonatomic = true,
 		SND_SOC_DAILINK_REG(sdw0_pin, sdw0_codec, platform),
 	},
+#if USE1308
 	{
 		.name = "SDW2-Codec",
 		.id = 2,
@@ -205,6 +214,7 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 		.nonatomic = true,
 		SND_SOC_DAILINK_REG(sdw2_pin, sdw2_codec, platform),
 	},
+#endif
 	{
 		.name = "dmic01",
 		.id = 4,
@@ -248,12 +258,14 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 #endif
 };
 
+#if USE1308
 static struct snd_soc_codec_conf rt1308_codec_conf[] = {
 	{
 		.dev_name = "sdw:2:25d:1308:0:0",
 		.name_prefix = "rt1308",
 	},
 };
+#endif
 
 /* SoC card */
 static struct snd_soc_card snd_soc_card_cnl_rt700 = {
@@ -267,8 +279,10 @@ static struct snd_soc_card snd_soc_card_cnl_rt700 = {
 	.dapm_routes = cnl_rt700_map,
 	.num_dapm_routes = ARRAY_SIZE(cnl_rt700_map),
 	.late_probe = cnl_card_late_probe,
+#if USE1308
 	.codec_conf = rt1308_codec_conf,
 	.num_configs = ARRAY_SIZE(rt1308_codec_conf),
+#endif
 };
 
 static int snd_cnl_rt700_mc_probe(struct platform_device *pdev)
