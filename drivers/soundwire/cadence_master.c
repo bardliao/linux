@@ -1302,11 +1302,11 @@ int sdw_cdns_init(struct sdw_cdns *cdns, bool clock_stop_exit)
 	cdns_updatel(cdns, CDNS_MCP_CLK_CTRL1,
 		     CDNS_MCP_CLK_MCLKD_MASK, divider);
 
-	pr_err("plb: mclk %d max_freq %d divider %d register %x\n",
-	       prop->mclk_freq,
-	       prop->max_clk_freq,
-	       divider,
-	       val);
+	dev_dbg(cdns->dev, "mclk %d max_freq %d divider %d register %x\n",
+		prop->mclk_freq,
+		prop->max_clk_freq,
+		divider,
+		val);
 
 	/*
 	 * Frame shape changes after initialization have to be done
@@ -1377,11 +1377,11 @@ int cdns_bus_conf(struct sdw_bus *bus, struct sdw_bus_params *params)
 	mcp_clkctrl = cdns_readl(cdns, mcp_clkctrl_off);
 	cdns_updatel(cdns, mcp_clkctrl_off, CDNS_MCP_CLK_MCLKD_MASK, divider);
 
-	pr_err("plb: mclk * 2 %d curr_dr_freq %d divider %d register %x\n",
-	       prop->mclk_freq * SDW_DOUBLE_RATE_FACTOR,
-	       params->curr_dr_freq,
-	       divider,
-	       mcp_clkctrl);
+	dev_dbg(cdns->dev, "mclk * 2 %d curr_dr_freq %d divider %d register %x\n",
+		prop->mclk_freq * SDW_DOUBLE_RATE_FACTOR,
+		params->curr_dr_freq,
+		divider,
+		mcp_clkctrl);
 
 	return 0;
 }
