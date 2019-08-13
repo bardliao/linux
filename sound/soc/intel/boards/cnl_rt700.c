@@ -105,8 +105,10 @@ static const struct snd_soc_dapm_widget cnl_rt700_widgets[] = {
 static const struct snd_soc_dapm_route cnl_rt700_map[] = {
 	/*Headphones*/
 	{ "Headphones", NULL, "HP" },
-	{ "Speaker", NULL, "rt1308 SPOL" },
-	{ "Speaker", NULL, "rt1308 SPOR" },
+	{ "Speaker", NULL, "rt1308-1 SPOL" },
+	{ "Speaker", NULL, "rt1308-1 SPOR" },
+	{ "Speaker", NULL, "rt1308-2 SPOL" },
+	{ "Speaker", NULL, "rt1308-2 SPOR" },
 	{ "MIC2", NULL, "AMIC" },
 };
 
@@ -149,10 +151,15 @@ SND_SOC_DAILINK_DEF(sdw0_pin,
 SND_SOC_DAILINK_DEF(sdw0_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:700:0:0", "rt700-aif1")));
 
+SND_SOC_DAILINK_DEF(sdw1_pin,
+	DAILINK_COMP_ARRAY(COMP_CPU("SDW1 Pin0")));
+SND_SOC_DAILINK_DEF(sdw1_codec,
+	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:1:25d:1308:0:0", "rt1308-aif")));
+
 SND_SOC_DAILINK_DEF(sdw2_pin,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW2 Pin0")));
 SND_SOC_DAILINK_DEF(sdw2_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:2:25d:1308:0:0", "rt1308-aif")));
+	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:2:25d:1308:0:2", "rt1308-aif")));
 
 SND_SOC_DAILINK_DEF(dmic_pin,
 	DAILINK_COMP_ARRAY(COMP_CPU("DMIC01 Pin")));
@@ -194,6 +201,16 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 		.dpcm_capture = 1,
 		.nonatomic = true,
 		SND_SOC_DAILINK_REG(sdw0_pin, sdw0_codec, platform),
+	},
+	{
+		.name = "SDW1-Codec",
+		.id = 1,
+		.be_hw_params_fixup = cnl_rt700_codec_fixup,
+		.ignore_suspend = 1,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.nonatomic = true,
+		SND_SOC_DAILINK_REG(sdw1_pin, sdw1_codec, platform),
 	},
 	{
 		.name = "SDW2-Codec",
@@ -250,8 +267,12 @@ struct snd_soc_dai_link cnl_rt700_msic_dailink[] = {
 
 static struct snd_soc_codec_conf rt1308_codec_conf[] = {
 	{
-		.dev_name = "sdw:2:25d:1308:0:0",
-		.name_prefix = "rt1308",
+		.dev_name = "sdw:1:25d:1308:0:0",
+		.name_prefix = "rt1308-1",
+	},
+	{
+		.dev_name = "sdw:2:25d:1308:0:2",
+		.name_prefix = "rt1308-2",
 	},
 };
 
