@@ -146,7 +146,7 @@ static int cnl_rt700_codec_fixup(struct snd_soc_pcm_runtime *rtd,
 SND_SOC_DAILINK_DEF(sdw0_pin,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW0 Pin0")));
 SND_SOC_DAILINK_DEF(sdw0_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:700:0:0", "rt700-aif1")));
+	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:711:0:1", "rt711-aif1")));
 
 SND_SOC_DAILINK_DEF(dmic_pin,
 	DAILINK_COMP_ARRAY(COMP_CPU("DMIC01 Pin")));
