@@ -69,6 +69,7 @@ static int sdw_config_stream(void *arg, void *s, void *dai,
 	config.type = SOF_DAI_INTEL_ALH;
 	config.dai_index = (link_id << 8) | (d->id);
 	config.alh.stream_id = alh_stream_id;
+	pr_err("bard: %s dai_index %d\n", __func__, config.dai_index);
 
 	/* send message to DSP */
 	ret = sof_ipc_tx_message(sdev->ipc,
@@ -99,6 +100,7 @@ static int sdw_free_stream(void *arg, void *s, void *dai, int link_id)
 	config.dai_index = (link_id << 8) | d->id;
 	config.alh.stream_id = 0xFFFF; /* invalid value on purpose */
 
+	pr_err("bard: %s dai_index %d\n", __func__, config.dai_index);
 	/* send message to DSP */
 	ret = sof_ipc_tx_message(sdev->ipc,
 				 config.hdr.cmd, &config, size, &reply,
