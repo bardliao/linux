@@ -27,6 +27,10 @@ static int is_rt711;
 module_param_named(is_using_rt711, is_rt711, int, 0444);
 MODULE_PARM_DESC(sof_debug, "Using rt711 test card");
 
+static int is_cnl;
+module_param_named(is_using_cnl, is_cnl, int, 0444);
+MODULE_PARM_DESC(sof_debug, "Using CNL");
+
 struct cnl_rt700_mc_private {
 	struct list_head hdmi_pcm_list;
 };
@@ -143,6 +147,25 @@ static struct snd_soc_dai_link_component rt711_component[] = {
 	{
 		.name = "sdw:0:25d:711:0:1",
 		.dai_name = "rt711-aif1",
+	}
+};
+
+static struct snd_soc_dai_link_component cnl_rt700_component[] = {
+	{
+		.name = "sdw:1:25d:700:0:0",
+		.dai_name = "rt700-aif1",
+	}
+};
+
+static struct snd_soc_dai_link_component sdw1_pin2_component[] = {
+	{
+		.dai_name = "SDW1 Pin2",
+	}
+};
+
+static struct snd_soc_dai_link_component sdw1_pin3_component[] = {
+	{
+		.dai_name = "SDW1 Pin3",
 	}
 };
 
@@ -343,6 +366,18 @@ static int snd_cnl_rt700_mc_probe(struct platform_device *pdev)
 		cnl_rt700_msic_dailink[1].num_codecs =
 			ARRAY_SIZE(rt711_component);
 	} else {
+		if (is_cnl) {
+			cnl_rt700_msic_dailink[0].codecs = cnl_rt700_component;
+			cnl_rt700_msic_dailink[0].num_codecs =
+				ARRAY_SIZE(cnl_rt700_component);
+			cnl_rt700_msic_dailink[0].cpus = sdw1_pin2_component;
+			cnl_rt700_msic_dailink[0].num_cpus = 1;
+			cnl_rt700_msic_dailink[1].codecs = cnl_rt700_component;
+			cnl_rt700_msic_dailink[1].num_codecs =
+				ARRAY_SIZE(cnl_rt700_component);
+			cnl_rt700_msic_dailink[1].cpus = sdw1_pin3_component;
+			cnl_rt700_msic_dailink[1].num_cpus = 1;
+		}
 		cnl_rt700_msic_dailink[0].init = cnl_rt700_init;
 		snd_soc_card_cnl_rt700.num_links =
 			ARRAY_SIZE(cnl_rt700_msic_dailink) - 2;
