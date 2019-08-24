@@ -517,6 +517,21 @@ static int hda_init_caps(struct snd_sof_dev *sdev)
 		return ret;
 	}
 
+	/* need to power-up core before setting-up capabilities */
+	ret = hda_dsp_core_power_up(sdev, HDA_DSP_CORE_MASK(0));
+	if (ret < 0) {
+		dev_err(sdev->dev, "error: could not power-up DSP subsystem\n");
+		return ret;
+	}
+
+	/* initialize SoundWire capabilities */
+	ret = hda_sdw_init(sdev);
+	if (ret < 0) {
+		dev_err(sdev->dev, "error: SoundWire get caps error\n");
+		hda_dsp_core_power_down(sdev, HDA_DSP_CORE_MASK(0));
+		return ret;
+	}
+
 #if IS_ENABLED(CONFIG_SND_SOC_SOF_HDA)
 	if (bus->mlcap)
 		snd_hdac_ext_bus_get_ml_capabilities(bus);
@@ -789,21 +804,6 @@ int hda_dsp_probe(struct snd_sof_dev *sdev)
 
 	/* set default mailbox offset for FW ready message */
 	sdev->dsp_box.offset = HDA_DSP_MBOX_UPLINK_OFFSET;
-
-	/* need to power-up core before setting-up capabilities */
-	ret = hda_dsp_core_power_up(sdev, HDA_DSP_CORE_MASK(0));
-	if (ret < 0) {
-		dev_err(sdev->dev, "error: could not power-up DSP subsystem\n");
-		goto free_ipc_irq;
-	}
-
-	/* initialize SoundWire capabilities */
-	ret = hda_sdw_init(sdev);
-	if (ret < 0) {
-		dev_err(sdev->dev, "error: SoundWire get caps error\n");
-		hda_dsp_core_power_down(sdev, HDA_DSP_CORE_MASK(0));
-		goto free_ipc_irq;
-	}
 
 	return 0;
 
