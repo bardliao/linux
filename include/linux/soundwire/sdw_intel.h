@@ -25,6 +25,10 @@ struct sdw_intel_ops {
  * @parent: parent device
  * @ops: callback ops
  * @arg: callback arg
+ * @link_mask: bit-wise mask indicating which link is enabled
+ *
+ * All fields are set prior to calling sdw_intel_init(), except for
+ * link_mask which is set by sdw_intel_init()
  */
 struct sdw_intel_res {
 	void __iomem *mmio_base;
@@ -33,6 +37,7 @@ struct sdw_intel_res {
 	struct device *parent;
 	const struct sdw_intel_ops *ops;
 	void *arg;
+	int link_mask;
 };
 
 void *sdw_intel_init(acpi_handle *parent_handle, struct sdw_intel_res *res);

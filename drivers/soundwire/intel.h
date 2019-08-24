@@ -24,4 +24,6 @@ struct sdw_intel_link_res {
 	void *arg;
 };
 
+#define SDW_INTEL_QUIRK_MASK_BUS_DISABLE	BIT(1)
+
 #endif /* __SDW_INTEL_LOCAL_H */
