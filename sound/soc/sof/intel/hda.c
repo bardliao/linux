@@ -117,7 +117,7 @@ static const struct sdw_intel_ops sdw_callback = {
 	.free_stream = sdw_free_stream,
 };
 
-static int hda_sdw_init(struct snd_sof_dev *sdev)
+static int hda_sdw_init(struct snd_sof_dev *sdev, u32 *link_mask)
 {
 	acpi_handle handle;
 	struct sdw_intel_res res;
@@ -146,6 +146,9 @@ static int hda_sdw_init(struct snd_sof_dev *sdev)
 	hdev = sdev->pdata->hw_pdata;
 	hdev->sdw = sdw;
 
+	/* report which links are enabled by hardware/firmware */
+	*link_mask = res.link_mask;
+
 	return 0;
 }
 
@@ -164,7 +167,7 @@ static int hda_sdw_exit(struct snd_sof_dev *sdev)
 	return 0;
 }
 #else
-static int hda_sdw_init(struct snd_sof_dev *sdev)
+static int hda_sdw_init(struct snd_sof_dev *sdev, u32 *link_mask)
 {
 	return 0;
 }
@@ -476,12 +479,12 @@ static const char *fixup_tplg_name(struct snd_sof_dev *sdev,
 static int hda_init_caps(struct snd_sof_dev *sdev)
 {
 	struct hdac_bus *bus = sof_to_bus(sdev);
+	struct snd_soc_acpi_mach *mach;
+	struct snd_sof_pdata *pdata = sdev->pdata;
 #if IS_ENABLED(CONFIG_SND_SOC_SOF_HDA)
 	struct hdac_ext_link *hlink;
-	struct snd_soc_acpi_mach_params *mach_params;
 	struct snd_soc_acpi_mach *hda_mach;
-	struct snd_sof_pdata *pdata = sdev->pdata;
-	struct snd_soc_acpi_mach *mach;
+	struct snd_soc_acpi_mach_params *mach_params;
 	const char *tplg_filename;
 	const char *idisp_str;
 	const char *dmic_str;
@@ -489,6 +492,7 @@ static int hda_init_caps(struct snd_sof_dev *sdev)
 	int codec_num = 0;
 	int i;
 #endif
+	u32 link_mask = 0;
 	int ret = 0;
 
 	device_disable_async_suspend(bus->dev);
@@ -525,11 +529,31 @@ static int hda_init_caps(struct snd_sof_dev *sdev)
 	}
 
 	/* initialize SoundWire capabilities */
-	ret = hda_sdw_init(sdev);
+	ret = hda_sdw_init(sdev, &link_mask);
 	if (ret < 0) {
 		dev_err(sdev->dev, "error: SoundWire get caps error\n");
 		hda_dsp_core_power_down(sdev, HDA_DSP_CORE_MASK(0));
 		return ret;
+	}
+
+	if (!pdata->machine && link_mask != 0) {
+		/* SoundWire enabled, revisit machine driver selection */
+		mach = pdata->desc->alt_machines;
+		while (mach) {
+			if (mach->link_mask == link_mask)
+				break;
+			mach++;
+		}
+		if (mach) {
+			dev_dbg(bus->dev,
+				"SoundWire machine driver %s topology %s\n",
+				mach->drv_name,
+				mach->sof_tplg_filename);
+			pdata->machine = mach;
+			mach->mach_params.platform = dev_name(sdev->dev);
+			pdata->fw_filename = mach->sof_fw_filename;
+			pdata->tplg_filename = mach->sof_tplg_filename;
+		}
 	}
 
 #if IS_ENABLED(CONFIG_SND_SOC_SOF_HDA)
