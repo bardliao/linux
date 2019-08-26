@@ -539,12 +539,9 @@ static int hda_init_caps(struct snd_sof_dev *sdev)
 	if (!pdata->machine && link_mask != 0) {
 		/* SoundWire enabled, revisit machine driver selection */
 		mach = pdata->desc->alt_machines;
-		while (mach) {
-			if (mach->link_mask == link_mask)
-				break;
+		while (mach && mach->link_mask && mach->link_mask != link_mask)
 			mach++;
-		}
-		if (mach) {
+		if (mach && mach->link_mask) {
 			dev_dbg(bus->dev,
 				"SoundWire machine driver %s topology %s\n",
 				mach->drv_name,
