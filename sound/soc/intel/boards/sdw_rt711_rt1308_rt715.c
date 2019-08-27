@@ -141,7 +141,7 @@ SND_SOC_DAILINK_DEF(sdw2_codec,
 SND_SOC_DAILINK_DEF(sdw3_pin3,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW3 Pin3")));
 SND_SOC_DAILINK_DEF(sdw3_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:3:25d:1308:0:1", "rt715-aif")));
+	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:3:25d:715:0:1", "rt715-aif1")));
 
 #if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
 SND_SOC_DAILINK_DEF(idisp1_pin,
@@ -176,7 +176,11 @@ static int rt1308_init(struct snd_soc_pcm_runtime *runtime)
 	return ret;
 }
 
-static struct snd_soc_codec_conf rt1308_codec_conf[] = {
+static struct snd_soc_codec_conf codec_conf[] = {
+	{
+		.dev_name = "sdw:0:25d:711:0:1",
+		.name_prefix = "rt711",
+	},
 	{
 		.dev_name = "sdw:1:25d:1308:0:0",
 		.name_prefix = "rt1308-1",
@@ -185,6 +189,11 @@ static struct snd_soc_codec_conf rt1308_codec_conf[] = {
 		.dev_name = "sdw:2:25d:1308:0:2",
 		.name_prefix = "rt1308-2",
 	},
+	{
+		.dev_name = "sdw:3:25d:715:0:1",
+		.name_prefix = "rt715",
+	},
+
 };
 
 struct snd_soc_dai_link dailink[] = {
@@ -270,8 +279,8 @@ static struct snd_soc_card card_rt700_rt1308_rt715 = {
 	.dapm_routes = map,
 	.num_dapm_routes = ARRAY_SIZE(map),
 	.late_probe = card_late_probe,
-	.codec_conf = rt1308_codec_conf,
-	.num_configs = ARRAY_SIZE(rt1308_codec_conf),
+	.codec_conf = codec_conf,
+	.num_configs = ARRAY_SIZE(codec_conf),
 };
 
 static int mc_probe(struct platform_device *pdev)
