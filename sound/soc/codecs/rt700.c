@@ -555,11 +555,11 @@ static int rt700_mux_get(struct snd_kcontrol *kcontrol,
 	unsigned int reg, val, nid;
 	int ret;
 
-	if (!strcmp("HPO Mux", ucontrol->id.name))
+	if (strstr(ucontrol->id.name, "HPO Mux"))
 		nid = RT700_HP_OUT;
-	else if (!strcmp("ADC 22 Mux", ucontrol->id.name))
+	else if (strstr(ucontrol->id.name, "ADC 22 Mux"))
 		nid = RT700_MIXER_IN1;
-	else if (!strcmp("ADC 23 Mux", ucontrol->id.name))
+	else if (strstr(ucontrol->id.name, "ADC 23 Mux"))
 		nid = RT700_MIXER_IN2;
 	else
 		return -EINVAL;
@@ -592,11 +592,11 @@ static int rt700_mux_put(struct snd_kcontrol *kcontrol,
 	if (item[0] >= e->items)
 		return -EINVAL;
 
-	if (!strcmp("HPO Mux", ucontrol->id.name))
+	if (strstr(ucontrol->id.name, "HPO Mux"))
 		nid = RT700_HP_OUT;
-	else if (!strcmp("ADC 22 Mux", ucontrol->id.name))
+	else if (strstr(ucontrol->id.name, "ADC 22 Mux"))
 		nid = RT700_MIXER_IN1;
-	else if (!strcmp("ADC 23 Mux", ucontrol->id.name))
+	else if (strstr(ucontrol->id.name, "ADC 23 Mux"))
 		nid = RT700_MIXER_IN2;
 	else
 		return -EINVAL;
