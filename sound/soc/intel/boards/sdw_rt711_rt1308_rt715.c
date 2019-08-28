@@ -104,8 +104,8 @@ static const struct snd_soc_dapm_widget widgets[] = {
 
 static const struct snd_soc_dapm_route map[] = {
 	/*Headphones*/
-	{ "Headphones", NULL, "HP" },
-	{ "MIC2", NULL, "AMIC" },
+	{ "Headphones", NULL, "rt711 HP" },
+	{ "rt711 MIC2", NULL, "AMIC" },
 };
 
 static const struct snd_kcontrol_new controls[] = {
