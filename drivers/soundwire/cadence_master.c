@@ -405,12 +405,15 @@ cdns_fill_msg_resp(struct sdw_cdns *cdns,
 	return SDW_CMD_OK;
 }
 
+static void cdns_read_response(struct sdw_cdns *cdns);
+
 static enum sdw_command_response
 _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	       int offset, int count, bool defer)
 {
 	unsigned long time;
 	u32 base, i, data;
+	u32 int_status;
 	u16 addr;
 
 	/* Program the watermark level for RX FIFO */
@@ -437,7 +440,7 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 
 	if (defer)
 		return SDW_CMD_OK;
-
+#if 0
 	/* wait for timeout or response */
 	time = wait_for_completion_timeout(&cdns->tx_complete,
 					   msecs_to_jiffies(CDNS_TX_TIMEOUT));
@@ -446,7 +449,26 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 		msg->len = 0;
 		return SDW_CMD_TIMEOUT;
 	}
+#else
 
+	int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+	for (i = 0; i <= CDNS_TX_TIMEOUT; i++) {
+		if (int_status & CDNS_MCP_INT_RX_WL) {
+			cdns_read_response(cdns);
+			cdns_writel(cdns, CDNS_MCP_INTSTAT,
+				    CDNS_MCP_INT_IRQ | CDNS_MCP_INT_RX_WL);
+			break;
+		}
+		usleep_range(5, 10);
+		int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+	}
+	pr_err("bard: %d int_status %x\n", i, int_status);
+	if (i > CDNS_TX_TIMEOUT) {
+		dev_err(cdns->dev, "IO transfer timed out\n");
+		msg->len = 0;
+		return SDW_CMD_TIMEOUT;
+	}
+#endif
 	return cdns_fill_msg_resp(cdns, msg, count, offset);
 }
 
@@ -729,16 +751,18 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 	if (!(int_status & CDNS_MCP_INT_IRQ))
 		return IRQ_NONE;
 
+	pr_err("bard: %s int_status %x\n", __func__, int_status);
 	if (int_status & CDNS_MCP_INT_RX_WL) {
-		cdns_read_response(cdns);
 
 		if (cdns->defer) {
+			cdns_read_response(cdns);
 			cdns_fill_msg_resp(cdns, cdns->defer->msg,
 					   cdns->defer->length, 0);
 			complete(&cdns->defer->complete);
 			cdns->defer = NULL;
 		} else {
-			complete(&cdns->tx_complete);
+			/* We handle it on  _cdns_xfer_msg() */
+			int_status &= ~CDNS_MCP_INT_RX_WL;
 		}
 	}
 
