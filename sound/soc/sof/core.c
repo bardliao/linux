@@ -23,7 +23,7 @@ MODULE_PARM_DESC(sof_debug, "SOF core debug options (0x0 all off)");
 #define SOF_CORE_ENABLE_TRACE BIT(0)
 
 /* SOF defaults if not provided by the platform in ms */
-#define TIMEOUT_DEFAULT_IPC_MS  500
+#define TIMEOUT_DEFAULT_IPC_MS  2000
 #define TIMEOUT_DEFAULT_BOOT_MS 2000
 
 /*

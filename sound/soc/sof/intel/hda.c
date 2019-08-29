@@ -41,6 +41,7 @@
 
 void hda_sdw_int_enable(struct snd_sof_dev *sdev, bool enable)
 {
+	dev_err(sdev->dev, "bard: %s enable %d\n", __func__, enable);
 	if (enable)
 		snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR,
 					HDA_DSP_REG_ADSPIC2,
@@ -124,6 +125,7 @@ static int hda_sdw_init(struct snd_sof_dev *sdev, u32 *link_mask)
 	struct sof_intel_hda_dev *hdev;
 	void *sdw;
 
+	pr_err("bard: %s\n", __func__);
 	handle = ACPI_HANDLE(sdev->dev);
 
 	memset(&res, 0, sizeof(res));
@@ -647,6 +649,7 @@ static int hda_init_caps(struct snd_sof_dev *sdev)
 	list_for_each_entry(hlink, &bus->hlink_list, list)
 		snd_hdac_ext_bus_link_put(bus, hlink);
 #endif
+	dev_err(bus->dev, "bard: %s end\n", __func__);
 	return 0;
 }
 

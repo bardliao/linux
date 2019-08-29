@@ -1136,6 +1136,7 @@ static int intel_probe(struct platform_device *pdev)
 	struct sdw_intel *sdw;
 	int ret;
 
+	dev_err(&pdev->dev, "bard: %s\n", __func__);
 	sdw = devm_kzalloc(&pdev->dev, sizeof(*sdw), GFP_KERNEL);
 	if (!sdw)
 		return -ENOMEM;
@@ -1260,6 +1261,7 @@ static int intel_suspend(struct device *dev)
 	struct sdw_intel *sdw = dev_get_drvdata(dev);
 	int ret;
 
+	dev_err(dev, "bard: %s\n", __func__);
 	if (sdw->cdns.bus.prop.hw_disabled) {
 		dev_dbg(dev, "SoundWire master %d is disabled, ignoring\n",
 			sdw->cdns.bus.link_id);
@@ -1288,6 +1290,7 @@ static int intel_resume(struct device *dev)
 	struct sdw_intel *sdw = dev_get_drvdata(dev);
 	int ret;
 
+	dev_err(dev, "bard: %s\n", __func__);
 	if (sdw->cdns.bus.prop.hw_disabled) {
 		dev_dbg(dev, "SoundWire master %d is disabled, ignoring\n",
 			sdw->cdns.bus.link_id);

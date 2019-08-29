@@ -106,6 +106,7 @@ static irqreturn_t cnl_ipc_irq_thread(int irq, void *context)
 	}
 
 	/* re-enable IPC interrupt */
+	dev_err(sdev->dev, "bard: %s enable irq\n", __func__);
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR, HDA_DSP_REG_ADSPIC,
 				HDA_DSP_ADSPIC_IPC, HDA_DSP_ADSPIC_IPC);
 

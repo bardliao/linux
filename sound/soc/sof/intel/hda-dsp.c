@@ -264,6 +264,7 @@ void hda_dsp_ipc_int_enable(struct snd_sof_dev *sdev)
 			HDA_DSP_REG_HIPCCTL_DONE | HDA_DSP_REG_HIPCCTL_BUSY);
 
 	/* enable IPC interrupt */
+	dev_err(sdev->dev, "bard: %s enable irq\n", __func__);
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR, HDA_DSP_REG_ADSPIC,
 				HDA_DSP_ADSPIC_IPC, HDA_DSP_ADSPIC_IPC);
 }
@@ -274,6 +275,7 @@ void hda_dsp_ipc_int_disable(struct snd_sof_dev *sdev)
 	const struct sof_intel_dsp_desc *chip = hda->desc;
 
 	/* disable IPC interrupt */
+	dev_err(sdev->dev, "bard: %s disable irq\n", __func__);
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR, HDA_DSP_REG_ADSPIC,
 				HDA_DSP_ADSPIC_IPC, 0);
 

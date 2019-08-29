@@ -231,6 +231,7 @@ irqreturn_t hda_dsp_ipc_irq_thread(int irq, void *context)
 	/* re-enable IPC interrupt */
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR, HDA_DSP_REG_ADSPIC,
 				HDA_DSP_ADSPIC_IPC, HDA_DSP_ADSPIC_IPC);
+//	dev_err(sdev->dev, "bard: %s enable irq\n", __func__);
 
 	return IRQ_HANDLED;
 }
@@ -246,7 +247,7 @@ irqreturn_t hda_dsp_ipc_irq_handler(int irq, void *context)
 
 	/* store status */
 	irq_status = snd_sof_dsp_read(sdev, HDA_DSP_BAR, HDA_DSP_REG_ADSPIS);
-	dev_vdbg(sdev->dev, "irq handler: irq_status:0x%x\n", irq_status);
+//	dev_err(sdev->dev, "bard: ipc irq handler: irq_status:0x%x\n", irq_status);
 
 	/* invalid message ? */
 	if (irq_status == 0xffffffff)
@@ -258,6 +259,7 @@ irqreturn_t hda_dsp_ipc_irq_handler(int irq, void *context)
 		snd_sof_dsp_update_bits_unlocked(sdev, HDA_DSP_BAR,
 						 HDA_DSP_REG_ADSPIC,
 						 HDA_DSP_ADSPIC_IPC, 0);
+//		dev_err(sdev->dev, "bard: %s disable irq\n", __func__);
 		ret = IRQ_WAKE_THREAD;
 	}
 

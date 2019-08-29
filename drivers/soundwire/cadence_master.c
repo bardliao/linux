@@ -462,7 +462,7 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 		usleep_range(5, 10);
 		int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
 	}
-	pr_err("bard: %d int_status %x\n", i, int_status);
+//	dev_err(cdns->dev, "bard: %d int_status %x\n", i, int_status);
 	if (i > CDNS_TX_TIMEOUT) {
 		dev_err(cdns->dev, "IO transfer timed out\n");
 		msg->len = 0;
@@ -747,11 +747,16 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+//	dev_err(cdns->dev, "bard: %s int_status %x\n", __func__, int_status);
 
 	if (!(int_status & CDNS_MCP_INT_IRQ))
 		return IRQ_NONE;
 
-	pr_err("bard: %s int_status %x\n", __func__, int_status);
+	if (int_status == 0xffffffff) {
+		dev_err(cdns->dev, "bard: %s cdns %d has powered down\n",
+			__func__, cdns->instance);
+	}
+
 	if (int_status & CDNS_MCP_INT_RX_WL) {
 
 		if (cdns->defer) {
@@ -786,6 +791,9 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 
 	if (int_status & CDNS_MCP_INT_SLAVE_MASK) {
 		/* Mask the Slave interrupt and wake thread */
+		cdns_updatel(cdns, CDNS_MCP_INT_SLAVE_MASK,
+			    CDNS_MCP_INT_IRQ, 0);
+		dev_err(cdns->dev, "bard: %s disable irq\n", __func__);
 		cdns_updatel(cdns, CDNS_MCP_INTMASK,
 			     CDNS_MCP_INT_SLAVE_MASK, 0);
 
@@ -793,6 +801,7 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 		ret = IRQ_WAKE_THREAD;
 	}
 
+//	dev_err(cdns->dev, "bard: %s write int_status %x\n", __func__, int_status);
 	cdns_writel(cdns, CDNS_MCP_INTSTAT, int_status);
 	return ret;
 }
@@ -809,7 +818,7 @@ irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
 	u32 slave0, slave1;
 	u32 slave0_new, slave1_new;
 
-	dev_dbg_ratelimited(cdns->dev, "%s: start\n", __func__);
+	dev_err(cdns->dev, "bard: %s: start\n", __func__);
 
 	slave0 = cdns_readl(cdns, CDNS_MCP_SLAVE_INTSTAT0);
 	slave1 = cdns_readl(cdns, CDNS_MCP_SLAVE_INTSTAT1);
@@ -838,7 +847,10 @@ irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
 	cdns_updatel(cdns, CDNS_MCP_INTMASK,
 		     CDNS_MCP_INT_SLAVE_MASK, CDNS_MCP_INT_SLAVE_MASK);
 
+	cdns_updatel(cdns, CDNS_MCP_INT_SLAVE_MASK,
+		    CDNS_MCP_INT_IRQ, CDNS_MCP_INT_IRQ);
 	dev_dbg_ratelimited(cdns->dev, "%s: end\n", __func__);
+	dev_err(cdns->dev, "bard: %s enable irq\n", __func__);
 
 	return IRQ_HANDLED;
 }
@@ -888,6 +900,7 @@ int sdw_cdns_enable_interrupt(struct sdw_cdns *cdns, bool state)
 	u32 slave_intmask1 = 0;
 	u32 mask = 0;
 
+	dev_err(cdns->dev, "%s state %d\n", __func__, state);
 	if (!state)
 		goto update_masks;
 
