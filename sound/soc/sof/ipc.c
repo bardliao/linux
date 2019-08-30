@@ -195,6 +195,23 @@ static inline void ipc_log_header(struct device *dev, u8 *text, u32 cmd)
 }
 #endif
 
+#define HDA_DSP_HDA_BAR                         0
+#define HDA_DSP_PP_BAR                          1
+#define HDA_DSP_SPIB_BAR                        2
+#define HDA_DSP_DRSM_BAR                        3
+#define HDA_DSP_BAR                             4
+
+#define HDA_DSP_GEN_BASE                0x0
+#define HDA_DSP_REG_ADSPCS              (HDA_DSP_GEN_BASE + 0x04)
+#define HDA_DSP_REG_ADSPIC              (HDA_DSP_GEN_BASE + 0x08)
+#define HDA_DSP_REG_ADSPIS              (HDA_DSP_GEN_BASE + 0x0C)
+#define HDA_DSP_REG_ADSPIC2             (HDA_DSP_GEN_BASE + 0x10)
+#define HDA_DSP_REG_ADSPIS2             (HDA_DSP_GEN_BASE + 0x14)
+
+#define HDA_DSP_ADSPIC_IPC                      1
+#define HDA_DSP_ADSPIS_IPC                      1
+#define HDA_DSP_ADSPIC2_SNDW                    BIT(5)
+
 /* wait for IPC message reply */
 static int tx_wait_done(struct snd_sof_ipc *ipc, struct snd_sof_ipc_msg *msg,
 			void *reply_data)
@@ -202,7 +219,9 @@ static int tx_wait_done(struct snd_sof_ipc *ipc, struct snd_sof_ipc_msg *msg,
 	struct snd_sof_dev *sdev = ipc->sdev;
 	struct sof_ipc_cmd_hdr *hdr = msg->msg_data;
 	int ret;
+	int retry = 20;
 
+again:
 	/* wait for DSP IPC completion */
 	ret = wait_event_timeout(msg->waitq, msg->ipc_complete,
 				 msecs_to_jiffies(sdev->ipc_timeout));
@@ -214,6 +233,22 @@ static int tx_wait_done(struct snd_sof_ipc *ipc, struct snd_sof_ipc_msg *msg,
 		snd_sof_ipc_dump(ipc->sdev);
 		snd_sof_trace_notify_for_error(ipc->sdev);
 		ret = -ETIMEDOUT;
+		retry--;
+		if (retry >= 0) {
+#if 0
+			/* disable IPC interrupt */
+			snd_sof_dsp_update_bits_unlocked(sdev, HDA_DSP_BAR,
+					HDA_DSP_REG_ADSPIC,
+					HDA_DSP_ADSPIC_IPC, 0);
+			msleep(10);
+			/* re-enable IPC interrupt */
+			snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR,
+					HDA_DSP_REG_ADSPIC,
+					HDA_DSP_ADSPIC_IPC, HDA_DSP_ADSPIC_IPC);
+#endif
+			dev_err(sdev->dev, "bard: retry=%d\n", retry);
+			goto again;
+		}
 	} else {
 		/* copy the data returned from DSP */
 		ret = msg->reply_error;
