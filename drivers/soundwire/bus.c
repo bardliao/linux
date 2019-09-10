@@ -932,7 +932,8 @@ static int sdw_handle_slave_alerts(struct sdw_slave *slave)
 
 		/* Update the Slave driver */
 		if (slave_notify && slave->ops &&
-		    slave->ops->interrupt_callback) {
+		    slave->ops->interrupt_callback &&
+		    slave->probe_complete) {
 			slave_intr.control_port = clear;
 			memcpy(slave_intr.port, &port_status,
 			       sizeof(slave_intr.port));
