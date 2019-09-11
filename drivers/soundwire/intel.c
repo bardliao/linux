@@ -1185,6 +1185,7 @@ static int intel_probe(struct platform_device *pdev)
 
 	intel_pdi_ch_update(sdw);
 
+	sdw->cdns.irq_lock = sdw->res->irq_lock;
 	/* Acquire IRQ */
 	ret = request_threaded_irq(sdw->res->irq, sdw_cdns_irq, sdw_cdns_thread,
 				   IRQF_SHARED, KBUILD_MODNAME, &sdw->cdns);

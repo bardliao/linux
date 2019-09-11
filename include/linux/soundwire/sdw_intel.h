@@ -38,6 +38,7 @@ struct sdw_intel_res {
 	const struct sdw_intel_ops *ops;
 	void *arg;
 	int link_mask;
+	spinlock_t irq_lock;
 };
 
 void *sdw_intel_init(acpi_handle *parent_handle, struct sdw_intel_res *res);

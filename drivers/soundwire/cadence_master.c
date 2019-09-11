@@ -431,6 +431,8 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 		(msg->flags == SDW_MSG_FLAG_WRITE) ? 0 : 1,
 		msg->dev_num, msg->addr, count);
 
+	spin_lock_irq(&cdns->irq_lock);
+
 	for (i = 0; i < count; i++) {
 		data = msg->dev_num << SDW_REG_SHIFT(CDNS_MCP_CMD_DEV_ADDR);
 		data |= cmd << SDW_REG_SHIFT(CDNS_MCP_CMD_COMMAND);
@@ -446,8 +448,10 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 
 
 
-	if (defer)
+	if (defer) {
+		spin_unlock_irq(&cdns->irq_lock);
 		return SDW_CMD_OK;
+	}
 #if 0
 	/* wait for timeout or response */
 	time = wait_for_completion_timeout(&cdns->tx_complete,
@@ -493,9 +497,11 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	if (i > CDNS_TX_TIMEOUT) {
 		dev_err(cdns->dev, "IO transfer timed out\n");
 		msg->len = 0;
+		spin_unlock_irq(&cdns->irq_lock);
 		return SDW_CMD_TIMEOUT;
 	}
 #endif
+	spin_unlock_irq(&cdns->irq_lock);
 	return cdns_fill_msg_resp(cdns, msg, count, offset);
 }
 
@@ -830,6 +836,8 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 	}
 
 	cdns_writel(cdns, CDNS_MCP_INTSTAT, int_status);
+	dev_err(cdns->dev,
+		"IRQ: received Cadence interrupt, return %x\n", ret);
 	return ret;
 }
 EXPORT_SYMBOL(sdw_cdns_irq);

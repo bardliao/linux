@@ -126,6 +126,8 @@ struct sdw_cdns {
 
 	bool link_up;
 	unsigned int msg_count;
+
+	spinlock_t irq_lock;
 };
 
 #define bus_to_cdns(_bus) container_of(_bus, struct sdw_cdns, bus)

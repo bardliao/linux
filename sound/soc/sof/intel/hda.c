@@ -136,6 +136,7 @@ static int hda_sdw_init(struct snd_sof_dev *sdev, u32 *link_mask)
 	res.parent = sdev->dev;
 	res.ops = &sdw_callback;
 	res.arg = sdev;
+	res.irq_lock = sdev->ipc_lock;
 
 	sdw = sdw_intel_init(handle, &res);
 	if (!sdw) {
