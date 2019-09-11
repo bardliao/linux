@@ -181,7 +181,7 @@ MODULE_PARM_DESC(cdns_mcp_int_mask, "Cadence MCP IntMask");
 
 /* Driver defaults */
 #define CDNS_DEFAULT_SSP_INTERVAL		0x18
-#define CDNS_TX_TIMEOUT				20
+#define CDNS_TX_TIMEOUT				200
 
 #define CDNS_SCP_RX_FIFOLEVEL			0x2
 
@@ -407,6 +407,8 @@ cdns_fill_msg_resp(struct sdw_cdns *cdns,
 	return SDW_CMD_OK;
 }
 
+static void cdns_read_response(struct sdw_cdns *cdns);
+
 static enum sdw_command_response
 _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	       int offset, int count, bool defer)
@@ -446,7 +448,7 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 
 	if (defer)
 		return SDW_CMD_OK;
-
+#if 0
 	/* wait for timeout or response */
 	time = wait_for_completion_timeout(&cdns->tx_complete,
 					   msecs_to_jiffies(CDNS_TX_TIMEOUT));
@@ -477,7 +479,23 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 		cdns_writel(cdns, CDNS_MCP_INTSTAT,
 			    CDNS_MCP_INT_IRQ | CDNS_MCP_INT_RX_WL);
 	}
-
+#else
+	for (i = 0; i <= CDNS_TX_TIMEOUT; i++) {
+		int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+		if (int_status & CDNS_MCP_INT_RX_WL) {
+			cdns_read_response(cdns);
+			cdns_writel(cdns, CDNS_MCP_INTSTAT,
+				    CDNS_MCP_INT_IRQ | CDNS_MCP_INT_RX_WL);
+			break;
+		}
+		usleep_range(5, 10);
+	}
+	if (i > CDNS_TX_TIMEOUT) {
+		dev_err(cdns->dev, "IO transfer timed out\n");
+		msg->len = 0;
+		return SDW_CMD_TIMEOUT;
+	}
+#endif
 	return cdns_fill_msg_resp(cdns, msg, count, offset);
 }
 
@@ -768,15 +786,16 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 		dev_err(cdns->dev,
 			"IRQ: received RX_WL interrupt\n");
 
-		cdns_read_response(cdns);
 
 		if (cdns->defer) {
+			cdns_read_response(cdns);
 			cdns_fill_msg_resp(cdns, cdns->defer->msg,
 					   cdns->defer->length, 0);
 			complete(&cdns->defer->complete);
 			cdns->defer = NULL;
 		} else {
-			complete(&cdns->tx_complete);
+			/* We handle it on  _cdns_xfer_msg() */
+			int_status &= ~CDNS_MCP_INT_RX_WL;
 		}
 	}
 
