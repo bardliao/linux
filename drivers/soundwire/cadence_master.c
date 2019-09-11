@@ -829,7 +829,7 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 
 		/* Mask the Slave interrupt and wake thread */
 		cdns_updatel(cdns, CDNS_MCP_INTMASK,
-			     CDNS_MCP_INT_SLAVE_MASK, 0);
+			     CDNS_MCP_INT_IRQ, 0);
 
 		int_status &= ~CDNS_MCP_INT_SLAVE_MASK;
 		ret = IRQ_WAKE_THREAD;
@@ -880,7 +880,7 @@ irqreturn_t sdw_cdns_thread(int irq, void *dev_id)
 	/* clear and unmask Slave interrupt now */
 	cdns_writel(cdns, CDNS_MCP_INTSTAT, CDNS_MCP_INT_SLAVE_MASK);
 	cdns_updatel(cdns, CDNS_MCP_INTMASK,
-		     CDNS_MCP_INT_SLAVE_MASK, CDNS_MCP_INT_SLAVE_MASK);
+		     CDNS_MCP_INT_IRQ, CDNS_MCP_INT_IRQ);
 
 	dev_dbg_ratelimited(cdns->dev, "%s: end\n", __func__);
 
