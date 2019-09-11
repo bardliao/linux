@@ -113,6 +113,10 @@ static int sdw_drv_probe(struct device *dev)
 	slave->probe_complete = true;
 	dev_dbg(dev, "probe complete\n");
 
+	if (slave->status == SDW_SLAVE_ATTACHED)
+		if (slave->ops && slave->ops->update_status)
+			slave->ops->update_status(slave, slave->status);
+
 	return 0;
 }
 
