@@ -839,12 +839,8 @@ static int intel_register_dai(struct sdw_intel *sdw)
 	if (ret)
 		return ret;
 
-#if 0
 	return snd_soc_register_component(cdns->dev, &dai_component,
 					  dais, num_dai);
-#else
-	return 0;
-#endif
 }
 
 static int sdw_master_read_intel_prop(struct sdw_bus *bus)
