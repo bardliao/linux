@@ -34,7 +34,7 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_icl_machines[] = {
 EXPORT_SYMBOL_GPL(snd_soc_acpi_intel_icl_machines);
 
 struct snd_soc_acpi_mach snd_soc_acpi_intel_icl_sdw_machines[] = {
-#if 0								  
+#if 1								 
 	{
 		.link_mask = 0xF, /* 4 active links required */
 		.drv_name = "sdw_rt711_rt1308_rt715",

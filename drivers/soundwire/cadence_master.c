@@ -422,9 +422,9 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	base = CDNS_MCP_CMD_BASE;
 	addr = msg->addr;
 
-	dev_err(cdns->dev, "IO transfer: dir %d dev_num %d addr %x count %d\n",
-		(msg->flags == SDW_MSG_FLAG_WRITE) ? 0 : 1,
-		msg->dev_num, msg->addr, count);
+//	dev_err(cdns->dev, "IO transfer: dir %d dev_num %d addr %x count %d\n",
+//		(msg->flags == SDW_MSG_FLAG_WRITE) ? 0 : 1,
+//		msg->dev_num, msg->addr, count);
 
 	for (i = 0; i < count; i++) {
 		data = msg->dev_num << SDW_REG_SHIFT(CDNS_MCP_CMD_DEV_ADDR);
