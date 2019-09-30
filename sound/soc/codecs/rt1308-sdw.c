@@ -183,6 +183,13 @@ static int rt1308_io_init(struct device *dev, struct sdw_slave *slave)
 	if (ret < 0)
 		goto _io_init_err_;
 
+	/* codec is attached, so we can access rt1308->regmap now */
+	regcache_cache_only(rt1308->regmap, false);
+
+	/* We don't need to re-init the codec */
+	if (rt1308->first_init)
+		goto init;
+
 	/* sw reset */
 	regmap_write(rt1308->regmap, RT1308_SDW_RESET, 0);
 
@@ -223,7 +230,7 @@ static int rt1308_io_init(struct device *dev, struct sdw_slave *slave)
 	regmap_write(rt1308->regmap, 0xc100, 0xaf);
 	regmap_write(rt1308->regmap, 0xc101, 0xaf);
 	regmap_write(rt1308->regmap, 0xc310, 0x24);
-
+init:
 	/* Mark Slave initialization complete */
 	rt1308->hw_init = true;
 
@@ -234,8 +241,15 @@ static int rt1308_io_init(struct device *dev, struct sdw_slave *slave)
 		pm_runtime_mark_last_busy(&slave->dev);
 		pm_runtime_enable(&slave->dev);
 		rt1308->first_init = true;
+		/*
+		 * set cache only since sdw link will be suspended after init
+		 * complete
+		 */
+		regcache_cache_only(rt1308->regmap, true);
+		regcache_mark_dirty(rt1308->regmap);
 	} else {
 		pm_runtime_mark_last_busy(&slave->dev);
+		regcache_sync(rt1308->regmap);
 	}
 
 	dev_dbg(&slave->dev, "%s hw_init complete\n", __func__);
@@ -257,9 +271,9 @@ static int rt1308_update_status(struct sdw_slave *slave,
 
 	/*
 	 * Perform initialization only if slave status is present and
-	 * hw_init flag is false
+	 * we will check hw_init in rt1308_io_init()
 	 */
-	if (rt1308->hw_init || rt1308->status != SDW_SLAVE_ATTACHED)
+	if (rt1308->status != SDW_SLAVE_ATTACHED)
 		return 0;
 
 	/* perform I/O transfers required for Slave initialization */
@@ -541,6 +555,25 @@ static struct sdw_slave_ops rt1308_slave_ops = {
 	.bus_config = rt1308_bus_config,
 };
 
+static int rt1308_dev_suspend(struct device *dev)
+{
+	struct rt1308_sdw_priv *rt1308 = dev_get_drvdata(dev);
+
+	regcache_cache_only(rt1308->regmap, true);
+	regcache_mark_dirty(rt1308->regmap);
+	return 0;
+}
+
+static int rt1308_dev_resume(struct device *dev)
+{
+	struct rt1308_sdw_priv *rt1308 = dev_get_drvdata(dev);
+
+	/* set hw_init = false to run io_init() */
+	rt1308->hw_init = false;
+
+	return 0;
+}
+
 static const struct snd_soc_component_driver soc_component_sdw_rt1308 = {
 	.controls = rt1308_snd_controls,
 	.num_controls = ARRAY_SIZE(rt1308_snd_controls),
@@ -631,10 +664,16 @@ static const struct sdw_device_id rt1308_id[] = {
 };
 MODULE_DEVICE_TABLE(sdw, rt1308_id);
 
+static const struct dev_pm_ops rt1308_pm = {
+	SET_SYSTEM_SLEEP_PM_OPS(rt1308_dev_suspend, rt1308_dev_resume)
+	SET_RUNTIME_PM_OPS(rt1308_dev_suspend, rt1308_dev_resume, NULL)
+};
+
 static struct sdw_driver rt1308_sdw_driver = {
 	.driver = {
 		.name = "rt1308",
 		.owner = THIS_MODULE,
+		.pm = &rt1308_pm,
 	},
 	.probe = rt1308_sdw_probe,
 	.ops = &rt1308_slave_ops,
