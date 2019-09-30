@@ -1566,6 +1566,8 @@ int sdw_prepare_stream(struct sdw_stream_runtime *stream)
 	if (stream->state != SDW_STREAM_CONFIGURED)
 		return 0;
 
+	pr_err("bard: %s wait 100 ms for enumeration\n", __func__);
+	msleep(100);
 	sdw_acquire_bus_lock(stream);
 
 	ret = _sdw_prepare_stream(stream);
