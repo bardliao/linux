@@ -1438,6 +1438,8 @@ static void intel_master_remove(struct platform_device *pdev)
 	struct device *dev = *pdev->dev;
 	struct sdw_intel *sdw;
 
+	pm_runtime_disable(dev);
+
 	sdw = platform_get_drvdata(pdev);
 
 	if (!bus->prop.hw_disabled) {
