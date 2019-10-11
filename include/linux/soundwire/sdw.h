@@ -635,11 +635,20 @@ struct sdw_slave {
 /**
  * struct sdw_master_device - SoundWire 'Master Device' representation
  * @dev: Linux device for this Master
- * @bus: Bus handle shortcut to improve readability (same as container_of)
+ * @link_ops: link-specific ops, initialized with sdw_master_device_add()
+ * @link_id: link index as defined by MIPI DisCo specification
+ * @pm_runtime_suspended: flag set with the value of pm_runtime_suspended()
+ * during system suspend and checked during system resume.
+ * @pdata: private data typically provided with sdw_master_device_add()
+ *
+ * link_ops can be NULL when link-level initializations and power-management
+ * are not desired.
  */
 struct sdw_master_device {
 	struct device dev;
-	struct sdw_bus *bus;
+	int link_id;
+	bool pm_runtime_suspended;
+	void *pdata;
 };
 
 #define dev_to_sdw_master_device(d)	\
