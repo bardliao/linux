@@ -117,6 +117,8 @@ struct sdw_intel {
 	struct sdw_cdns cdns;
 	int instance;
 	struct sdw_intel_link_res *link_res;
+	struct snd_pcm_hw_params *hw_params;
+	struct sdw_cdns_pdi *pdi;
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *debugfs;
 #endif
@@ -610,6 +612,7 @@ static int intel_params_stream(struct sdw_intel *sdw,
 	params_data.link_id = link_id;
 	params_data.alh_stream_id = alh_stream_id;
 
+	sdw->hw_params = hw_params;
 	if (res->ops && res->ops->params_stream && res->dev)
 		return res->ops->params_stream(res->dev,
 					       &params_data);
@@ -823,7 +826,7 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 	intel_pdi_alh_configure(sdw, pdi);
 	sdw_cdns_config_stream(cdns, ch, dir, pdi);
 
-
+	sdw->pdi = pdi;
 	/* Inform DSP about PDI stream number */
 	ret = intel_params_stream(sdw, substream, dai, params,
 				  sdw->instance,
@@ -869,8 +872,11 @@ error:
 static int intel_prepare(struct snd_pcm_substream *substream,
 			 struct snd_soc_dai *dai)
 {
+	struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
+	struct sdw_intel *sdw = cdns_to_intel(cdns);
 	struct sdw_cdns_dma_data *dma;
 	int ret;
+	int ch, dir;
 
 	dev_err(dai->dev, "%s: %s: start\n", __func__, dai->name);
 
@@ -879,6 +885,33 @@ static int intel_prepare(struct snd_pcm_substream *substream,
 		dev_err(dai->dev, "failed to get dma data in %s",
 			__func__);
 		return -EIO;
+	}
+
+	if (dma->stream->state == SDW_STREAM_DISABLED) {
+		ret = sdw_deprepare_stream(dma->stream);
+		if (ret) {
+			dev_err(dai->dev, "sdw_deprepare_stream: failed %d", ret);
+			return ret;
+		}
+
+		/* configure stream */
+		ch = params_channels(sdw->hw_params);
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
+			dir = SDW_DATA_DIR_RX;
+		else
+			dir = SDW_DATA_DIR_TX;
+
+		/* do run-time configurations for SHIM, ALH and PDI/PORT */
+		intel_pdi_shim_configure(sdw, sdw->pdi);
+		intel_pdi_alh_configure(sdw, sdw->pdi);
+		sdw_cdns_config_stream(cdns, ch, dir, sdw->pdi);
+
+
+		/* Inform DSP about PDI stream number */
+		ret = intel_params_stream(sdw, substream, dai, sdw->hw_params,
+					  sdw->instance,
+					  sdw->pdi->intel_alh_id);
+
 	}
 
 	ret = sdw_prepare_stream(dma->stream);
@@ -967,6 +1000,8 @@ intel_hw_free(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 		return ret;
 	}
 
+	sdw->hw_params = NULL;
+	sdw->pdi = NULL;
 	sdw_release_stream(dma->stream);
 
 	dev_err(dai->dev, "%s: %s: done\n", __func__, dai->name);
