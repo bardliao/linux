@@ -119,6 +119,7 @@ struct sdw_intel {
 	struct sdw_intel_link_res *link_res;
 	struct snd_pcm_hw_params *hw_params;
 	struct sdw_cdns_pdi *pdi;
+	bool suspend_reinitialize;
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *debugfs;
 #endif
@@ -821,7 +822,7 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 		goto error;
 	}
 
-	dma->suspend_reinitialize = false;
+	sdw->suspend_reinitialize = false;
 
 	/* do run-time configurations for SHIM, ALH and PDI/PORT */
 	intel_pdi_shim_configure(sdw, pdi);
@@ -889,7 +890,7 @@ static int intel_prepare(struct snd_pcm_substream *substream,
 		return -EIO;
 	}
 
-	if (dma->suspend_reinitialize) {
+	if (sdw->suspend_reinitialize) {
 		/*
 		 * .prepare() is called when dealing with underflows or
 		 * after system resume. In the latter case, we need to
@@ -913,7 +914,7 @@ static int intel_prepare(struct snd_pcm_substream *substream,
 					  sdw->instance,
 					  sdw->pdi->intel_alh_id);
 
-		dma->suspend_reinitialize = false;
+		sdw->suspend_reinitialize = false;
 	}
 
 	ret = sdw_prepare_stream(dma->stream);
@@ -948,7 +949,6 @@ static int intel_trigger(struct snd_pcm_substream *substream, int cmd,
 
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		dev_err(dai->dev, "%s: %s: suspend\n", __func__, dai->name);
-		dma->suspend_reinitialize = true;
 		/* fallthrough */
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -1399,6 +1399,7 @@ static int intel_suspend(struct device *dev)
 
 	dev_err(dev, "%s start\n", __func__);
 
+	sdw->suspend_reinitialize = true;
 	if (pm_runtime_status_suspended(dev)) {
 		dev_dbg(dev,
 			"%s: pm_runtime status: suspended\n",
