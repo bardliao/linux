@@ -917,6 +917,17 @@ static int intel_prepare(struct snd_pcm_substream *substream,
 		sdw->suspend_reinitialize = false;
 	}
 
+	/*
+	 * Due to ASoC doesn't have .deprepare ops, so .prepare could be
+	 * called from DISABLED state directly. And we don't need to call
+	 * sdw_prepare_stream() in such case.
+	 */
+	if (dma->stream->state == SDW_STREAM_DISABLED) {
+		pr_debug("%s: %s: state is DISABLED\n",
+			 __func__, dma->stream->name);
+		return ret;
+	}
+
 	ret = sdw_prepare_stream(dma->stream);
 
 	dev_err(dai->dev, "%s: %s: done\n", __func__, dai->name);
