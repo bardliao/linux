@@ -1826,7 +1826,8 @@ int sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 
 	sdw_acquire_bus_lock(stream);
 
-	if (stream->state != SDW_STREAM_DISABLED) {
+	if (stream->state != SDW_STREAM_DISABLED &&
+	    stream->state != SDW_STREAM_PREPARED) {
 		pr_err("%s: %s: inconsistent state state %d\n",
 		       __func__, stream->name, stream->state);
 		ret = -EINVAL;
