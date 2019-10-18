@@ -157,8 +157,10 @@ static const struct snd_soc_dapm_route map[] = {
 	/* Speakers */
 	{ "Speaker", NULL, "rt1308-1 SPOL" },
 	{ "Speaker", NULL, "rt1308-1 SPOR" },
+#if 0
 	{ "Speaker", NULL, "rt1308-2 SPOL" },
 	{ "Speaker", NULL, "rt1308-2 SPOR" },
+#endif
 };
 
 static const struct snd_kcontrol_new controls[] = {
@@ -172,18 +174,18 @@ SND_SOC_DAILINK_DEF(sdw0_pin2,
 SND_SOC_DAILINK_DEF(sdw0_pin3,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW0 Pin3")));
 SND_SOC_DAILINK_DEF(sdw0_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:711:0:1", "rt711-aif1")));
+	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:711:0:0", "rt711-aif1")));
 
 SND_SOC_DAILINK_DEF(sdw1_pin2,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW1 Pin2")));
 SND_SOC_DAILINK_DEF(sdw1_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:1:25d:1308:0:0", "rt1308-aif")));
-
+#if 0
 SND_SOC_DAILINK_DEF(sdw2_pin2,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW2 Pin2")));
 SND_SOC_DAILINK_DEF(sdw2_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:2:25d:1308:0:2", "rt1308-aif")));
-
+#endif
 SND_SOC_DAILINK_DEF(sdw3_pin2,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW3 Pin2")));
 SND_SOC_DAILINK_DEF(sdw3_codec,
@@ -211,17 +213,19 @@ SND_SOC_DAILINK_DEF(platform,
 
 static struct snd_soc_codec_conf codec_conf[] = {
 	{
-		.dev_name = "sdw:0:25d:711:0:1",
+		.dev_name = "sdw:0:25d:711:0:0",
 		.name_prefix = "rt711",
 	},
 	{
 		.dev_name = "sdw:1:25d:1308:0:0",
 		.name_prefix = "rt1308-1",
 	},
+#if 0
 	{
 		.dev_name = "sdw:2:25d:1308:0:2",
 		.name_prefix = "rt1308-2",
 	},
+#endif
 	{
 		.dev_name = "sdw:3:25d:715:0:1",
 		.name_prefix = "rt715",
@@ -255,6 +259,7 @@ struct snd_soc_dai_link dailink[] = {
 		.nonatomic = true,
 		SND_SOC_DAILINK_REG(sdw1_pin2, sdw1_codec, platform),
 	},
+#if 0
 	{
 		.name = "SDW2-Playback",
 		.id = 3,
@@ -263,6 +268,7 @@ struct snd_soc_dai_link dailink[] = {
 		.nonatomic = true,
 		SND_SOC_DAILINK_REG(sdw2_pin2, sdw2_codec, platform),
 	},
+#endif
 	{
 		.name = "SDW3-Capture",
 		.id = 4,
