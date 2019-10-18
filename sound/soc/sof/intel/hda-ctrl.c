@@ -57,7 +57,17 @@ int hda_dsp_ctrl_get_caps(struct snd_sof_dev *sdev)
 	struct hdac_bus *bus = sof_to_bus(sdev);
 	u32 cap, offset, feature;
 	int count = 0;
+	int ret;
 
+	/* one reset cycle seems to help quite a bit */
+	ret = hda_dsp_ctrl_link_reset(sdev, true);
+	if (ret < 0)
+		return ret;
+	ret = hda_dsp_ctrl_link_reset(sdev, false);
+	if (ret < 0)
+		return ret;
+
+	// the SKL driver does this offset = snd_hdac_chip_readw(bus, LLCH);
 	offset = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, SOF_HDA_LLCH);
 
 	dev_dbg(sdev->dev, "plb: %s offset 0x%x\n", __func__, offset);
@@ -67,12 +77,12 @@ int hda_dsp_ctrl_get_caps(struct snd_sof_dev *sdev)
 			offset & SOF_HDA_CAP_NEXT_MASK);
 
 		cap = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, offset);
-		
+
 		if (cap == -1) {
 			dev_dbg(bus->dev, "Invalid capability reg read\n");
 			break;
 		}
-		
+
 		dev_dbg(sdev->dev, "Capability version: 0x%x\n",
 			(cap & AZX_CAP_HDR_VER_MASK) >> AZX_CAP_HDR_VER_OFF);
 

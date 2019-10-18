@@ -435,6 +435,11 @@ static int hda_init(struct snd_sof_dev *sdev)
 	hbus->mixer_assigned = -1;
 	hbus->modelname = "sofbus";
 
+//      the SKL driver does this, but this bombs out. Not sure if this is needed?
+//	ret = pci_request_regions(pci, "Skylake HD audio");
+//	if (ret < 0)
+//		return ret;
+
 	/* initialise hdac bus */
 	bus->addr = pci_resource_start(pci, 0);
 #if IS_ENABLED(CONFIG_PCI)
@@ -764,6 +769,11 @@ int hda_dsp_probe(struct snd_sof_dev *sdev)
 	hdev->no_ipc_position = sof_ops(sdev)->pcm_pointer ? 1 : 0;
 #endif
 
+	// the SKL driver does this, not sure if this is needed ?
+	ret = pci_enable_device(pci);
+	if (ret < 0)
+		return ret;
+
 	/* set up HDA base */
 	bus = sof_to_bus(sdev);
 	ret = hda_init(sdev);
@@ -888,6 +898,8 @@ free_streams:
 	iounmap(sdev->bar[HDA_DSP_BAR]);
 hdac_bus_unmap:
 	iounmap(bus->remap_addr);
+disable_pci:
+	pci_disable_device(pci);
 err:
 	return ret;
 }
@@ -938,10 +950,15 @@ int hda_dsp_remove(struct snd_sof_dev *sdev)
 	iounmap(sdev->bar[HDA_DSP_BAR]);
 	iounmap(bus->remap_addr);
 
+	// the SKL driver does this, not sure if this is needed
+	// pci_release_regions(pci);
+	pci_disable_device(pci);
+
 #if IS_ENABLED(CONFIG_SND_SOC_SOF_HDA)
 	snd_hdac_ext_bus_exit(bus);
 #endif
 	hda_codec_i915_exit(sdev);
+
 
 	return 0;
 }
