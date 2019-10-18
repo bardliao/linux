@@ -281,8 +281,14 @@ int snd_hdac_bus_parse_capabilities(struct hdac_bus *bus)
 
 	offset = snd_hdac_chip_readw(bus, LLCH);
 
+	dev_dbg(bus->dev, "plb: %s offset 0x%x\n", "parse_capabilities", offset);
+	
 	/* Lets walk the linked capabilities list */
 	do {
+		dev_dbg(bus->dev, "checking for capabilities at offset 0x%x\n",
+			offset & AZX_CAP_HDR_NXT_PTR_MASK);
+
+				
 		cur_cap = _snd_hdac_chip_readl(bus, offset);
 
 		dev_dbg(bus->dev, "Capability version: 0x%x\n",
@@ -298,30 +304,30 @@ int snd_hdac_bus_parse_capabilities(struct hdac_bus *bus)
 
 		switch ((cur_cap & AZX_CAP_HDR_ID_MASK) >> AZX_CAP_HDR_ID_OFF) {
 		case AZX_ML_CAP_ID:
-			dev_dbg(bus->dev, "Found ML capability\n");
+			dev_dbg(bus->dev, "found ML capability at 0x%x\n", offset);
 			bus->mlcap = bus->remap_addr + offset;
 			break;
 
 		case AZX_GTS_CAP_ID:
-			dev_dbg(bus->dev, "Found GTS capability offset=%x\n", offset);
+			dev_dbg(bus->dev, "found GTS capability at 0x%x\n", offset);
 			bus->gtscap = bus->remap_addr + offset;
 			break;
 
 		case AZX_PP_CAP_ID:
 			/* PP capability found, the Audio DSP is present */
-			dev_dbg(bus->dev, "Found PP capability offset=%x\n", offset);
+			dev_dbg(bus->dev, "found PP capability at 0x%x\n", offset);
 			bus->ppcap = bus->remap_addr + offset;
 			break;
 
 		case AZX_SPB_CAP_ID:
 			/* SPIB capability found, handler function */
-			dev_dbg(bus->dev, "Found SPB capability\n");
+			dev_dbg(bus->dev, "found SPIB capability at 0x%x\n", offset);
 			bus->spbcap = bus->remap_addr + offset;
 			break;
 
 		case AZX_DRSM_CAP_ID:
 			/* DMA resume  capability found, handler function */
-			dev_dbg(bus->dev, "Found DRSM capability\n");
+			dev_dbg(bus->dev, "found DRSM capability at 0x%x\n", offset);
 			bus->drsmcap = bus->remap_addr + offset;
 			break;
 

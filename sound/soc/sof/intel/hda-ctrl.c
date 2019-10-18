@@ -60,17 +60,39 @@ int hda_dsp_ctrl_get_caps(struct snd_sof_dev *sdev)
 
 	offset = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, SOF_HDA_LLCH);
 
-	do {
-		cap = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, offset);
+	dev_dbg(sdev->dev, "plb: %s offset 0x%x\n", __func__, offset);
 
+	do {
 		dev_dbg(sdev->dev, "checking for capabilities at offset 0x%x\n",
 			offset & SOF_HDA_CAP_NEXT_MASK);
 
+		cap = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, offset);
+		
+		if (cap == -1) {
+			dev_dbg(bus->dev, "Invalid capability reg read\n");
+			break;
+		}
+		
+		dev_dbg(sdev->dev, "Capability version: 0x%x\n",
+			(cap & AZX_CAP_HDR_VER_MASK) >> AZX_CAP_HDR_VER_OFF);
+
 		feature = (cap & SOF_HDA_CAP_ID_MASK) >> SOF_HDA_CAP_ID_OFF;
 
+		dev_dbg(sdev->dev, "HDA capability ID: 0x%x\n", feature);
+
 		switch (feature) {
+		case SOF_HDA_ML_CAP_ID:
+			dev_dbg(sdev->dev, "found ML capability at 0x%x\n",
+				offset);
+			bus->mlcap = bus->remap_addr + offset;
+			break;
+		case SOF_HDA_GTS_CAP_ID:
+			dev_dbg(sdev->dev, "found GTS capability at 0x%x\n",
+				offset);
+			bus->gtscap = bus->remap_addr + offset;
+			break;
 		case SOF_HDA_PP_CAP_ID:
-			dev_dbg(sdev->dev, "found DSP capability at 0x%x\n",
+			dev_dbg(sdev->dev, "found PP capability at 0x%x\n",
 				offset);
 			bus->ppcap = bus->remap_addr + offset;
 			sdev->bar[HDA_DSP_PP_BAR] = bus->ppcap;
@@ -87,19 +109,10 @@ int hda_dsp_ctrl_get_caps(struct snd_sof_dev *sdev)
 			bus->drsmcap = bus->remap_addr + offset;
 			sdev->bar[HDA_DSP_DRSM_BAR] = bus->drsmcap;
 			break;
-		case SOF_HDA_GTS_CAP_ID:
-			dev_dbg(sdev->dev, "found GTS capability at 0x%x\n",
-				offset);
-			bus->gtscap = bus->remap_addr + offset;
-			break;
-		case SOF_HDA_ML_CAP_ID:
-			dev_dbg(sdev->dev, "found ML capability at 0x%x\n",
-				offset);
-			bus->mlcap = bus->remap_addr + offset;
-			break;
 		default:
-			dev_vdbg(sdev->dev, "found capability %d at 0x%x\n",
+			dev_dbg(sdev->dev, "found capability %d at 0x%x\n",
 				 feature, offset);
+			cap = 0;
 			break;
 		}
 
