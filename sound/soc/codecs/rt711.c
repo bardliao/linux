@@ -85,9 +85,9 @@ static int rt711_index_update_bits(struct regmap *regmap, unsigned int nid,
 static void rt711_reset(struct regmap *regmap)
 {
 	regmap_write(regmap, RT711_FUNC_RESET, 0);
-	rt711_index_read(regmap, RT711_VENDOR_REG, RT711_PARA_VERB_CTL, &val);
-	rt711_index_write(regmap, RT711_VENDOR_REG,
-		RT711_PARA_VERB_CTL, (val | RT711_HIDDEN_REG_SW_RESET));
+	rt711_index_update_bits(regmap, RT711_VENDOR_REG,
+		RT711_PARA_VERB_CTL, RT711_HIDDEN_REG_SW_RESET,
+		RT711_HIDDEN_REG_SW_RESET);
 }
 
 static int rt711_calibration(struct rt711_priv *rt711)
