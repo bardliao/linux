@@ -673,6 +673,7 @@ static void sdw_modify_slave_status(struct sdw_slave *slave,
 			__func__, slave->dev_num);
 
 		init_completion(&slave->enumeration_complete);
+		init_completion(&slave->initialization_complete);
 
 	} else if (status == SDW_SLAVE_ATTACHED) {
 		dev_dbg(&slave->dev,
@@ -1076,6 +1077,7 @@ int sdw_handle_slave_status(struct sdw_bus *bus,
 {
 	enum sdw_slave_status prev_status;
 	struct sdw_slave *slave;
+	bool attached_initializing;
 	int i, ret = 0;
 
 	dev_dbg(bus->dev, "%s: start\n", __func__);
@@ -1125,6 +1127,8 @@ int sdw_handle_slave_status(struct sdw_bus *bus,
 
 		dev_dbg(bus->dev, "processing Slave %d Status %d\n", i, status[i]);
 
+		attached_initializing = false;
+
 		switch (status[i]) {
 		case SDW_SLAVE_UNATTACHED:
 			if (slave->status == SDW_SLAVE_UNATTACHED)
@@ -1154,6 +1158,8 @@ int sdw_handle_slave_status(struct sdw_bus *bus,
 				break;
 			}
 
+			attached_initializing = true;
+
 			dev_err(bus->dev, "Slave %d initializing\n", i);
 			ret = sdw_initialize_slave(slave);
 			if (ret)
@@ -1177,6 +1183,9 @@ int sdw_handle_slave_status(struct sdw_bus *bus,
 
 		dev_err(bus->dev, "%s: Updating Slave %d status done\n",
 			__func__, i);
+
+		if (attached_initializing)
+			complete(&slave->initialization_complete);
 	}
 
 	dev_dbg(bus->dev, "%s: end\n", __func__);
