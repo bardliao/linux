@@ -176,6 +176,7 @@ static int headset_init(struct snd_soc_pcm_runtime *rtd)
 
 static int sof_rt711_rt1308_rt715_quirk_cb(const struct dmi_system_id *id)
 {
+	pr_err("bard: %s\n", __func__);
 	sof_rt711_rt1308_rt715_quirk = (unsigned long)id->driver_data;
 	return 1;
 }
@@ -185,6 +186,7 @@ static const struct dmi_system_id sof_sdw_rt711_rt1308_rt715_quirk_table[] = {
 		.callback = sof_rt711_rt1308_rt715_quirk_cb,
 		.matches = {
 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude"),
 		},
 		.driver_data = (void *)(SOF_RT711_JD_SRC_JD2 |
 					SOF_SDW_MONO_SPK),
@@ -262,22 +264,28 @@ SND_SOC_DAILINK_DEF(sdw0_pin2,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW0 Pin2")));
 SND_SOC_DAILINK_DEF(sdw0_pin3,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW0 Pin3")));
-SND_SOC_DAILINK_DEF(sdw0_codec,
+SND_SOC_DAILINK_DEF(sdw0_codec_rt711,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:711:0", "rt711-aif1")));
+SND_SOC_DAILINK_DEF(sdw0_codec_rt1308,
+	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:1308:0", "rt1308-aif")));
 
 SND_SOC_DAILINK_DEF(sdw1_pin2,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW1 Pin2")));
-SND_SOC_DAILINK_DEF(sdw1_codec,
+SND_SOC_DAILINK_DEF(sdw1_pin3,
+	DAILINK_COMP_ARRAY(COMP_CPU("SDW1 Pin3")));
+SND_SOC_DAILINK_DEF(sdw1_codec_rt711,
+	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:1:25d:711:0", "rt711-aif1")));
+SND_SOC_DAILINK_DEF(sdw1_codec_rt1308,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:1:25d:1308:0", "rt1308-aif")));
 
 SND_SOC_DAILINK_DEF(sdw2_pin2,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW2 Pin2")));
-SND_SOC_DAILINK_DEF(sdw2_codec,
+SND_SOC_DAILINK_DEF(sdw2_codec_rt1308,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:2:25d:1308:0", "rt1308-aif")));
 
 SND_SOC_DAILINK_DEF(sdw3_pin2,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW3 Pin2")));
-SND_SOC_DAILINK_DEF(sdw3_codec,
+SND_SOC_DAILINK_DEF(sdw3_codec_rt715,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:3:25d:715:0", "rt715-aif2")));
 
 #if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
@@ -300,7 +308,7 @@ SND_SOC_DAILINK_DEF(idisp3_codec,
 SND_SOC_DAILINK_DEF(platform,
 		DAILINK_COMP_ARRAY(COMP_PLATFORM("0000:00:1f.3")));
 
-static struct snd_soc_codec_conf codec_conf[] = {
+static struct snd_soc_codec_conf codec_conf_mono_spk[] = {
 	{
 		.dev_name = "sdw:0:25d:711:0",
 		.name_prefix = "rt711",
@@ -313,11 +321,90 @@ static struct snd_soc_codec_conf codec_conf[] = {
 		.dev_name = "sdw:3:25d:715:0",
 		.name_prefix = "rt715",
 	},
+
+};
+
+static struct snd_soc_codec_conf codec_conf[] = {
+	{
+		.dev_name = "sdw:0:25d:1308:0",
+		.name_prefix = "rt1308-1",
+	},
+	{
+		.dev_name = "sdw:0:25d:711:0",
+		.name_prefix = "rt711",
+	},
 	{
 		.dev_name = "sdw:2:25d:1308:0",
 		.name_prefix = "rt1308-2",
 	},
+	{
+		.dev_name = "sdw:3:25d:715:0",
+		.name_prefix = "rt715",
+	},
 
+};
+
+struct snd_soc_dai_link dailink_mono_spk[] = {
+	{
+		.name = "SDW0-Playback",
+		.id = 0,
+		.init = headset_init,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.nonatomic = true,
+		SND_SOC_DAILINK_REG(sdw0_pin2, sdw0_codec_rt711, platform),
+	},
+	{
+		.name = "SDW0-Capture",
+		.id = 1,
+		.no_pcm = 1,
+		.dpcm_capture = 1,
+		.nonatomic = true,
+		SND_SOC_DAILINK_REG(sdw0_pin3, sdw0_codec_rt711, platform),
+	},
+	{
+		.name = "SDW1-Playback",
+		.id = 2,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.nonatomic = true,
+		SND_SOC_DAILINK_REG(sdw1_pin2, sdw1_codec_rt1308, platform),
+	},
+	{
+		.name = "SDW3-Capture",
+		.id = 4,
+		.no_pcm = 1,
+		.dpcm_capture = 1,
+		.nonatomic = true,
+		SND_SOC_DAILINK_REG(sdw3_pin2, sdw3_codec_rt715, platform),
+	},
+
+#if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
+	{
+		.name = "iDisp1",
+		.id = 5,
+		.init = hdmi_init,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		SND_SOC_DAILINK_REG(idisp1_pin, idisp1_codec, platform),
+	},
+	{
+		.name = "iDisp2",
+		.id = 6,
+		.init = hdmi_init,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		SND_SOC_DAILINK_REG(idisp2_pin, idisp2_codec, platform),
+	},
+	{
+		.name = "iDisp3",
+		.id = 7,
+		.init = hdmi_init,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		SND_SOC_DAILINK_REG(idisp3_pin, idisp3_codec, platform),
+	},
+#endif
 };
 
 struct snd_soc_dai_link dailink[] = {
@@ -328,7 +415,7 @@ struct snd_soc_dai_link dailink[] = {
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.nonatomic = true,
-		SND_SOC_DAILINK_REG(sdw0_pin2, sdw0_codec, platform),
+		SND_SOC_DAILINK_REG(sdw0_pin2, sdw0_codec_rt711, platform),
 	},
 	{
 		.name = "SDW0-Capture",
@@ -336,7 +423,7 @@ struct snd_soc_dai_link dailink[] = {
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.nonatomic = true,
-		SND_SOC_DAILINK_REG(sdw0_pin3, sdw0_codec, platform),
+		SND_SOC_DAILINK_REG(sdw0_pin3, sdw0_codec_rt711, platform),
 	},
 	{
 		.name = "SDW1-Playback",
@@ -344,7 +431,7 @@ struct snd_soc_dai_link dailink[] = {
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.nonatomic = true,
-		SND_SOC_DAILINK_REG(sdw1_pin2, sdw1_codec, platform),
+		SND_SOC_DAILINK_REG(sdw1_pin2, sdw0_codec_rt1308, platform),
 	},
 	{
 		.name = "SDW3-Capture",
@@ -352,7 +439,7 @@ struct snd_soc_dai_link dailink[] = {
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.nonatomic = true,
-		SND_SOC_DAILINK_REG(sdw3_pin2, sdw3_codec, platform),
+		SND_SOC_DAILINK_REG(sdw3_pin2, sdw3_codec_rt715, platform),
 	},
 
 #if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
@@ -388,7 +475,7 @@ struct snd_soc_dai_link dailink[] = {
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.nonatomic = true,
-		SND_SOC_DAILINK_REG(sdw2_pin2, sdw2_codec, platform),
+		SND_SOC_DAILINK_REG(sdw2_pin2, sdw2_codec_rt1308, platform),
 	},
 };
 
@@ -445,9 +532,16 @@ static int mc_probe(struct platform_device *pdev)
 	sof_rt711_add_codec_device_props("sdw:0:25d:711:0");
 
 	if (sof_rt711_rt1308_rt715_quirk & SOF_SDW_MONO_SPK) {
+#if 0
 		/* Remove rt1308-2 codec from dailink and codec_conf */
 		card->num_links = ARRAY_SIZE(dailink) - 1 ;
 		card->num_configs = ARRAY_SIZE(codec_conf) - 1;
+#else
+		card->dai_link = dailink_mono_spk;
+		card->num_links = ARRAY_SIZE(dailink_mono_spk);
+		card->codec_conf = codec_conf_mono_spk;
+		card->num_configs = ARRAY_SIZE(codec_conf_mono_spk);
+#endif
 	}
 
 	/* Register the card */
