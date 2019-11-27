@@ -962,6 +962,7 @@ int sdw_bus_exit_clk_stop(struct sdw_bus *bus)
 	bool simple_clk_stop = true;
 	struct sdw_slave *slave;
 	bool is_slave = false;
+	unsigned long time;
 	int ret;
 
 	/*
@@ -986,6 +987,13 @@ int sdw_bus_exit_clk_stop(struct sdw_bus *bus)
 			simple_clk_stop = false;
 			continue;
 		}
+		time = wait_for_completion_timeout(&slave->enumeration_complete,
+				msecs_to_jiffies(500));
+		if (!time) {
+			dev_err(&slave->dev, "enumeration not complete, timed out\n");
+			return -ETIMEDOUT;
+		}
+
 
 		ret = sdw_slave_clk_stop_callback(slave, mode,
 						  SDW_CLK_PRE_DEPREPARE);
