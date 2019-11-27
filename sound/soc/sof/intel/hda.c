@@ -241,6 +241,7 @@ static bool hda_dsp_check_sdw_irq(struct snd_sof_dev *sdev)
 
 out:
 	spin_unlock_irq(&sdev->hw_lock);
+	usleep_range(2,5);
 	return ret;
 }
 
