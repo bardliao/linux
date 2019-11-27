@@ -212,9 +212,6 @@ static bool hda_dsp_check_sdw_irq(struct snd_sof_dev *sdev)
 	if (!hdev->sdw)
 		return ret;
 
-	/* The function can be called at irq thread, so use spin_lock_irq */
-	spin_lock_irq(&sdev->hw_lock);
-
 	/* store status */
 	irq_status = snd_sof_dsp_read(sdev, HDA_DSP_BAR, HDA_DSP_REG_ADSPIS2);
 
@@ -227,7 +224,6 @@ static bool hda_dsp_check_sdw_irq(struct snd_sof_dev *sdev)
 		ret = true;
 
 out:
-	spin_unlock_irq(&sdev->hw_lock);
 	return ret;
 }
 
