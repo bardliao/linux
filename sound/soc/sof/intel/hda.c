@@ -223,10 +223,8 @@ static bool hda_dsp_check_sdw_irq(struct snd_sof_dev *sdev)
 		goto out;
 
 	/* IPC message ? */
-	if (irq_status & HDA_DSP_REG_ADSPIS2_SNDW) {
-		sdev->irq_event |= SOF_HDA_IRQ_SDW;
+	if (irq_status & HDA_DSP_REG_ADSPIS2_SNDW)
 		ret = true;
-	}
 
 out:
 	spin_unlock_irq(&sdev->hw_lock);
@@ -643,12 +641,8 @@ static irqreturn_t hda_dsp_interrupt_handler(int irq, void *context)
 {
 	struct snd_sof_dev *sdev = context;
 
-	/* clear flags for interrupt sources */
-	sdev->irq_event = 0;
-
-	if (hda_dsp_check_stream_irq(sdev) ||
-	    hda_dsp_check_ipc_irq(sdev)    ||
-	    hda_dsp_check_sdw_irq(sdev)) {
+	if (snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, SOF_HDA_INTSTS) &
+	    SOF_HDA_INT_GLOBAL_EN) {
 
 		/* disable GIE interrupt */
 		snd_sof_dsp_update_bits(sdev, HDA_DSP_HDA_BAR,
@@ -668,16 +662,13 @@ static irqreturn_t hda_dsp_interrupt_thread(int irq, void *context)
 	struct sof_intel_hda_dev *hdev = sdev->pdata->hw_pdata;
 
 	/* deal with streams and controller first */
-	if (sdev->irq_event & SOF_HDA_IRQ_STREAM ||
-	    hda_dsp_check_stream_irq(sdev))
+	if (hda_dsp_check_stream_irq(sdev))
 		hda_dsp_stream_threaded_handler(irq, sdev);
 
-	if (sdev->irq_event & SOF_HDA_IRQ_IPC ||
-	    hda_dsp_check_ipc_irq(sdev))
+	if (hda_dsp_check_ipc_irq(sdev))
 		sof_ops(sdev)->irq_thread(irq, sdev);
 
-	if (sdev->irq_event & SOF_HDA_IRQ_SDW ||
-	    hda_dsp_check_sdw_irq(sdev))
+	if (hda_dsp_check_sdw_irq(sdev))
 		hda_dsp_sdw_thread(irq, hdev->sdw);
 
 	/* enable GIE interrupt */
