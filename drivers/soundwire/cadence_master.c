@@ -427,12 +427,14 @@ cdns_fill_msg_resp(struct sdw_cdns *cdns,
 	return SDW_CMD_OK;
 }
 
+static void cdns_read_response(struct sdw_cdns *cdns);
+
 static enum sdw_command_response
 _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	       int offset, int count, bool defer)
 {
-	unsigned long time;
 	u32 base, i, data;
+	u32 int_status;
 	u16 addr;
 
 	/* Program the watermark level for RX FIFO */
@@ -460,14 +462,18 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	if (defer)
 		return SDW_CMD_OK;
 
-	/* wait for timeout or response */
-	time = wait_for_completion_timeout(&cdns->tx_complete,
-					   msecs_to_jiffies(CDNS_TX_TIMEOUT));
-	if (!time) {
-		dev_err(cdns->dev, "IO transfer timed out\n");
-		msg->len = 0;
-		return SDW_CMD_TIMEOUT;
+	for (i = 0; i < CDNS_TX_TIMEOUT; i++) {
+		usleep_range(1,2);
+		int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+		if (int_status & CDNS_MCP_INT_RX_WL) {
+			cdns_read_response(cdns);
+			cdns_writel(cdns, CDNS_MCP_INTSTAT,
+				     CDNS_MCP_INT_RX_WL);
+			break;
+		}
 	}
+	if (i >= CDNS_TX_TIMEOUT)
+		dev_err(cdns->dev, "IO transfer timed out\n");
 
 	return cdns_fill_msg_resp(cdns, msg, count, offset);
 }
@@ -476,8 +482,8 @@ static enum sdw_command_response
 cdns_program_scp_addr(struct sdw_cdns *cdns, struct sdw_msg *msg)
 {
 	int nack = 0, no_ack = 0;
-	unsigned long time;
 	u32 data[2], base;
+	u32 int_status;
 	int i;
 
 	/* Program the watermark level for RX FIFO */
@@ -501,13 +507,18 @@ cdns_program_scp_addr(struct sdw_cdns *cdns, struct sdw_msg *msg)
 	base += CDNS_MCP_CMD_WORD_LEN;
 	cdns_writel(cdns, base, data[1]);
 
-	time = wait_for_completion_timeout(&cdns->tx_complete,
-					   msecs_to_jiffies(CDNS_TX_TIMEOUT));
-	if (!time) {
-		dev_err(cdns->dev, "SCP Msg trf timed out\n");
-		msg->len = 0;
-		return SDW_CMD_TIMEOUT;
+	for (i = 0; i < CDNS_TX_TIMEOUT; i++) {
+		usleep_range(1,2);
+		int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+		if (int_status & CDNS_MCP_INT_RX_WL) {
+			cdns_read_response(cdns);
+			cdns_writel(cdns, CDNS_MCP_INTSTAT,
+				     CDNS_MCP_INT_RX_WL);
+			break;
+		}
 	}
+	if (i >= CDNS_TX_TIMEOUT)
+		dev_err(cdns->dev, "SCP Msg trf timed out\n");
 
 	/* check response the writes */
 	for (i = 0; i < 2; i++) {
@@ -752,15 +763,18 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	if (int_status & CDNS_MCP_INT_RX_WL) {
-		cdns_read_response(cdns);
-
 		if (cdns->defer) {
+			cdns_read_response(cdns);
 			cdns_fill_msg_resp(cdns, cdns->defer->msg,
 					   cdns->defer->length, 0);
 			complete(&cdns->defer->complete);
 			cdns->defer = NULL;
 		} else {
-			complete(&cdns->tx_complete);
+			/*
+			 * We will read response right after a message is
+			 * transmitted
+			 */
+			return ret;
 		}
 	}
 
@@ -788,6 +802,7 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 			     CDNS_MCP_INT_SLAVE_MASK, 0);
 
 		int_status &= ~CDNS_MCP_INT_SLAVE_MASK;
+		usleep_range(2,5);
 		schedule_work(&cdns->work);
 	}
 
