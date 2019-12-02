@@ -196,7 +196,8 @@ static const struct dmi_system_id sof_sdw_rt711_rt1308_rt715_quirk_table[] = {
 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "XPS"),
 		},
-		.driver_data = (void *)(SOF_RT711_JD_SRC_JD2),
+		.driver_data = (void *)(SOF_RT711_JD_SRC_JD2 |
+					SOF_SDW_MONO_SPK),
 	},
 	{}
 };
@@ -275,9 +276,13 @@ SND_SOC_DAILINK_DEF(sdw0_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:0:25d:711:0", "rt711-aif1")));
 
 SND_SOC_DAILINK_DEF(sdw1_pin2,
-	DAILINK_COMP_ARRAY(COMP_CPU("SDW1 Pin2")));
+	DAILINK_COMP_ARRAY(
+		COMP_CPU("SDW1 Pin2")/*,
+		COMP_CPU("SDW2 Pin2")*/));
 SND_SOC_DAILINK_DEF(sdw1_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC("sdw:1:25d:1308:0", "rt1308-aif")));
+	DAILINK_COMP_ARRAY(
+		COMP_CODEC("sdw:1:25d:1308:0", "rt1308-aif"),
+		COMP_CODEC("sdw:2:25d:1308:0", "rt1308-aif")));
 
 SND_SOC_DAILINK_DEF(sdw2_pin2,
 	DAILINK_COMP_ARRAY(COMP_CPU("SDW2 Pin2")));
@@ -456,7 +461,7 @@ static int mc_probe(struct platform_device *pdev)
 	if (sof_rt711_rt1308_rt715_quirk & SOF_SDW_MONO_SPK) {
 		/* Remove rt1308-2 codec from dailink and codec_conf */
 		card->num_links = ARRAY_SIZE(dailink) - 1 ;
-		card->num_configs = ARRAY_SIZE(codec_conf) - 1;
+//		card->num_configs = ARRAY_SIZE(codec_conf) - 1;
 	}
 
 	/* Register the card */
