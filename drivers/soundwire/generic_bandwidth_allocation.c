@@ -232,6 +232,9 @@ static int sdw_get_group_count(struct sdw_bus *bus,
 
 	list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
 		rate = m_rt->stream->params.rate;
+		/* Somehow m_rt could be garbage */
+		if (rate != 48000)
+			continue;
 		if (m_rt == list_first_entry(&bus->m_rt_list,
 					     struct sdw_master_runtime,
 					     bus_node)) {
