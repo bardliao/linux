@@ -492,6 +492,14 @@ static struct snd_soc_pcm_runtime *soc_new_pcm_runtime(
 		goto free_rtd;
 
 	/*
+	 * for rtd->cpu_dais
+	 */
+	rtd->cpu_dais = devm_kcalloc(dev, dai_link->num_cpus,
+					sizeof(struct snd_soc_dai *),
+					GFP_KERNEL);
+	if (!rtd->cpu_dais)
+		goto free_rtd;
+	/*
 	 * rtd remaining settings
 	 */
 	INIT_LIST_HEAD(&rtd->component_list);
@@ -587,13 +595,15 @@ int snd_soc_suspend(struct device *dev)
 		card->suspend_pre(card);
 
 	for_each_card_rtds(card, rtd) {
-		struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+		struct snd_soc_dai *cpu_dai;
 
 		if (rtd->dai_link->ignore_suspend)
 			continue;
 
-		if (!cpu_dai->driver->bus_control)
-			snd_soc_dai_suspend(cpu_dai);
+		for_each_rtd_cpu_dai(rtd, i, cpu_dai) {
+			if (!cpu_dai->driver->bus_control)
+				snd_soc_dai_suspend(cpu_dai);
+		}
 	}
 
 	/* close any waiting streams */
@@ -658,16 +668,18 @@ int snd_soc_suspend(struct device *dev)
 	}
 
 	for_each_card_rtds(card, rtd) {
-		struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+		struct snd_soc_dai *cpu_dai;
 
 		if (rtd->dai_link->ignore_suspend)
 			continue;
 
-		if (cpu_dai->driver->bus_control)
-			snd_soc_dai_suspend(cpu_dai);
+		for_each_rtd_cpu_dai(rtd, i, cpu_dai) {
+			if (cpu_dai->driver->bus_control)
+				snd_soc_dai_suspend(cpu_dai);
 
-		/* deactivate pins to sleep state */
-		pinctrl_pm_select_sleep_state(cpu_dai->dev);
+			/* deactivate pins to sleep state */
+			pinctrl_pm_select_sleep_state(cpu_dai->dev);
+		}
 	}
 
 	if (card->suspend_post)
@@ -705,13 +717,15 @@ static void soc_resume_deferred(struct work_struct *work)
 
 	/* resume control bus DAIs */
 	for_each_card_rtds(card, rtd) {
-		struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+		struct snd_soc_dai *cpu_dai;
 
 		if (rtd->dai_link->ignore_suspend)
 			continue;
 
-		if (cpu_dai->driver->bus_control)
-			snd_soc_dai_resume(cpu_dai);
+		for_each_rtd_cpu_dai(rtd, i, cpu_dai) {
+			if (cpu_dai->driver->bus_control)
+				snd_soc_dai_resume(cpu_dai);
+		}
 	}
 
 	for_each_card_components(card, component) {
@@ -748,13 +762,15 @@ static void soc_resume_deferred(struct work_struct *work)
 	}
 
 	for_each_card_rtds(card, rtd) {
-		struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+		struct snd_soc_dai *cpu_dai;
 
 		if (rtd->dai_link->ignore_suspend)
 			continue;
 
-		if (!cpu_dai->driver->bus_control)
-			snd_soc_dai_resume(cpu_dai);
+		for_each_rtd_cpu_dai(rtd, i, cpu_dai) {
+			if (!cpu_dai->driver->bus_control)
+				snd_soc_dai_resume(cpu_dai);
+		}
 	}
 
 	if (card->resume_post)
@@ -777,6 +793,7 @@ int snd_soc_resume(struct device *dev)
 	bool bus_control = false;
 	struct snd_soc_pcm_runtime *rtd;
 	struct snd_soc_dai *codec_dai;
+	struct snd_soc_dai *cpu_dai;
 	int i;
 
 	/* If the card is not initialized yet there is nothing to do */
@@ -785,10 +802,10 @@ int snd_soc_resume(struct device *dev)
 
 	/* activate pins from sleep state */
 	for_each_card_rtds(card, rtd) {
-		struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-
-		if (cpu_dai->active)
-			pinctrl_pm_select_default_state(cpu_dai->dev);
+		for_each_rtd_codec_dai(rtd, i, cpu_dai) {
+			if (cpu_dai->active)
+				pinctrl_pm_select_default_state(cpu_dai->dev);
+		}
 
 		for_each_rtd_codec_dai(rtd, i, codec_dai) {
 			if (codec_dai->active)
@@ -803,9 +820,8 @@ int snd_soc_resume(struct device *dev)
 	 * due to I/O costs and anti-pop so handle them out of line.
 	 */
 	for_each_card_rtds(card, rtd) {
-		struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-
-		bus_control |= cpu_dai->driver->bus_control;
+		for_each_rtd_cpu_dai(rtd, i, cpu_dai)
+			bus_control |= cpu_dai->driver->bus_control;
 	}
 	if (bus_control) {
 		dev_dbg(dev, "ASoC: Resuming control bus master immediately\n");
@@ -1020,14 +1036,6 @@ static int soc_dai_link_sanity_check(struct snd_soc_card *card,
 			return -EPROBE_DEFER;
 	}
 
-	/* FIXME */
-	if (link->num_cpus > 1) {
-		dev_err(card->dev,
-			"ASoC: multi cpu is not yet supported %s\n",
-			link->name);
-		return -EINVAL;
-	}
-
 	/*
 	 * CPU device may be specified by either name or OF node, but
 	 * can be left unspecified, and will be matched based on DAI
@@ -1109,7 +1117,7 @@ int snd_soc_add_dai_link(struct snd_soc_card *card,
 			 struct snd_soc_dai_link *dai_link)
 {
 	struct snd_soc_pcm_runtime *rtd;
-	struct snd_soc_dai_link_component *codec, *platform;
+	struct snd_soc_dai_link_component *codec, *platform, *cpu;
 	struct snd_soc_component *component;
 	int i, ret;
 
@@ -1134,14 +1142,19 @@ int snd_soc_add_dai_link(struct snd_soc_card *card,
 	if (!rtd)
 		return -ENOMEM;
 
-	/* FIXME: we need multi CPU support in the future */
-	rtd->cpu_dai = snd_soc_find_dai(dai_link->cpus);
-	if (!rtd->cpu_dai) {
-		dev_info(card->dev, "ASoC: CPU DAI %s not registered\n",
-			 dai_link->cpus->dai_name);
-		goto _err_defer;
+	rtd->num_cpu_dai = dai_link->num_cpus;
+	for_each_link_cpus(dai_link, i, cpu) {
+		rtd->cpu_dais[i] = snd_soc_find_dai(cpu);
+		if (!rtd->cpu_dais[i]) {
+			dev_info(card->dev, "ASoC: CPU DAI %s not registered\n",
+				 cpu->dai_name);
+			goto _err_defer;
+		}
+		snd_soc_rtdcom_add(rtd, rtd->cpu_dais[i]->component);
 	}
-	snd_soc_rtdcom_add(rtd, rtd->cpu_dai->component);
+
+	/* Single cpu links expect cpu and cpu_dai in runtime data */
+	rtd->cpu_dai = rtd->cpu_dais[0];
 
 	/* Find CODEC from registered CODECs */
 	rtd->num_codecs = dai_link->num_codecs;
@@ -1372,6 +1385,7 @@ static void soc_remove_link_dais(struct snd_soc_card *card)
 {
 	int i;
 	struct snd_soc_dai *codec_dai;
+	struct snd_soc_dai *cpu_dai;
 	struct snd_soc_pcm_runtime *rtd;
 	int order;
 
@@ -1381,14 +1395,15 @@ static void soc_remove_link_dais(struct snd_soc_card *card)
 			for_each_rtd_codec_dai(rtd, i, codec_dai)
 				soc_remove_dai(codec_dai, order);
 
-			soc_remove_dai(rtd->cpu_dai, order);
+			for_each_rtd_cpu_dai(rtd, i, cpu_dai)
+				soc_remove_dai(cpu_dai, order);
 		}
 	}
 }
 
 static int soc_probe_link_dais(struct snd_soc_card *card)
 {
-	struct snd_soc_dai *codec_dai;
+	struct snd_soc_dai *codec_dai, *cpu_dai;
 	struct snd_soc_pcm_runtime *rtd;
 	int i, order, ret;
 
@@ -1399,9 +1414,12 @@ static int soc_probe_link_dais(struct snd_soc_card *card)
 				"ASoC: probe %s dai link %d late %d\n",
 				card->name, rtd->num, order);
 
-			ret = soc_probe_dai(rtd->cpu_dai, order);
-			if (ret)
-				return ret;
+			/* probe the CPU DAI */
+			for_each_rtd_cpu_dai(rtd, i, cpu_dai) {
+				ret = soc_probe_dai(cpu_dai, order);
+				if (ret)
+					return ret;
+			}
 
 			/* probe the CODEC DAI */
 			for_each_rtd_codec_dai(rtd, i, codec_dai) {
@@ -1494,10 +1512,11 @@ static int soc_link_init(struct snd_soc_card *card,
 			 struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_dai_link *dai_link = rtd->dai_link;
-	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_soc_dai *cpu_dai;
 	struct snd_soc_rtdcom_list *rtdcom;
 	struct snd_soc_component *component;
 	int ret, num;
+	int i;
 
 	/* set default power off timeout */
 	rtd->pmdown_time = pmdown_time;
@@ -1539,12 +1558,14 @@ static int soc_link_init(struct snd_soc_card *card,
 	}
 
 	/* create compress_device if possible */
-	ret = snd_soc_dai_compress_new(cpu_dai, rtd, num);
-	if (ret != -ENOTSUPP) {
-		if (ret < 0)
-			dev_err(card->dev, "ASoC: can't create compress %s\n",
-					 dai_link->stream_name);
-		return ret;
+	for_each_rtd_cpu_dai(rtd, i, cpu_dai) {
+		ret = snd_soc_dai_compress_new(cpu_dai, rtd, num);
+		if (ret != -ENOTSUPP) {
+			if (ret < 0)
+				dev_err(card->dev, "ASoC: can't create compress %s\n",
+						 dai_link->stream_name);
+			return ret;
+		}
 	}
 
 	/* create the pcm */
@@ -1554,7 +1575,7 @@ static int soc_link_init(struct snd_soc_card *card,
 			dai_link->stream_name, ret);
 		return ret;
 	}
-	ret = soc_link_dai_pcm_new(&cpu_dai, 1, rtd);
+	ret = soc_link_dai_pcm_new(rtd->cpu_dais, rtd->num_cpu_dai, rtd);
 	if (ret < 0)
 		return ret;
 	ret = soc_link_dai_pcm_new(rtd->codec_dais,
@@ -1640,7 +1661,7 @@ static void soc_remove_aux_devices(struct snd_soc_card *card)
 int snd_soc_runtime_set_dai_fmt(struct snd_soc_pcm_runtime *rtd,
 	unsigned int dai_fmt)
 {
-	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_soc_dai *cpu_dai;
 	struct snd_soc_dai *codec_dai;
 	unsigned int i;
 	int ret;
@@ -1658,33 +1679,35 @@ int snd_soc_runtime_set_dai_fmt(struct snd_soc_pcm_runtime *rtd,
 	 * Flip the polarity for the "CPU" end of a CODEC<->CODEC link
 	 * the component which has non_legacy_dai_naming is Codec
 	 */
-	if (cpu_dai->component->driver->non_legacy_dai_naming) {
-		unsigned int inv_dai_fmt;
+	for_each_rtd_cpu_dai(rtd, i, cpu_dai) {
+		if (cpu_dai->component->driver->non_legacy_dai_naming) {
+			unsigned int inv_dai_fmt;
 
-		inv_dai_fmt = dai_fmt & ~SND_SOC_DAIFMT_MASTER_MASK;
-		switch (dai_fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-		case SND_SOC_DAIFMT_CBM_CFM:
-			inv_dai_fmt |= SND_SOC_DAIFMT_CBS_CFS;
-			break;
-		case SND_SOC_DAIFMT_CBM_CFS:
-			inv_dai_fmt |= SND_SOC_DAIFMT_CBS_CFM;
-			break;
-		case SND_SOC_DAIFMT_CBS_CFM:
-			inv_dai_fmt |= SND_SOC_DAIFMT_CBM_CFS;
-			break;
-		case SND_SOC_DAIFMT_CBS_CFS:
-			inv_dai_fmt |= SND_SOC_DAIFMT_CBM_CFM;
-			break;
+			inv_dai_fmt = dai_fmt & ~SND_SOC_DAIFMT_MASTER_MASK;
+			switch (dai_fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+			case SND_SOC_DAIFMT_CBM_CFM:
+				inv_dai_fmt |= SND_SOC_DAIFMT_CBS_CFS;
+				break;
+			case SND_SOC_DAIFMT_CBM_CFS:
+				inv_dai_fmt |= SND_SOC_DAIFMT_CBS_CFM;
+				break;
+			case SND_SOC_DAIFMT_CBS_CFM:
+				inv_dai_fmt |= SND_SOC_DAIFMT_CBM_CFS;
+				break;
+			case SND_SOC_DAIFMT_CBS_CFS:
+				inv_dai_fmt |= SND_SOC_DAIFMT_CBM_CFM;
+				break;
+			}
+
+			dai_fmt = inv_dai_fmt;
 		}
 
-		dai_fmt = inv_dai_fmt;
-	}
-
-	ret = snd_soc_dai_set_fmt(cpu_dai, dai_fmt);
-	if (ret != 0 && ret != -ENOTSUPP) {
-		dev_warn(cpu_dai->dev,
-			 "ASoC: Failed to set DAI format: %d\n", ret);
-		return ret;
+		ret = snd_soc_dai_set_fmt(cpu_dai, dai_fmt);
+		if (ret != 0 && ret != -ENOTSUPP) {
+			dev_warn(cpu_dai->dev,
+				 "ASoC: Failed to set DAI format: %d\n", ret);
+			return ret;
+		}
 	}
 
 	return 0;
@@ -2149,8 +2172,10 @@ static int snd_soc_bind_card(struct snd_soc_card *card)
 				pinctrl_pm_select_sleep_state(dai->dev);
 		}
 
-		if (!rtd->cpu_dai->active)
-			pinctrl_pm_select_sleep_state(rtd->cpu_dai->dev);
+		for_each_rtd_cpu_dai(rtd, i, dai) {
+			if (!dai->active)
+				pinctrl_pm_select_sleep_state(dai->dev);
+		}
 	}
 
 probe_end:
@@ -2212,11 +2237,13 @@ int snd_soc_poweroff(struct device *dev)
 
 	/* deactivate pins to sleep state */
 	for_each_card_rtds(card, rtd) {
-		struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+		struct snd_soc_dai *cpu_dai;
 		struct snd_soc_dai *codec_dai;
 		int i;
 
-		pinctrl_pm_select_sleep_state(cpu_dai->dev);
+		for_each_rtd_codec_dai(rtd, i, cpu_dai) {
+			pinctrl_pm_select_sleep_state(cpu_dai->dev);
+		}
 		for_each_rtd_codec_dai(rtd, i, codec_dai) {
 			pinctrl_pm_select_sleep_state(codec_dai->dev);
 		}
