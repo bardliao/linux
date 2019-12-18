@@ -61,6 +61,10 @@ static int sdw_params_stream(struct device *dev,
 	int ret;
 	u32 size = sizeof(config);
 
+	/* [HACK] We need to use the same dai_index for two rt1308 */
+	if (link_id == 2)
+		link_id = 1;
+
 	memset(&config, 0, size);
 	config.hdr.size = size;
 	config.hdr.cmd = SOF_IPC_GLB_DAI_MSG | SOF_IPC_DAI_CONFIG;
@@ -91,6 +95,10 @@ static int sdw_free_stream(struct device *dev,
 	int link_id = free_data->link_id;
 	int ret;
 	u32 size = sizeof(config);
+
+	/* [HACK] We need to use the same dai_index for two rt1308 */
+	if (link_id == 2)
+		link_id = 1;
 
 	memset(&config, 0, size);
 	config.hdr.size = size;
