@@ -754,11 +754,17 @@ static int sdw_stream_setup(struct snd_pcm_substream *substream,
 	}
 
 	/* Set stream pointer on CPU DAI */
-	ret = snd_soc_dai_set_sdw_stream(dai, sdw_stream, substream->stream);
-	if (ret < 0) {
-		dev_err(dai->dev, "failed to set stream pointer on cpu dai %s",
-			dai->name);
-		goto release_stream;
+	/*
+	 * FIXME: we should use the same stream instead of allocate a new
+	 * one in the multi cpus case
+	 */
+	for (i = 0; i < rtd->num_cpu_dai; i++) {
+		ret = snd_soc_dai_set_sdw_stream(rtd->cpu_dais[i], sdw_stream, substream->stream);
+		if (ret < 0) {
+			dev_err(dai->dev, "failed to set stream pointer on cpu dai %s",
+				dai->name);
+			goto release_stream;
+		}
 	}
 
 	/* Set stream pointer on all CODEC DAIs */
