@@ -1276,7 +1276,8 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 	if (!bus->multi_link && stream->m_rt_count > 0) {
 		dev_err(bus->dev,
 			"Multilink not supported, link %d\n", bus->link_id);
-		ret = -EINVAL;
+	/* HACK: when a stream with two cpu dais, the m_rt_count will > 0 */
+		ret = 0;
 		goto unlock;
 	}
 
