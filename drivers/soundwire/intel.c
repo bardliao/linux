@@ -1429,6 +1429,12 @@ static int intel_master_probe(struct platform_device *pdev)
 
 	complete(&master_dev->probe_complete);
 
+	/*
+	 * Ignore BIOS err_threshold, it's a really bad idea when dealing
+	 * with multiple hardware synchronized links
+	 */
+	sdw->cdns.bus.prop.err_threshold = 0;
+
 	return 0;
 
 err_init:
