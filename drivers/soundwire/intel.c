@@ -1457,13 +1457,22 @@ static int intel_master_startup(struct sdw_intel *sdw)
 		return 0;
 	}
 
+	bus = &sdw->cdns.bus;
+
 	link_flags = md_flags >> (sdw->cdns.bus.link_id * 8);
 	multi_link = !(link_flags & SDW_INTEL_MASTER_DISABLE_MULTI_LINK);
 	if (!multi_link) {
 		dev_dbg(&md->dev, "Multi-link is disabled\n");
 		bus->multi_link = false;
 	} else {
+		/*
+		 * hardware-based synchronization is required regardless
+		 * of the number of segments used by a stream: SSP-based
+		 * synchronization is gated by gsync when the multi-master
+		 * mode is set.
+		 */
 		bus->multi_link = true;
+		bus->hw_sync_min_links = 1;
 	}
 
 	/* Initialize shim, controller */
