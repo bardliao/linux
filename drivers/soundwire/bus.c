@@ -21,6 +21,12 @@ int sdw_add_bus_master(struct sdw_bus *bus)
 	struct sdw_master_prop *prop = NULL;
 	int ret;
 
+	ret = sdw_master_device_add(bus);
+	if (ret) {
+		pr_err("Failed to add master device at link %d\n",
+		       bus->link_id);
+	}
+
 	if (!bus->dev) {
 		pr_err("SoundWire bus has no device\n");
 		return -ENODEV;
@@ -139,6 +145,7 @@ static int sdw_delete_slave(struct device *dev, void *data)
 void sdw_delete_bus_master(struct sdw_bus *bus)
 {
 	device_for_each_child(bus->dev, NULL, sdw_delete_slave);
+	sdw_master_device_del(bus);
 
 	sdw_bus_debugfs_exit(bus);
 }
