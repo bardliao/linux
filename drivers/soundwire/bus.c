@@ -16,10 +16,22 @@
  * Initializes the bus instance, read properties and create child
  * devices.
  */
-int sdw_add_bus_master(struct sdw_bus *bus)
+int sdw_add_bus_master(struct sdw_bus *bus, struct sdw_link_ops *link_ops,
+		       void *pdata)
 {
 	struct sdw_master_prop *prop = NULL;
 	int ret;
+
+	if (!bus) {
+		pr_err("SoundWire bus is null\n");
+		return -EINVAL;
+	}
+
+	ret = sdw_master_device_add(bus, link_ops, pdata);
+	if (ret) {
+		pr_err("Failed to add master device at link %d\n",
+		       bus->link_id);
+	}
 
 	if (!bus->dev) {
 		pr_err("SoundWire bus has no device\n");
@@ -138,7 +150,12 @@ static int sdw_delete_slave(struct device *dev, void *data)
  */
 void sdw_delete_bus_master(struct sdw_bus *bus)
 {
+	struct sdw_master_device *md = &bus->md;
+
+	sdw_master_device_del(md);
 	device_for_each_child(bus->dev, NULL, sdw_delete_slave);
+	/* Unregister master device */
+	device_unregister(&md->dev);
 
 	sdw_bus_debugfs_exit(bus);
 }
