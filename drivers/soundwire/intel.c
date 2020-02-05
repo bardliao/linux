@@ -1389,6 +1389,7 @@ static int intel_master_startup(struct sdw_intel *sdw)
 err_interrupt:
 	sdw_cdns_enable_interrupt(&sdw->cdns, false);
 err_init:
+	sdw_delete_bus_master(&sdw->cdns.bus);
 	return ret;
 }
 
@@ -1402,7 +1403,6 @@ static void intel_master_remove(struct platform_device *pdev)
 	if (!bus->prop.hw_disabled) {
 		intel_debugfs_exit(sdw);
 		sdw_cdns_enable_interrupt(&sdw->cdns, false);
-		free_irq(sdw->link_res->irq, sdw);
 		snd_soc_unregister_component(dev);
 	}
 	sdw_bus_master_delete(&sdw->cdns.bus);
