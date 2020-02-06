@@ -17,6 +17,7 @@
  * @dev: device implementing hw_params and free callbacks
  * @clock_stop_quirks: mask defining requested behavior on pm_suspend
  * @shim_lock: mutex to handle access to shared SHIM registers
+ * @shim_mask: global pointer to check SHIM register initialization
  */
 struct sdw_intel_link_res {
 	struct sdw_intel_master_dev *master_dev;
@@ -29,6 +30,7 @@ struct sdw_intel_link_res {
 	struct device *dev;
 	u32 clock_stop_quirks;
 	struct mutex *shim_lock; /* protect shared registers */
+	u32 *shim_mask;
 };
 
 struct sdw_intel {
