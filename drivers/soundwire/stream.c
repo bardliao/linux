@@ -1666,6 +1666,9 @@ int sdw_enable_stream(struct sdw_stream_runtime *stream)
 		return -EINVAL;
 	}
 
+	if (stream->state == SDW_STREAM_ENABLED)
+		return 0;
+
 	sdw_acquire_bus_lock(stream);
 
 	if (stream->state != SDW_STREAM_PREPARED &&
@@ -1748,6 +1751,8 @@ int sdw_disable_stream(struct sdw_stream_runtime *stream)
 		pr_err("SoundWire: Handle not found for stream\n");
 		return -EINVAL;
 	}
+	if (stream->state == SDW_STREAM_DISABLED)
+		return 0;
 
 	sdw_acquire_bus_lock(stream);
 
@@ -1823,6 +1828,9 @@ int sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 		pr_err("SoundWire: Handle not found for stream\n");
 		return -EINVAL;
 	}
+
+	if (stream->state == SDW_STREAM_DEPREPARED)
+		return 0;
 
 	sdw_acquire_bus_lock(stream);
 
