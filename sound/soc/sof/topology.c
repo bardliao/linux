@@ -1277,8 +1277,16 @@ static int sof_connect_dai_widget(struct snd_soc_component *scomp,
 				w->name, rtd->dai_link->name);
 			break;
 		case snd_soc_dapm_dai_in:
+#if 0
 			for_each_rtd_cpu_dai(rtd, i, cpu_dai)
 				cpu_dai->playback_widget = w;
+#else
+			if (strcmp(w->name, "ALH0x202.OUT") == 0) {
+				rtd->cpu_dais[1]->playback_widget = w;
+				dev_err(scomp->dev, "bard: set ALH0x202 to playback_widget\n");
+			} else
+				rtd->cpu_dais[0]->playback_widget = w;
+#endif
 			dai->name = rtd->dai_link->name;
 			dev_dbg(scomp->dev, "tplg: connected widget %s -> DAI link %s\n",
 				w->name, rtd->dai_link->name);
