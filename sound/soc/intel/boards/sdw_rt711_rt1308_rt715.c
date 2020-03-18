@@ -243,8 +243,7 @@ static const struct dmi_system_id sof_sdw_rt711_rt1308_rt715_quirk_table[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "XPS"),
 		},
 		.driver_data = (void *)(SOF_RT711_JD_SRC_JD2 |
-					SOF_RT715_DAI_ID_FIX |
-					SOF_SDW_NO_AGGREGATED),
+					SOF_RT715_DAI_ID_FIX),
 	},
 	{
 		.callback = sof_rt711_rt1308_rt715_quirk_cb,
