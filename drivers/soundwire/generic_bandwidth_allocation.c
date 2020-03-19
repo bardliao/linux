@@ -140,8 +140,8 @@ static void _sdw_compute_port_params(struct sdw_bus *bus,
 			sdw_compute_master_ports(m_rt, &params[i],
 						 port_bo, hstop);
 
-			block_offset += m_rt->ch_count *
-					m_rt->stream->params.bps;
+	//		block_offset += m_rt->ch_count *
+	//				m_rt->stream->params.bps;
 			port_bo = block_offset;
 		}
 

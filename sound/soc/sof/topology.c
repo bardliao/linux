@@ -1285,12 +1285,13 @@ static int sof_connect_dai_widget(struct snd_soc_component *scomp,
 				 */
 				if (!cpu_dai->playback_widget)
 					break;
+				dev_err(scomp->dev, "bard: cpu_dai->playback_widget->name %s i %d\n", cpu_dai->playback_widget->name, i);
 			}
 			if (i == rtd->num_cpus) {
-				dev_err(scomp->dev, "error: can't find BE for DAI %s\n",
-					w->name);
+				dev_err(scomp->dev, "error: can't find BE for DAI %s rtd->num_cpus %d rtd->dai_link->name %s\n",
+					w->name, rtd->num_cpus, rtd->dai_link->name);
 
-				return -EINVAL;
+//				return -EINVAL;
 			}
 			cpu_dai->playback_widget = w;
 			dai->name = rtd->dai_link->name;

@@ -1238,6 +1238,8 @@ int rt711_io_init(struct device *dev, struct sdw_slave *slave)
 	/* Data port arrangement */
 	rt711_index_write(rt711->regmap, RT711_VENDOR_REG,
 		RT711_TX_RX_MUX_CTL, 0x0154);
+	rt711_index_write(rt711->regmap, RT711_VENDOR_REG,
+		0x7, 0x300);
 
 	/* Set index */
 	rt711_index_write(rt711->regmap, RT711_VENDOR_REG,
