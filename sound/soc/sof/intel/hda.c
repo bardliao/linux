@@ -68,6 +68,8 @@ static int sdw_params_stream(struct device *dev,
 	config.type = SOF_DAI_INTEL_ALH;
 	config.dai_index = (link_id << 8) | (d->id);
 	config.alh.stream_id = alh_stream_id;
+	config.alh.rate = params_rate(params_data->hw_params);
+	config.alh.channels = params_channels(params_data->hw_params);
 
 	/* send message to DSP */
 	ret = sof_ipc_tx_message(sdev->ipc,
