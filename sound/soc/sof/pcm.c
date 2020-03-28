@@ -472,7 +472,7 @@ static int sof_pcm_open(struct snd_soc_component *component,
 	if (!spcm)
 		return -EINVAL;
 
-	dev_dbg(component->dev, "pcm: open stream %d dir %d\n",
+	dev_dbg(component->dev, "bard: pcm: open stream %d dir %d\n",
 		spcm->pcm.pcm_id, substream->stream);
 
 
@@ -488,6 +488,11 @@ static int sof_pcm_open(struct snd_soc_component *component,
 
 	/* set runtime config */
 	runtime->hw.info = ops->hw_info; /* platform-specific */
+	if (strstr(spcm->pcm.pcm_name, "SDW")) {
+		runtime->hw.info &= ~SNDRV_PCM_INFO_PAUSE;
+		pr_err("bard: got SDW\n");
+	}
+	pr_err("bard: runtime->hw.info=%x\n", runtime->hw.info);
 
 	runtime->hw.formats = le64_to_cpu(caps->formats);
 	runtime->hw.period_bytes_min = le32_to_cpu(caps->period_size_min);
