@@ -632,6 +632,22 @@ struct sdw_slave {
 
 #define dev_to_sdw_dev(_dev) container_of(_dev, struct sdw_slave, dev)
 
+/**
+ * struct sdw_master_device - SoundWire 'Master Device' representation
+ *
+ * @dev: Linux device for this Master
+ * @bus: Bus handle
+ * @link_id: link index as defined by MIPI DisCo specification
+ */
+struct sdw_master_device {
+	struct device dev;
+	struct sdw_bus *bus;
+	int link_id;
+};
+
+#define dev_to_sdw_master_device(d)	\
+	container_of(d, struct sdw_master_device, dev)
+
 struct sdw_driver {
 	const char *name;
 
