@@ -32,7 +32,7 @@ static int sdw_slave_add(struct sdw_bus *bus,
 
 	/* Initialize data structure */
 	memcpy(&slave->id, id, sizeof(*id));
-	slave->dev.parent = bus->dev;
+	slave->dev.parent = &bus->md->dev;
 	slave->dev.fwnode = fwnode;
 
 	if (id->unique_id == SDW_IGNORED_UNIQUE_ID) {
