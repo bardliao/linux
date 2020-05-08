@@ -113,6 +113,7 @@ int sdw_bus_master_startup(struct sdw_bus *bus)
 	struct sdw_link_ops *link_ops;
 	int ret = 0;
 
+	dev_err(bus->dev, "bard: %s\n", __func__);
 	if (IS_ERR_OR_NULL(bus))
 		return -EINVAL;
 

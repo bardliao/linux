@@ -1384,44 +1384,62 @@ static int intel_init(struct sdw_intel *sdw)
 /*
  * probe and init
  */
-static int intel_master_probe(struct sdw_bus *bus, void *link_ctx)
+static int intel_master_probe(struct platform_device *pdev)
 {
-	struct sdw_intel *sdw = link_ctx;
+	struct sdw_intel *sdw;
+	int ret;
 
+	sdw = devm_kzalloc(&pdev->dev, sizeof(*sdw), GFP_KERNEL);
 	if (!sdw) {
-		dev_err(bus->dev, "%s sdw not set\n", __func__);
+		dev_err(&pdev->dev, "%s sdw not set\n", __func__);
 		return -EINVAL;
 	}
 
-	sdw->instance = bus->link_id;
-	sdw->cdns.dev = bus->dev;
-	sdw->cdns.registers = sdw->link_res->registers;
-	sdw->cdns.instance = bus->link_id;
+	sdw->instance = pdev->id;
+//	sdw->link_res = dev_get_platdata(&pdev->dev);
+	sdw->cdns.dev = &pdev->dev;
+//	sdw->cdns.registers = sdw->link_res->registers;
+	sdw->cdns.instance = sdw->instance;
 	sdw->cdns.msg_count = 0;
-	sdw->link_res->cdns = &sdw->cdns;
+	//sdw->link_res->cdns = &sdw->cdns;
 
 	sdw_cdns_probe(&sdw->cdns);
 
 	/* Set property read ops */
 	sdw_intel_ops.read_prop = intel_prop_read;
-	bus->ops = &sdw_intel_ops;
-
-	/* set driver data, accessed by snd_soc_dai_set_drvdata() */
-	dev_set_drvdata(bus->dev, &sdw->cdns);
+	sdw->cdns.bus.ops = &sdw_intel_ops;
 
 	/* use generic bandwidth allocation algorithm */
-	bus->compute_params = sdw_compute_params;
-	if (bus->prop.hw_disabled)
-		dev_info(bus->dev,
+	sdw->cdns.bus.compute_params = sdw_compute_params;
+
+	sdw->cdns.bus.link_id = sdw->instance;
+	sdw->cdns.bus.md.dev.parent = &pdev->dev;
+	sdw->cdns.bus.md.dev.of_node = pdev->dev.of_node;
+	sdw->cdns.bus.md.dev.fwnode = pdev->dev.fwnode;
+	sdw->cdns.bus.link_ops = &sdw_intel_link_ops;
+	sdw->cdns.bus.pdata = sdw;
+
+	ret = sdw_add_bus_master(&sdw->cdns.bus);
+	if (ret) {
+		dev_err(&pdev->dev, "Could not create link %d\n",
+			sdw->cdns.bus.link_id);
+	}
+
+	if (sdw->cdns.bus.prop.hw_disabled)
+		dev_info(&pdev->dev,
 			 "SoundWire master %d is disabled, will be ignored\n",
-			 bus->link_id);
+			 sdw->cdns.bus.link_id);
 
 	/*
 	 * Ignore BIOS err_threshold, it's a really bad idea when dealing
 	 * with multiple hardware synchronized links
 	 */
-	bus->prop.err_threshold = 0;
+	sdw->cdns.bus.prop.err_threshold = 0;
 
+	/* set driver data, accessed by snd_soc_dai_set_drvdata() */
+	dev_set_drvdata(sdw->cdns.bus.dev, &sdw->cdns);
+	//sdw->link_res->md = &sdw->cdns.bus.md;
+	platform_set_drvdata(pdev, sdw);
 	return 0;
 }
 
@@ -1517,13 +1535,13 @@ static int intel_master_startup(struct sdw_bus *bus)
 
 	/* Enable runtime PM */
 	if (!(link_flags & SDW_INTEL_MASTER_DISABLE_PM_RUNTIME)) {
-		pm_runtime_set_autosuspend_delay(bus->dev,
+		pm_runtime_set_autosuspend_delay(sdw->cdns.dev,
 						 INTEL_MASTER_SUSPEND_DELAY_MS);
-		pm_runtime_use_autosuspend(bus->dev);
-		pm_runtime_mark_last_busy(bus->dev);
+		pm_runtime_use_autosuspend(sdw->cdns.dev);
+		pm_runtime_mark_last_busy(sdw->cdns.dev);
 
-		pm_runtime_set_active(bus->dev);
-		pm_runtime_enable(bus->dev);
+		pm_runtime_set_active(sdw->cdns.dev);
+		pm_runtime_enable(sdw->cdns.dev);
 	}
 
 	clock_stop_quirks = sdw->link_res->clock_stop_quirks;
@@ -1537,7 +1555,7 @@ static int intel_master_startup(struct sdw_bus *bus)
 		 * no effect if pm_runtime is disabled by the user via
 		 * a module parameter for testing purposes.
 		 */
-		pm_runtime_get_noresume(bus->dev);
+		pm_runtime_get_noresume(sdw->cdns.dev);
 	}
 
 	/*
@@ -1554,7 +1572,7 @@ static int intel_master_startup(struct sdw_bus *bus)
 	 * definition of Master properties.
 	 */
 	if (!(link_flags & SDW_INTEL_MASTER_DISABLE_PM_RUNTIME_IDLE))
-		pm_runtime_idle(bus->dev);
+		pm_runtime_idle(sdw->cdns.dev);
 
 	return 0;
 
@@ -1564,13 +1582,12 @@ err_init:
 	return ret;
 }
 
-static int intel_master_remove(struct sdw_bus *bus)
+static int intel_master_remove(struct platform_device *pdev)
 {
-	struct sdw_intel *sdw;
+	struct sdw_intel *sdw = platform_get_drvdata(pdev);
+	struct sdw_bus *bus = &sdw->cdns.bus;
 
-	pm_runtime_disable(bus->dev);
-
-	sdw = bus->pdata;
+	pm_runtime_disable(sdw->cdns.dev);
 
 	/*
 	 * Since pm_runtime is already disabled, we don't decrease
@@ -2035,21 +2052,32 @@ static const struct dev_pm_ops intel_pm = {
 	SET_SYSTEM_SLEEP_PM_OPS(intel_suspend, intel_resume)
 	SET_RUNTIME_PM_OPS(intel_suspend_runtime, intel_resume_runtime, NULL)
 };
-
+#if 0
 static struct device_driver sdw_intel_driver = {
 	.name = "intel-master",
 	.bus = &sdw_bus_type,
 	.pm = &intel_pm,
 };
-
+#endif
 struct sdw_link_ops sdw_intel_link_ops = {
-	.driver = &sdw_intel_driver,
-	.add = intel_master_probe,
+//	.driver = &sdw_intel_driver,
+//	.add = intel_master_probe,
 	.startup = intel_master_startup,
-	.del = intel_master_remove,
+//	.del = intel_master_remove,
 	.process_wake_event = intel_master_process_wakeen_event,
 };
 EXPORT_SYMBOL(sdw_intel_link_ops);
+
+static struct platform_driver sdw_intel_drv = {
+	.probe = intel_master_probe,
+	.remove = intel_master_remove,
+	.driver = {
+		.name = "intel-master",
+		.pm = &intel_pm,
+	}
+};
+
+module_platform_driver(sdw_intel_drv);
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_ALIAS("sdw:intel-master");

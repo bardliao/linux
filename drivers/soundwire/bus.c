@@ -22,6 +22,7 @@ int sdw_add_bus_master(struct sdw_bus *bus)
 	struct sdw_master_prop *prop = NULL;
 	int ret;
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	if (!bus) {
 		pr_err("SoundWire bus is null\n");
 		return -EINVAL;
@@ -33,6 +34,7 @@ int sdw_add_bus_master(struct sdw_bus *bus)
 		       bus->link_id);
 	}
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	if (!bus->dev) {
 		pr_err("SoundWire bus has no device\n");
 		return -ENODEV;
@@ -102,6 +104,7 @@ int sdw_add_bus_master(struct sdw_bus *bus)
 		ret = sdw_of_find_slaves(bus);
 	else
 		ret = -ENOTSUPP; /* No ACPI/DT so error out */
+	pr_err("bard: find slave ret %d\n", ret);
 
 	if (ret) {
 		dev_err(bus->dev, "Finding slaves failed:%d\n", ret);
@@ -122,6 +125,7 @@ int sdw_add_bus_master(struct sdw_bus *bus)
 	bus->params.curr_dr_freq = bus->params.max_dr_freq;
 	bus->params.curr_bank = SDW_BANK0;
 	bus->params.next_bank = SDW_BANK1;
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 
 	return 0;
 }

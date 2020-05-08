@@ -60,6 +60,7 @@ static int sdw_slave_add(struct sdw_bus *bus,
 
 	mutex_lock(&bus->bus_lock);
 	list_add_tail(&slave->node, &bus->slaves);
+	dev_err(bus->dev, "bard: %s add slave id %x\n", __func__, slave->id.part_id);
 	mutex_unlock(&bus->bus_lock);
 
 	ret = device_register(&slave->dev);

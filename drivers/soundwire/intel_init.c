@@ -192,13 +192,15 @@ EXPORT_SYMBOL(sdw_intel_thread);
 static struct sdw_intel_ctx
 *sdw_intel_probe_controller(struct sdw_intel_res *res)
 {
+	struct platform_device_info pdevinfo;
+	struct platform_device *pdev;
 	struct sdw_intel_link_res *link;
-	struct sdw_intel *sdw;
 	struct sdw_intel_ctx *ctx;
 	struct acpi_device *adev;
 	struct sdw_slave *slave;
 	struct list_head *node;
 	struct sdw_bus *bus;
+	struct sdw_intel *sdw;
 	u32 link_mask;
 	int num_slaves = 0;
 	int count;
@@ -236,16 +238,8 @@ static struct sdw_intel_ctx
 
 	INIT_LIST_HEAD(&ctx->link_list);
 
-	ret = driver_register(sdw_intel_link_ops.driver);
-	if (ret) {
-		dev_err(&adev->dev, "failed to register sdw master driver: %d\n", ret);
-		goto register_err;
-	}
-
-	ctx->sdw_intels = kcalloc(count, sizeof(*ctx->sdw_intels), GFP_KERNEL);
-	sdw = ctx->sdw_intels;
 	/* Create SDW Master devices */
-	for (i = 0; i < count; i++, link++, sdw++) {
+	for (i = 0; i < count; i++, link++/*, sdw++*/) {
 		if (link_mask && !(link_mask & BIT(i)))
 			continue;
 
@@ -260,26 +254,28 @@ static struct sdw_intel_ctx
 		link->shim_lock = &ctx->shim_lock;
 		link->shim_mask = &ctx->shim_mask;
 		link->link_mask = link_mask;
-		sdw->link_res = link;
-		sdw->cdns.bus.link_id = i;
-		sdw->cdns.bus.md.dev.parent = res->parent;
-		sdw->cdns.bus.md.dev.of_node = res->parent->of_node;
-		sdw->cdns.bus.md.dev.fwnode = acpi_fwnode_handle(adev);
-		sdw->cdns.bus.link_ops = &sdw_intel_link_ops;
-		sdw->cdns.bus.pdata = sdw;
 
-		ret = sdw_add_bus_master(&sdw->cdns.bus);
-		if (ret) {
-			dev_err(&adev->dev, "Could not create link %d\n", i);
-			goto err;
+		memset(&pdevinfo, 0, sizeof(pdevinfo));
+
+		pdevinfo.parent = res->parent;
+		pdevinfo.name = "intel-master";
+		pdevinfo.id = i;
+		pdevinfo.fwnode = acpi_fwnode_handle(adev);
+
+		pdev = platform_device_register_full(&pdevinfo);
+		if (IS_ERR(pdev)) {
+			dev_err(&adev->dev, "failed to register sdw master driver: %d\n", PTR_ERR(pdev));
+			goto register_err;
 		}
-
+		sdw = platform_get_drvdata(pdev);
+		sdw->link_res = link;
+		sdw->cdns.registers = sdw->link_res->registers;
+		link->cdns = &sdw->cdns;
 		link->md = &sdw->cdns.bus.md;
 
 		list_add_tail(&link->list, &ctx->link_list);
-		bus = &sdw->cdns.bus;
 		/* Calculate number of slaves */
-		list_for_each(node, &bus->slaves)
+		list_for_each(node, &link->md->bus->slaves)
 			num_slaves++;
 	}
 
@@ -291,6 +287,7 @@ static struct sdw_intel_ctx
 	i = 0;
 	list_for_each_entry(link, &ctx->link_list, list) {
 		bus = &link->cdns->bus;
+
 		list_for_each_entry(slave, &bus->slaves, node) {
 			ctx->ids[i].id = slave->id;
 			ctx->ids[i].link_id = bus->link_id;
@@ -302,7 +299,6 @@ static struct sdw_intel_ctx
 
 err:
 	ctx->count = i;
-	driver_unregister(sdw_intel_link_ops.driver);
 register_err:
 	sdw_intel_cleanup(ctx);
 link_err:
