@@ -1582,8 +1582,6 @@ static int intel_master_remove(struct platform_device *pdev)
 	struct sdw_intel *sdw;
 	struct sdw_bus *bus;
 
-	pm_runtime_disable(dev);
-
 	sdw = platform_get_drvdata(pdev);
 
 	/*
