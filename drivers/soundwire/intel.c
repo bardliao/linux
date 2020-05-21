@@ -1656,8 +1656,8 @@ int intel_master_process_wakeen_event(struct platform_device *pdev)
 
 static int intel_suspend(struct device *dev)
 {
-	struct sdw_cdns *cdns = dev_get_drvdata(dev);
-	struct sdw_intel *sdw = cdns_to_intel(cdns);
+	struct sdw_intel *sdw = dev_get_drvdata(dev);
+	struct sdw_cdns *cdns = &sdw->cdns;
 	struct sdw_bus *bus = &cdns->bus;
 	u32 clock_stop_quirks;
 	int ret;
@@ -1712,8 +1712,8 @@ static int intel_suspend(struct device *dev)
 
 static int intel_suspend_runtime(struct device *dev)
 {
-	struct sdw_cdns *cdns = dev_get_drvdata(dev);
-	struct sdw_intel *sdw = cdns_to_intel(cdns);
+	struct sdw_intel *sdw = dev_get_drvdata(dev);
+	struct sdw_cdns *cdns = &sdw->cdns;
 	struct sdw_bus *bus = &cdns->bus;
 	u32 clock_stop_quirks;
 	int ret;
@@ -1775,8 +1775,8 @@ static int intel_suspend_runtime(struct device *dev)
 
 static int intel_resume(struct device *dev)
 {
-	struct sdw_cdns *cdns = dev_get_drvdata(dev);
-	struct sdw_intel *sdw = cdns_to_intel(cdns);
+	struct sdw_intel *sdw = dev_get_drvdata(dev);
+	struct sdw_cdns *cdns = &sdw->cdns;
 	struct sdw_bus *bus = &cdns->bus;
 	int link_flags;
 	bool multi_link;
@@ -1870,8 +1870,8 @@ static int intel_resume(struct device *dev)
 
 static int intel_resume_runtime(struct device *dev)
 {
-	struct sdw_cdns *cdns = dev_get_drvdata(dev);
-	struct sdw_intel *sdw = cdns_to_intel(cdns);
+	struct sdw_intel *sdw = dev_get_drvdata(dev);
+	struct sdw_cdns *cdns = &sdw->cdns;
 	struct sdw_bus *bus = &cdns->bus;
 	u32 clock_stop_quirks;
 	bool clock_stop0;
