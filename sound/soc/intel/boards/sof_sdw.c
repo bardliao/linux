@@ -155,6 +155,11 @@ static struct snd_soc_codec_conf codec_conf[] = {
 		.dlc = COMP_CODEC_CONF("sdw:2:25d:5682:0"),
 		.name_prefix = "rt5682",
 	},
+	/* rt1316 on link 1 */
+	{
+		.dlc = COMP_CODEC_CONF("sdw:1:25d:1316:1"),
+		.name_prefix = "rt1316",
+	},
 };
 
 static struct snd_soc_dai_link_component dmic_component[] = {
@@ -207,6 +212,12 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = "rt1308-aif",
 		.ops = &sof_sdw_rt1308_i2s_ops,
 		.init = sof_sdw_rt1308_init,
+	},
+	{
+		.id = 0x1316,
+		.direction = {true, true},
+		.dai_name = "rt1316-aif",
+		.init = sof_sdw_rt1316_init,
 	},
 	{
 		.id = 0x715,
@@ -326,6 +337,7 @@ static void init_dai_link(struct snd_soc_dai_link *dai_links, int be_id,
 			  int (*init)(struct snd_soc_pcm_runtime *rtd),
 			  const struct snd_soc_ops *ops)
 {
+	pr_err("bard: id %d name %s\n", be_id, name);
 	dai_links->id = be_id;
 	dai_links->name = name;
 	dai_links->platforms = platform_component;

@@ -57,16 +57,17 @@ static int first_spk_init(struct snd_soc_pcm_runtime *rtd)
 		dev_err(card->dev, "rt1308 widgets addition failed: %d\n", ret);
 		return ret;
 	}
-
+#if 0
 	ret = snd_soc_dapm_add_routes(&card->dapm, rt1308_map, 2);
 	if (ret)
 		dev_err(rtd->dev, "failed to add first SPK map: %d\n", ret);
-
+#endif
 	return ret;
 }
 
 static int second_spk_init(struct snd_soc_pcm_runtime *rtd)
 {
+#if 0
 	struct snd_soc_card *card = rtd->card;
 	int ret;
 
@@ -75,6 +76,9 @@ static int second_spk_init(struct snd_soc_pcm_runtime *rtd)
 		dev_err(rtd->dev, "failed to add second SPK map: %d\n", ret);
 
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 static int all_spk_init(struct snd_soc_pcm_runtime *rtd)

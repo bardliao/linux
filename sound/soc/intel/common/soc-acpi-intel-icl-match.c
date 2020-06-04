@@ -62,11 +62,28 @@ static const struct snd_soc_acpi_adr_device rt700_0_adr[] = {
 	}
 };
 
+static const struct snd_soc_acpi_adr_device rt1316_1_adr[] = {
+	{
+		.adr = 0x000130025d131601,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+	}
+};
+
 static const struct snd_soc_acpi_link_adr icl_rvp[] = {
 	{
 		.mask = BIT(0),
 		.num_adr = ARRAY_SIZE(rt700_0_adr),
 		.adr_d = rt700_0_adr,
+	},
+	{}
+};
+
+static const struct snd_soc_acpi_link_adr icl_rvp_rt1316[] = {
+	{
+		.mask = BIT(1),
+		.num_adr = ARRAY_SIZE(rt1316_1_adr),
+		.adr_d = rt1316_1_adr,
 	},
 	{}
 };
@@ -175,6 +192,13 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_icl_sdw_machines[] = {
 		.drv_name = "sof_sdw",
 		.sof_fw_filename = "sof-icl.ri",
 		.sof_tplg_filename = "sof-icl-rt700.tplg",
+	},
+	{
+		.link_mask = 0x2, /* rt1316 connected on link1 */
+		.links = icl_rvp_rt1316,
+		.drv_name = "sof_sdw",
+		.sof_fw_filename = "sof-icl.ri",
+		.sof_tplg_filename = "sof-icl-rt1316.tplg",
 	},
 	{},
 };
