@@ -511,6 +511,37 @@ cdns_fill_msg_resp(struct sdw_cdns *cdns,
 	return SDW_CMD_OK;
 }
 
+static int wait_for_tx_complete(struct sdw_cdns *cdns, unsigned int timeout)
+{
+	u32 int_status;
+	int i;
+
+	for (i = 0; i < timeout; i++) {
+		int_status = cdns_readl(cdns, CDNS_MCP_INTSTAT);
+		if (int_status & CDNS_MCP_INT_RX_WL)
+			return 0;
+
+		msleep(1);
+	}
+	return -ETIME;
+}
+
+static void cdns_read_response(struct sdw_cdns *cdns)
+{
+	u32 num_resp, cmd_base;
+	int i;
+
+	num_resp = cdns_readl(cdns, CDNS_MCP_FIFOSTAT);
+	num_resp &= CDNS_MCP_RX_FIFO_AVAIL;
+
+	cmd_base = CDNS_MCP_CMD_BASE;
+
+	for (i = 0; i < num_resp; i++) {
+		cdns->response_buf[i] = cdns_readl(cdns, cmd_base);
+		cmd_base += CDNS_MCP_CMD_WORD_LEN;
+	}
+}
+
 static enum sdw_command_response
 _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	       int offset, int count, bool defer)
@@ -543,7 +574,7 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 
 	if (defer)
 		return SDW_CMD_OK;
-
+#if 0
 	/* wait for timeout or response */
 	time = wait_for_completion_timeout(&cdns->tx_complete,
 					   msecs_to_jiffies(CDNS_TX_TIMEOUT));
@@ -553,7 +584,16 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 		msg->len = 0;
 		return SDW_CMD_TIMEOUT;
 	}
+#else
+	if (wait_for_tx_complete(cdns, CDNS_TX_TIMEOUT)) {
+		dev_err(cdns->dev, "IO transfer timed out, cmd %d device %d addr %x len %d\n",
+			cmd, msg->dev_num, msg->addr, msg->len);
+		msg->len = 0;
+		return SDW_CMD_TIMEOUT;
+	}
 
+	cdns_read_response(cdns);
+#endif
 	return cdns_fill_msg_resp(cdns, msg, count, offset);
 }
 
@@ -585,7 +625,7 @@ cdns_program_scp_addr(struct sdw_cdns *cdns, struct sdw_msg *msg)
 	cdns_writel(cdns, base, data[0]);
 	base += CDNS_MCP_CMD_WORD_LEN;
 	cdns_writel(cdns, base, data[1]);
-
+#if 0
 	time = wait_for_completion_timeout(&cdns->tx_complete,
 					   msecs_to_jiffies(CDNS_TX_TIMEOUT));
 	if (!time) {
@@ -593,7 +633,15 @@ cdns_program_scp_addr(struct sdw_cdns *cdns, struct sdw_msg *msg)
 		msg->len = 0;
 		return SDW_CMD_TIMEOUT;
 	}
+#else
+	if (wait_for_tx_complete(cdns, CDNS_TX_TIMEOUT)) {
+		dev_err(cdns->dev, "SCP Msg trf timed out\n");
+		msg->len = 0;
+		return SDW_CMD_TIMEOUT;
+	}
 
+	cdns_read_response(cdns);
+#endif
 	/* check response the writes */
 	for (i = 0; i < 2; i++) {
 		if (!(cdns->response_buf[i] & CDNS_MCP_RESP_ACK)) {
@@ -719,22 +767,6 @@ EXPORT_SYMBOL(cdns_reset_page_addr);
  * IRQ handling
  */
 
-static void cdns_read_response(struct sdw_cdns *cdns)
-{
-	u32 num_resp, cmd_base;
-	int i;
-
-	num_resp = cdns_readl(cdns, CDNS_MCP_FIFOSTAT);
-	num_resp &= CDNS_MCP_RX_FIFO_AVAIL;
-
-	cmd_base = CDNS_MCP_CMD_BASE;
-
-	for (i = 0; i < num_resp; i++) {
-		cdns->response_buf[i] = cdns_readl(cdns, cmd_base);
-		cmd_base += CDNS_MCP_CMD_WORD_LEN;
-	}
-}
-
 static int cdns_update_slave_status(struct sdw_cdns *cdns,
 				    u32 slave0, u32 slave1)
 {
@@ -819,6 +851,39 @@ static int cdns_update_slave_status(struct sdw_cdns *cdns,
 }
 
 /**
+ * To update slave status in a work since we will need to handle
+ * other interrupts eg. CDNS_MCP_INT_RX_WL during the update slave
+ * process.
+ * @work: cdns worker thread
+ */
+#if 0
+static void cdns_update_slave_status_work(struct work_struct *work)
+{
+	struct sdw_cdns *cdns =
+		container_of(work, struct sdw_cdns, work);
+#else
+static void cdns_update_slave_status_work(struct sdw_cdns *cdns)
+{
+#endif
+	u32 slave0, slave1;
+
+	dev_dbg_ratelimited(cdns->dev, "Slave status change\n");
+
+	slave0 = cdns_readl(cdns, CDNS_MCP_SLAVE_INTSTAT0);
+	slave1 = cdns_readl(cdns, CDNS_MCP_SLAVE_INTSTAT1);
+
+	cdns_update_slave_status(cdns, slave0, slave1);
+	cdns_writel(cdns, CDNS_MCP_SLAVE_INTSTAT0, slave0);
+	cdns_writel(cdns, CDNS_MCP_SLAVE_INTSTAT1, slave1);
+
+	/* clear and unmask Slave interrupt now */
+	cdns_writel(cdns, CDNS_MCP_INTSTAT, CDNS_MCP_INT_SLAVE_MASK);
+	cdns_updatel(cdns, CDNS_MCP_INTMASK,
+		     CDNS_MCP_INT_SLAVE_MASK, CDNS_MCP_INT_SLAVE_MASK);
+
+}
+
+/**
  * sdw_cdns_irq() - Cadence interrupt handler
  * @irq: irq number
  * @dev_id: irq context
@@ -843,9 +908,9 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	if (int_status & CDNS_MCP_INT_RX_WL) {
-		cdns_read_response(cdns);
 
 		if (cdns->defer) {
+			cdns_read_response(cdns);
 			cdns_fill_msg_resp(cdns, cdns->defer->msg,
 					   cdns->defer->length, 0);
 			complete(&cdns->defer->complete);
@@ -892,41 +957,15 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 			     CDNS_MCP_INT_SLAVE_MASK, 0);
 
 		int_status &= ~CDNS_MCP_INT_SLAVE_MASK;
-		schedule_work(&cdns->work);
+//		schedule_work(&cdns->work);
+		cdns_update_slave_status_work(cdns);
+		
 	}
 
 	cdns_writel(cdns, CDNS_MCP_INTSTAT, int_status);
 	return ret;
 }
 EXPORT_SYMBOL(sdw_cdns_irq);
-
-/**
- * To update slave status in a work since we will need to handle
- * other interrupts eg. CDNS_MCP_INT_RX_WL during the update slave
- * process.
- * @work: cdns worker thread
- */
-static void cdns_update_slave_status_work(struct work_struct *work)
-{
-	struct sdw_cdns *cdns =
-		container_of(work, struct sdw_cdns, work);
-	u32 slave0, slave1;
-
-	dev_dbg_ratelimited(cdns->dev, "Slave status change\n");
-
-	slave0 = cdns_readl(cdns, CDNS_MCP_SLAVE_INTSTAT0);
-	slave1 = cdns_readl(cdns, CDNS_MCP_SLAVE_INTSTAT1);
-
-	cdns_update_slave_status(cdns, slave0, slave1);
-	cdns_writel(cdns, CDNS_MCP_SLAVE_INTSTAT0, slave0);
-	cdns_writel(cdns, CDNS_MCP_SLAVE_INTSTAT1, slave1);
-
-	/* clear and unmask Slave interrupt now */
-	cdns_writel(cdns, CDNS_MCP_INTSTAT, CDNS_MCP_INT_SLAVE_MASK);
-	cdns_updatel(cdns, CDNS_MCP_INTMASK,
-		     CDNS_MCP_INT_SLAVE_MASK, CDNS_MCP_INT_SLAVE_MASK);
-
-}
 
 /*
  * init routines
@@ -1531,7 +1570,7 @@ int sdw_cdns_probe(struct sdw_cdns *cdns)
 	init_completion(&cdns->tx_complete);
 	cdns->bus.port_ops = &cdns_port_ops;
 
-	INIT_WORK(&cdns->work, cdns_update_slave_status_work);
+//	INIT_WORK(&cdns->work, cdns_update_slave_status_work);
 	return 0;
 }
 EXPORT_SYMBOL(sdw_cdns_probe);
