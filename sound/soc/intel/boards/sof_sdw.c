@@ -132,6 +132,10 @@ static struct snd_soc_codec_conf codec_conf[] = {
 		.dlc = COMP_CODEC_CONF("sdw:0:25d:711:0"),
 		.name_prefix = "rt711",
 	},
+	{
+		.dlc = COMP_CODEC_CONF("sdw:0:25d:711:1"),
+		.name_prefix = "rt711",
+	},
 	/* rt1308 w/ I2S connection */
 	{
 		.dlc = COMP_CODEC_CONF("i2c-10EC1308:00"),
@@ -178,6 +182,18 @@ static struct snd_soc_codec_conf codec_conf[] = {
 		.dlc = COMP_CODEC_CONF("sdw:2:25d:5682:0"),
 		.name_prefix = "rt5682",
 	},
+	{
+		.dlc = COMP_CODEC_CONF("sdw:1:25d:1316:1"),
+		.name_prefix = "rt1316-1",
+	},
+	{
+		.dlc = COMP_CODEC_CONF("sdw:2:25d:1316:1"),
+		.name_prefix = "rt1316-2",
+	},
+	{
+		.dlc = COMP_CODEC_CONF("sdw:3:25d:714:1"),
+		.name_prefix = "rt714",
+	},
 };
 
 static struct snd_soc_dai_link_component dmic_component[] = {
@@ -220,6 +236,16 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 	},
 	{
 		.part_id = 0x711,
+		.version_id = 3,
+		.direction = {true, true},
+		.dai_name = "rt711-sdca-aif1",
+		.card_components = "hs:rt711-sdca",
+		.init = sof_sdw_rt711_init,
+		.exit = sof_sdw_rt711_exit,
+	},
+	{
+		.part_id = 0x711,
+		.version_id = 2,
 		.direction = {true, true},
 		.dai_name = "rt711-aif1",
 		.card_components = "hs:rt711",
@@ -234,6 +260,20 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.card_components = "spk:rt1308",
 		.ops = &sof_sdw_rt1308_i2s_ops,
 		.init = sof_sdw_rt1308_init,
+	},
+	{
+		.part_id = 0x1316,
+		.direction = {true, true},
+		.dai_name = "rt1316-aif",
+		.card_components = "spk:rt1316",
+		.init = sof_sdw_rt1316_init,
+	},
+	{
+		.part_id = 0x714,
+		.direction = {false, true},
+		.dai_name = "rt715-aif2",
+		.card_components = "mic:rt714-sdca",
+		.init = sof_sdw_rt715_init,
 	},
 	{
 		.part_id = 0x715,
