@@ -321,6 +321,7 @@ static int rt711_sdca_sdw_probe(struct sdw_slave *slave,
 {
 	struct regmap *sdw_regmap, *regmap;
 
+	dev_err(&slave->dev, "bard: %s\n", __func__);
 	/* Regmap Initialization */
 	sdw_regmap = devm_regmap_init_sdw(slave, &rt711_sdca_sdw_regmap);
 	if (!sdw_regmap)
