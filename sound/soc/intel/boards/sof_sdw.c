@@ -351,6 +351,7 @@ static void init_dai_link(struct snd_soc_dai_link *dai_links, int be_id,
 			  int (*init)(struct snd_soc_pcm_runtime *rtd),
 			  const struct snd_soc_ops *ops)
 {
+	pr_err("id %d name %s\n", be_id, name);
 	dai_links->id = be_id;
 	dai_links->name = name;
 	dai_links->platforms = platform_component;
