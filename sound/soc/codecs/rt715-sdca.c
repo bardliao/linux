@@ -40,10 +40,9 @@ static int rt715_index_write(struct rt715_sdca_priv *rt715, unsigned int nid,
 	addr = (nid << 20) | reg;
 
 	ret = regmap_write(regmap, addr, value);
-	if (ret < 0) {
+	if (ret < 0)
 		pr_err("Failed to set private value: %08x <= %04x %d\n", ret,
 			addr, value);
-	}
 
 	return ret;
 }
@@ -89,8 +88,7 @@ static int rt715_set_amp_gain_put_sdca(struct snd_kcontrol *kcontrol,
 		(struct soc_mixer_control *)kcontrol->private_value;
 	struct rt715_sdca_priv *rt715 = snd_soc_component_get_drvdata(component);
 	unsigned int val_l, val_r, gain_l_val, gain_r_val;
-	unsigned int i;
-	int ret_wl, ret_wr, ret_rl, ret_rr;
+	int ret;
 
 	/* control value to 2s complement */
 	/* L channel */
@@ -102,9 +100,8 @@ static int rt715_set_amp_gain_put_sdca(struct snd_kcontrol *kcontrol,
 	if (mc->shift == 8)
 		gain_l_val = (gain_l_val * 10) << mc->shift;
 	else {
-		gain_l_val = abs(gain_l_val - mc->shift) * RT715_SDCA_DB_STEP;
-		gain_l_val <<= 8;
-		gain_l_val /= 1000;
+		gain_l_val =
+			((abs(gain_l_val - mc->shift) * RT715_SDCA_DB_STEP) << 8) / 1000;
 		if (val_l <= mc->shift) {
 			gain_l_val = ~gain_l_val;
 			gain_l_val += 1;
@@ -119,11 +116,10 @@ static int rt715_set_amp_gain_put_sdca(struct snd_kcontrol *kcontrol,
 	val_r = gain_r_val;
 
 	if (mc->shift == 8)
-		gain_r_val = (gain_r_val*10) << mc->shift;
+		gain_r_val = (gain_r_val * 10) << mc->shift;
 	else {
-		gain_r_val = abs(gain_r_val - mc->shift) * RT715_SDCA_DB_STEP;
-		gain_r_val <<= 8;
-		gain_r_val /= 1000;
+		gain_r_val =
+			((abs(gain_r_val - mc->shift) * RT715_SDCA_DB_STEP) << 8) / 1000;
 		if (val_r <= mc->shift) {
 			gain_r_val = ~gain_r_val;
 			gain_r_val += 1;
@@ -131,30 +127,22 @@ static int rt715_set_amp_gain_put_sdca(struct snd_kcontrol *kcontrol,
 		gain_r_val &= 0xffff;
 	}
 
-	for (i = 0; i < 3; i++) { /* retry 3 times at most */
-		/* Lch*/
-		ret_wl = regmap_write(rt715->regmap,
-				mc->reg, gain_l_val);
-		if (ret_wl != 0)
-			pr_err("Failed to write 0x%x=0x%x\n", mc->reg, gain_l_val);
-		/* Rch */
-		ret_wr = regmap_write(rt715->regmap,
-				mc->rreg, gain_r_val);
-		if (ret_wr != 0)
-			pr_err("Failed to write 0x%x=0x%x\n", mc->rreg, gain_r_val);
-
-		ret_rl = regmap_read(rt715->regmap, mc->reg, &val_l);
-		if (ret_rl < 0)
-			pr_err("Failed to read 0x%x, ret_rl=%d\n", mc->reg, ret_rl);
-		ret_rr = regmap_read(rt715->regmap, mc->rreg, &val_r);
-		if (ret_rr < 0)
-			pr_err("Failed to read 0x%x, ret_rr=%d\n", mc->rreg, ret_rr);
-
-		if (val_r == gain_r_val && val_l == gain_l_val)
-			break;
+	/* Lch*/
+	ret = regmap_write(rt715->regmap, mc->reg, gain_l_val);
+	if (ret != 0) {
+		dev_err(component->dev, "Failed to write 0x%x=0x%x\n", mc->reg,
+			gain_l_val);
+		return ret;
+	}
+	/* Rch */
+	ret = regmap_write(rt715->regmap, mc->rreg, gain_r_val);
+	if (ret != 0) {
+		dev_err(component->dev, "Failed to write 0x%x=0x%x\n", mc->rreg,
+			gain_r_val);
+		return ret;
 	}
 
-	return (ret_wl || ret_wr || ret_rl || ret_rr);
+	return 0;
 }
 
 static int rt715_set_amp_gain_get_sdca(struct snd_kcontrol *kcontrol,
@@ -169,10 +157,11 @@ static int rt715_set_amp_gain_get_sdca(struct snd_kcontrol *kcontrol,
 
 	ret = regmap_read(rt715->regmap, mc->reg, &val_l);
 	if (ret < 0)
-		pr_err("Failed to read 0x%x, ret=%d\n", mc->reg, ret);
+		dev_err(component->dev, "Failed to read 0x%x, ret=%d\n", mc->reg, ret);
 	ret = regmap_read(rt715->regmap, mc->rreg, &val_r);
 	if (ret < 0)
-		pr_err("Failed to read 0x%x, ret=%d\n", mc->rreg, ret);
+		dev_err(component->dev, "Failed to read 0x%x, ret=%d\n", mc->rreg,
+			ret);
 
 	/* L channel */
 	if (mc->shift == 8) {
@@ -448,13 +437,11 @@ static int rt715_mux_put(struct snd_kcontrol *kcontrol,
 		RT715_HDA_LEGACY_MUX_CTL1, &val2);
 	val2 = (val2 >> mask_sft) & 0xf;
 
-	change = (val != val2);
+	change = val != val2;
 
-	if (change) {
+	if (change)
 		rt715_index_update_bits(rt715, RT715_VENDOR_HDA_CTL,
-			RT715_HDA_LEGACY_MUX_CTL1, (0xf << mask_sft),
-			(val << mask_sft));
-	}
+			RT715_HDA_LEGACY_MUX_CTL1, 0xf << mask_sft, val << mask_sft);
 
 	snd_soc_dapm_mux_update_power(dapm, kcontrol,
 						item[0], e, NULL);
@@ -726,7 +713,8 @@ static int rt715_pcm_hw_params(struct snd_pcm_substream *substream,
 	retval = sdw_stream_add_slave(rt715->slave, &stream_config,
 					&port_config, 1, stream->sdw_stream);
 	if (retval) {
-		pr_err("Unable to configure port, retval:%d\n", retval);
+		dev_err(component->dev, "Unable to configure port, retval:%d\n",
+			retval);
 		return retval;
 	}
 
