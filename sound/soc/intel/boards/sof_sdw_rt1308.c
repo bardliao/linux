@@ -38,12 +38,6 @@ static int first_spk_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_card *card = rtd->card;
 	int ret;
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
-					  "%s spk:rt1308",
-					  card->components);
-	if (!card->components)
-		return -ENOMEM;
-
 	ret = snd_soc_add_card_controls(card, rt1308_controls,
 					ARRAY_SIZE(rt1308_controls));
 	if (ret) {

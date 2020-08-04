@@ -215,12 +215,14 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.part_id = 0x700,
 		.direction = {true, true},
 		.dai_name = "rt700-aif1",
+		.card_components = "hs:rt700",
 		.init = sof_sdw_rt700_init,
 	},
 	{
 		.part_id = 0x711,
 		.direction = {true, true},
 		.dai_name = "rt711-aif1",
+		.card_components = "hs:rt711",
 		.init = sof_sdw_rt711_init,
 		.exit = sof_sdw_rt711_exit,
 	},
@@ -229,6 +231,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.acpi_id = "10EC1308",
 		.direction = {true, false},
 		.dai_name = "rt1308-aif",
+		.card_components = "spk:rt1308",
 		.ops = &sof_sdw_rt1308_i2s_ops,
 		.init = sof_sdw_rt1308_init,
 	},
@@ -236,12 +239,14 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.part_id = 0x715,
 		.direction = {false, true},
 		.dai_name = "rt715-aif2",
+		.card_components = "mic:rt715",
 		.init = sof_sdw_rt715_init,
 	},
 	{
 		.part_id = 0x8373,
 		.direction = {true, true},
 		.dai_name = "max98373-aif1",
+		.card_components = "spk:mx8373",
 		.init = sof_sdw_mx8373_init,
 		.codec_card_late_probe = sof_sdw_mx8373_late_probe,
 	},
@@ -249,6 +254,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.part_id = 0x5682,
 		.direction = {true, true},
 		.dai_name = "rt5682-sdw",
+		.card_components = "hs:rt5682",
 		.init = sof_sdw_rt5682_init,
 	},
 };
@@ -569,8 +575,8 @@ static int get_slave_info(const struct snd_soc_acpi_link_adr *adr_link,
 	return 0;
 }
 
-static int create_sdw_dailink(struct device *dev, int *be_index,
-			      struct snd_soc_dai_link *dai_links,
+static int create_sdw_dailink(struct device *dev, struct snd_soc_card *card,
+			      int *be_index, struct snd_soc_dai_link *dai_links,
 			      int sdw_be_num, int sdw_cpu_dai_num,
 			      struct snd_soc_dai_link_component *cpus,
 			      const struct snd_soc_acpi_link_adr *link,
@@ -628,6 +634,7 @@ static int create_sdw_dailink(struct device *dev, int *be_index,
 
 	cpu_dai_index = *cpu_id;
 	for_each_pcm_streams(stream) {
+		struct sof_sdw_codec_info *info;
 		char *name, *cpu_name;
 		int playback, capture;
 		static const char * const sdw_stream_name[] = {
@@ -635,6 +642,7 @@ static int create_sdw_dailink(struct device *dev, int *be_index,
 			"SDW%d-Capture",
 		};
 
+		info = &codec_info_list[codec_index];
 		if (!codec_info_list[codec_index].direction[stream])
 			continue;
 
@@ -676,6 +684,15 @@ static int create_sdw_dailink(struct device *dev, int *be_index,
 
 		playback = (stream == SNDRV_PCM_STREAM_PLAYBACK);
 		capture = (stream == SNDRV_PCM_STREAM_CAPTURE);
+
+		if (info->card_components &&
+		    !strstr(card->components, info->card_components))
+			card->components = devm_kasprintf(card->dev,
+							  GFP_KERNEL,
+							  "%s %s",
+							  card->components,
+							  info->card_components);
+
 		init_dai_link(dai_links + *be_index, *be_index, name,
 			      playback, capture,
 			      cpus + *cpu_id, cpu_dai_num,
@@ -812,7 +829,7 @@ static int sof_card_dai_links_create(struct device *dev,
 		    group_generated[endpoint->group_id])
 			continue;
 
-		ret = create_sdw_dailink(dev, &be_id, links, sdw_be_num,
+		ret = create_sdw_dailink(dev, card, &be_id, links, sdw_be_num,
 					 sdw_cpu_dai_num, cpus, adr_link,
 					 &cpu_id, group_generated);
 		if (ret < 0) {
@@ -866,6 +883,14 @@ SSP:
 
 		playback = info->direction[SNDRV_PCM_STREAM_PLAYBACK];
 		capture = info->direction[SNDRV_PCM_STREAM_CAPTURE];
+		if (info->card_components &&
+		    !strstr(card->components, info->card_components))
+			card->components = devm_kasprintf(card->dev,
+							  GFP_KERNEL,
+							  "%s %s",
+							  card->components,
+							  info->card_components);
+
 		init_dai_link(links + link_id, be_id, name,
 			      playback, capture,
 			      cpus + cpu_id, 1,
@@ -1003,6 +1028,13 @@ static int mc_probe(struct platform_device *pdev)
 	card->dev = &pdev->dev;
 	snd_soc_card_set_drvdata(card, ctx);
 
+	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
+					  "cfg-spk:%d cfg-amp:%d",
+					  (sof_sdw_quirk & SOF_SDW_FOUR_SPK)
+					  ? 4 : 2, amp_num);
+	if (!card->components)
+		return -ENOMEM;
+
 	mach = pdev->dev.platform_data;
 	ret = sof_card_dai_links_create(&pdev->dev, mach,
 					card);
@@ -1019,13 +1051,6 @@ static int mc_probe(struct platform_device *pdev)
 	for (i = 0; i < ARRAY_SIZE(codec_info_list); i++)
 		amp_num += codec_info_list[i].amp_num;
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
-					  "cfg-spk:%d cfg-amp:%d",
-					  (sof_sdw_quirk & SOF_SDW_FOUR_SPK)
-					  ? 4 : 2, amp_num);
-	if (!card->components)
-		return -ENOMEM;
-
 	card->long_name = sdw_card_long_name;
 
 	/* Register the card */
@@ -1036,6 +1061,8 @@ static int mc_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, card);
+
+	dev_dbg(&pdev->dev, "card->components %s\n", card->components);
 
 	return ret;
 }

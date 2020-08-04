@@ -58,6 +58,7 @@ struct sof_sdw_codec_info {
 	const bool direction[2]; // playback & capture support
 	const char *dai_name;
 	const struct snd_soc_ops *ops;
+	const char *card_components;
 
 	int  (*init)(const struct snd_soc_acpi_link_adr *link,
 		     struct snd_soc_dai_link *dai_links,

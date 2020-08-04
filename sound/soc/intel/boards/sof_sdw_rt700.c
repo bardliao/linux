@@ -52,12 +52,6 @@ static int rt700_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_jack *jack;
 	int ret;
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
-					  "%s hs:rt700",
-					  card->components);
-	if (!card->components)
-		return -ENOMEM;
-
 	ret = snd_soc_add_card_controls(card, rt700_controls,
 					ARRAY_SIZE(rt700_controls));
 	if (ret) {

@@ -52,12 +52,6 @@ static int rt5682_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_jack *jack;
 	int ret;
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
-					  "%s hs:rt5682",
-					  card->components);
-	if (!card->components)
-		return -ENOMEM;
-
 	ret = snd_soc_add_card_controls(card, rt5682_controls,
 					ARRAY_SIZE(rt5682_controls));
 	if (ret) {
