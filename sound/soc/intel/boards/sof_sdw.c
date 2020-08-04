@@ -643,7 +643,7 @@ static int create_sdw_dailink(struct device *dev, struct snd_soc_card *card,
 		};
 
 		info = &codec_info_list[codec_index];
-		if (!codec_info_list[codec_index].direction[stream])
+		if (!info->direction[stream])
 			continue;
 
 		/* create stream name according to first link id */
