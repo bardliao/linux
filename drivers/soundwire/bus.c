@@ -747,6 +747,7 @@ static int sdw_program_device_num(struct sdw_bus *bus)
 
 		if (!found) {
 			/* TODO: Park this device in Group 13 */
+			sdw_slave_add(bus, &id, NULL);
 			dev_err(bus->dev, "Slave Entry not found\n");
 		}
 
