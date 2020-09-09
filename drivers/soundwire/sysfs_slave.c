@@ -212,3 +212,59 @@ int sdw_slave_sysfs_init(struct sdw_slave *slave)
 
 	return 0;
 }
+
+static ssize_t status_show(struct device *dev,
+			   struct device_attribute *attr, char *buf)
+{
+	struct sdw_slave *slave = dev_to_sdw_dev(dev);
+
+	switch (slave->status) {
+	case SDW_SLAVE_UNATTACHED:
+		return sprintf(buf, "%s", "UNATTACHED");
+	case SDW_SLAVE_ATTACHED:
+		return sprintf(buf, "%s", "ATTACHED");
+	case SDW_SLAVE_ALERT:
+		return sprintf(buf, "%s", "ALERT");
+	case SDW_SLAVE_RESERVED:
+		return sprintf(buf, "%s", "RESERVED");
+	}
+	return 0;
+}
+static DEVICE_ATTR_RO(status);
+
+static ssize_t device_number_show(struct device *dev,
+				  struct device_attribute *attr, char *buf)
+{
+	struct sdw_slave *slave = dev_to_sdw_dev(dev);
+
+	if (slave->status == SDW_SLAVE_UNATTACHED)
+		return sprintf(buf, "%s", "N/A");
+	else
+		return sprintf(buf, "%d", slave->dev_num);
+}
+static DEVICE_ATTR_RO(device_number);
+
+static struct attribute *slave_status_attrs[] = {
+	&dev_attr_status.attr,
+	&dev_attr_device_number.attr,
+	NULL,
+};
+
+/*
+ * we don't use ATTRIBUTES_GROUP here since we want to add a subdirectory
+ * for device-status
+ */
+static struct attribute_group sdw_slave_status_attr_group = {
+	.attrs	= slave_status_attrs,
+	.name = "dev-status",
+};
+
+/*
+ * We can't use devm_ here, otherwise resources would be added before
+ * the driver probe. The group is removed in device_del() however.
+ */
+
+int sdw_slave_status_sysfs_init(struct sdw_slave *slave)
+{
+	return device_add_group(&slave->dev, &sdw_slave_status_attr_group);
+}
