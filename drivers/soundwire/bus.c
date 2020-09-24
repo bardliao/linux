@@ -1254,6 +1254,38 @@ static int sdw_initialize_slave(struct sdw_slave *slave)
 		return ret;
 	}
 
+	/* Enable SCP_SDCA interrupts */
+	if (slave->prop.is_sdca) {
+		val = slave->prop.scp_sdca_int1_mask;
+		ret = sdw_update(slave, SDW_SCP_SDCA_INTMASK1, val, val);
+		if (ret < 0) {
+			dev_err(slave->bus->dev,
+				"SDW_SCP_SDCA_INTMASK1 write failed:%d\n", ret);
+			return ret;
+		}
+		val = slave->prop.scp_sdca_int2_mask;
+		ret = sdw_update(slave, SDW_SCP_SDCA_INTMASK2, val, val);
+		if (ret < 0) {
+			dev_err(slave->bus->dev,
+				"SDW_SCP_SDCA_INTMASK2 write failed:%d\n", ret);
+			return ret;
+		}
+		val = slave->prop.scp_sdca_int3_mask;
+		ret = sdw_update(slave, SDW_SCP_SDCA_INTMASK3, val, val);
+		if (ret < 0) {
+			dev_err(slave->bus->dev,
+				"SDW_SCP_SDCA_INTMASK3 write failed:%d\n", ret);
+			return ret;
+		}
+		val = slave->prop.scp_sdca_int4_mask;
+		ret = sdw_update(slave, SDW_SCP_SDCA_INTMASK4, val, val);
+		if (ret < 0) {
+			dev_err(slave->bus->dev,
+				"SDW_SCP_SDCA_INTMASK4 write failed:%d\n", ret);
+			return ret;
+		}
+	}
+
 	/* No need to continue if DP0 is not present */
 	if (!slave->prop.dp0_prop)
 		return 0;
