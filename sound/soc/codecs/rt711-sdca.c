@@ -324,6 +324,7 @@ static void rt711_sdca_jack_detect_handler(struct work_struct *work)
 
 static void rt711_sdca_jack_init(struct rt711_sdca_priv *rt711)
 {
+	struct sdw_slave_prop *prop = &rt711->slave->prop;
 	mutex_lock(&rt711->calibrate_mutex);
 
 	if (rt711->hs_jack) {
@@ -364,6 +365,9 @@ static void rt711_sdca_jack_init(struct rt711_sdca_priv *rt711)
 			break;
 		}
 
+		prop->scp_sdca_int1_mask = SDW_SCP_SDCA_INTMASK_SDCA_0;
+		prop->scp_sdca_int2_mask = SDW_SCP_SDCA_INTMASK_SDCA_8;
+
 		/* set SCP_SDCA_IntMask1[0]=1 */
 		regmap_write(rt711->regmap, SDW_SCP_SDCA_INTMASK1,
 			SDW_SCP_SDCA_INTMASK_SDCA_0);
@@ -380,6 +384,8 @@ static void rt711_sdca_jack_init(struct rt711_sdca_priv *rt711)
 		rt711_sdca_index_update_bits(rt711, RT711_VENDOR_HDA_CTL,
 			RT711_GE_MODE_RELATED_CTL, 0x0c00, 0x0000);
 
+		prop->scp_sdca_int1_mask = 0;
+		prop->scp_sdca_int2_mask = 0;
 		/*  set SCP_SDCA_IntMask1[0]=0 */
 		regmap_write(rt711->regmap, SDW_SCP_SDCA_INTMASK1, 0x00);
 		/* set SCP_SDCA_IntMask2[0]=0 */
