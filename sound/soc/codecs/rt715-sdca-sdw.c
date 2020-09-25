@@ -29,18 +29,6 @@ static bool rt715_sdca_readable_register(struct device *dev, unsigned int reg)
 	case 0x2206 ... 0x2212:
 	case 0x2230 ... 0x2239:
 	case 0x2f5b:
-	case 0x2000000:
-	case 0x2002000:
-	case 0x200002b:
-	case 0x200202b:
-	case 0x2000036:
-	case 0x2002036:
-	case 0x2000037:
-	case 0x2002037:
-	case 0x2000039:
-	case 0x2002039:
-	case 0x6100000:
-	case 0x6102000:
 	case 0x40880288:
 	case 0x40882288:
 		return true;
@@ -57,12 +45,52 @@ static bool rt715_sdca_volatile_register(struct device *dev, unsigned int reg)
 	case 0x201c:
 	case 0x201d:
 	case 0x201f:
+	case 0x2021:
+	case 0x2023:
 	case 0x2230:
 	case 0x202d ... 0x202f: /* BRA */
-	case 0x2201 ... 0x2212: /* i2c debug */
+	case 0x2200 ... 0x2212: /* i2c debug */
+	case 0x2f07:
+	case 0x2f1b ... 0x2f1e:
+	case 0x2f30 ... 0x2f34:
+	case 0x2f50 ... 0x2f51:
+	case 0x2f53 ... 0x2f59:
+	case 0x2f5c ... 0x2f5f:
+	case 0x40880288: /* VAD Searching status */
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool rt715_sdca_mbq_readable_register(struct device *dev, unsigned int reg)
+{
+
+	switch (reg) {
 	case 0x2000000:
 	case 0x2002000:
-	case 0x40880288: /* VAD Searching status */
+	case 0x200002b:
+	case 0x200202b:
+	case 0x2000036:
+	case 0x2002036:
+	case 0x2000037:
+	case 0x2002037:
+	case 0x2000039:
+	case 0x2002039:
+	case 0x6100000:
+	case 0x6102000:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool rt715_sdca_mbq_volatile_register(struct device *dev, unsigned int reg)
+{
+
+	switch (reg) {
+	case 0x2000000:
+	case 0x2002000:
 		return true;
 	default:
 		return false;
@@ -87,8 +115,8 @@ static const struct regmap_config rt715_sdca_mbq_regmap = {
 	.name = "sdw-mbq",
 	.reg_bits = 32,
 	.val_bits = 16,
-	.readable_reg = rt715_sdca_readable_register,
-	.volatile_reg = rt715_sdca_volatile_register,
+	.readable_reg = rt715_sdca_mbq_readable_register,
+	.volatile_reg = rt715_sdca_mbq_volatile_register,
 	.max_register = 0x43ffffff,
 	.reg_defaults = rt715_mbq_reg_defaults_sdca,
 	.num_reg_defaults = ARRAY_SIZE(rt715_mbq_reg_defaults_sdca),
@@ -212,7 +240,9 @@ static int __maybe_unused rt715_dev_suspend(struct device *dev)
 		return 0;
 
 	regcache_cache_only(rt715->regmap, true);
+	regcache_mark_dirty(rt715->regmap);
 	regcache_cache_only(rt715->mbq_regmap, true);
+	regcache_mark_dirty(rt715->mbq_regmap);
 
 	return 0;
 }
@@ -241,7 +271,7 @@ static int __maybe_unused rt715_dev_resume(struct device *dev)
 regmap_sync:
 	slave->unattach_request = 0;
 	regcache_cache_only(rt715->regmap, false);
-	regcache_sync_region(rt715->regmap, 0x40400000, 0x40880f80);
+	regcache_sync_region(rt715->regmap, 0x201a, 0x40880f80);
 	regcache_cache_only(rt715->mbq_regmap, false);
 	regcache_sync_region(rt715->mbq_regmap, 0x2000000, 0x61020ff);
 	regcache_sync_region(rt715->mbq_regmap, 0x40400000, 0x40880f80);

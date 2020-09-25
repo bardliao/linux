@@ -924,8 +924,8 @@ int rt715_io_init(struct device *dev, struct sdw_slave *slave)
 
 	rt715_index_read(rt715, RT715_VENDOR_REG,
 		RT715_PRODUCT_NUM, &hw_ver);
-	hw_ver = hw_ver & 0x0001;
-
+	hw_ver = hw_ver & 0x000f;
+	pr_info("hw_ver:%d\n",hw_ver);
 	/* set clock selector = external */
 	regmap_write(rt715->regmap,
 		RT715_SDCA_ADDR(FUN_MIC_ARRAY, RT715_SDCA_CX_CLK_SEL_EN,
