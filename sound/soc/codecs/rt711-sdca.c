@@ -428,8 +428,6 @@ io_error:
 
 static void rt711_sdca_jack_init(struct rt711_sdca_priv *rt711)
 {
-	struct sdw_slave_prop *prop = &rt711->slave->prop;
-
 	mutex_lock(&rt711->calibrate_mutex);
 
 	if (rt711->hs_jack) {
