@@ -13,8 +13,8 @@
 
 const struct snd_soc_dapm_route max_98373_dapm_routes[] = {
 	/* speaker */
-	{ "Left Spk", NULL, "Left BE_OUT" },
-	{ "Right Spk", NULL, "Right BE_OUT" },
+	{ "Spk", NULL, "Left BE_OUT" },
+	{ "Spk", NULL, "Right BE_OUT" },
 };
 
 static struct snd_soc_codec_conf max_98373_codec_conf[] = {
@@ -62,7 +62,7 @@ static int max98373_hw_params(struct snd_pcm_substream *substream,
 int max98373_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
-	struct snd_soc_dai *codec_dai;
+	struct snd_soc_dapm_context *dapm;
 	struct snd_soc_dai *cpu_dai;
 	int j;
 	int ret = 0;
@@ -72,32 +72,25 @@ int max98373_trigger(struct snd_pcm_substream *substream, int cmd)
 		return 0;
 
 	cpu_dai = asoc_rtd_to_cpu(rtd, 0);
-	for_each_rtd_codec_dais(rtd, j, codec_dai) {
-		struct snd_soc_dapm_context *dapm =
-				snd_soc_component_get_dapm(cpu_dai->component);
-		char pin_name[MAX_98373_PIN_NAME];
+	dapm = snd_soc_component_get_dapm(cpu_dai->component);
 
-		snprintf(pin_name, ARRAY_SIZE(pin_name), "%s Spk",
-			 codec_dai->component->name_prefix);
-
-		switch (cmd) {
-		case SNDRV_PCM_TRIGGER_START:
-		case SNDRV_PCM_TRIGGER_RESUME:
-		case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-			ret = snd_soc_dapm_enable_pin(dapm, pin_name);
-			if (!ret)
-				snd_soc_dapm_sync(dapm);
-			break;
-		case SNDRV_PCM_TRIGGER_STOP:
-		case SNDRV_PCM_TRIGGER_SUSPEND:
-		case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-			ret = snd_soc_dapm_disable_pin(dapm, pin_name);
-			if (!ret)
-				snd_soc_dapm_sync(dapm);
-			break;
-		default:
-			break;
-		}
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		ret = snd_soc_dapm_enable_pin(dapm, "Spk");
+		if (!ret)
+			snd_soc_dapm_sync(dapm);
+		break;
+	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		ret = snd_soc_dapm_disable_pin(dapm, "Spk");
+		if (!ret)
+			snd_soc_dapm_sync(dapm);
+		break;
+	default:
+		break;
 	}
 
 	return ret;

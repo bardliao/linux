@@ -14,13 +14,11 @@
 #include "sof_maxim_common.h"
 
 static const struct snd_soc_dapm_widget mx8373_widgets[] = {
-	SND_SOC_DAPM_SPK("Left Spk", NULL),
-	SND_SOC_DAPM_SPK("Right Spk", NULL),
+	SND_SOC_DAPM_SPK("Spk", NULL),
 };
 
 static const struct snd_kcontrol_new mx8373_controls[] = {
-	SOC_DAPM_PIN_SWITCH("Left Spk"),
-	SOC_DAPM_PIN_SWITCH("Right Spk"),
+	SOC_DAPM_PIN_SWITCH("Spk"),
 };
 
 static int spk_init(struct snd_soc_pcm_runtime *rtd)
@@ -115,8 +113,7 @@ int sof_sdw_mx8373_late_probe(struct snd_soc_card *card)
 {
 	struct snd_soc_dapm_context *dapm = &card->dapm;
 
-	/* Disable Left and Right Spk pin after boot */
-	snd_soc_dapm_disable_pin(dapm, "Left Spk");
-	snd_soc_dapm_disable_pin(dapm, "Right Spk");
+	/* Disable Spk pin after boot */
+	snd_soc_dapm_disable_pin(dapm, "Spk");
 	return snd_soc_dapm_sync(dapm);
 }
