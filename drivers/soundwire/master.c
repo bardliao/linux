@@ -119,7 +119,7 @@ static int __maybe_unused sdw_master_device_suspend(struct device *dev)
 static int __maybe_unused sdw_master_device_resume(struct device *dev)
 {
 	dev_dbg(dev, "%s: start\n", __func__);
-
+#if 0
 	if (pm_runtime_suspended(dev)) {
 		dev_dbg(dev, "%s: pm_runtime status was suspended, forcing active\n", __func__);
 
@@ -129,7 +129,7 @@ static int __maybe_unused sdw_master_device_resume(struct device *dev)
 		pm_runtime_mark_last_busy(dev);
 		pm_runtime_enable(dev);
 	}
-
+#endif
 	dev_dbg(dev, "%s: done\n", __func__);
 
 	return 0;
