@@ -495,6 +495,48 @@ static int __maybe_unused rt711_dev_suspend(struct device *dev)
 
 #define RT711_PROBE_TIMEOUT 5000
 
+static int __maybe_unused rt711_dev_resume_runtime(struct device *dev)
+{
+	struct sdw_slave *slave = dev_to_sdw_dev(dev);
+	struct rt711_priv *rt711 = dev_get_drvdata(dev);
+	unsigned long time;
+
+	dev_dbg(&slave->dev, "%s: start\n", __func__);
+
+	if (!rt711->hw_init) {
+		dev_dbg(&slave->dev, "%s: done - hw_init not necessary\n",
+			__func__);
+		return 0;
+	}
+
+	if (!slave->unattach_request)
+		goto regmap_sync;
+
+
+	dev_dbg(&slave->dev, "%s: wait_for_completion start\n", __func__);
+
+	time = wait_for_completion_timeout(&slave->initialization_complete,
+				msecs_to_jiffies(RT711_PROBE_TIMEOUT));
+	if (!time) {
+		dev_err(&slave->dev, "%s Initialization not complete, timed out\n", __func__);
+		return -ETIMEDOUT;
+	}
+
+	dev_dbg(&slave->dev, "%s: wait_for_completion done\n", __func__);
+
+regmap_sync:
+	dev_dbg(&slave->dev, "%s: regmap_sync\n", __func__);
+	slave->unattach_request = 0;
+
+	regcache_cache_only(rt711->regmap, false);
+	regcache_sync_region(rt711->regmap, 0x3000, 0x8fff);
+	regcache_sync_region(rt711->regmap, 0x752009, 0x752091);
+
+	dev_dbg(&slave->dev, "%s: done\n", __func__);
+
+	return 0;
+}
+
 static int __maybe_unused rt711_dev_resume(struct device *dev)
 {
 	struct sdw_slave *slave = dev_to_sdw_dev(dev);
@@ -518,15 +560,15 @@ static int __maybe_unused rt711_dev_resume(struct device *dev)
 	time = wait_for_completion_timeout(&slave->initialization_complete,
 				msecs_to_jiffies(RT711_PROBE_TIMEOUT));
 	if (!time) {
-		dev_err(&slave->dev, "Initialization not complete, timed out\n");
+		dev_err(&slave->dev, "%s Initialization not complete, timed out\n", __func__);
 		return -ETIMEDOUT;
 	}
 
 	dev_dbg(&slave->dev, "%s: wait_for_completion done\n", __func__);
 
 regmap_sync:
-	slave->unattach_request = 0;
 	dev_dbg(&slave->dev, "%s: regmap_sync\n", __func__);
+	slave->unattach_request = 0;
 
 	regcache_cache_only(rt711->regmap, false);
 	regcache_sync_region(rt711->regmap, 0x3000, 0x8fff);
@@ -543,17 +585,6 @@ static int __maybe_unused rt711_dev_suspend_runtime(struct device *dev)
 
 	dev_dbg(dev, "%s: start\n", __func__);
 	ret = rt711_dev_suspend(dev);
-	dev_dbg(dev, "%s: done\n", __func__);
-
-	return ret;
-}
-
-static int __maybe_unused rt711_dev_resume_runtime(struct device *dev)
-{
-	int ret;
-
-	dev_dbg(dev, "%s: start\n", __func__);
-	ret = rt711_dev_resume(dev);
 	dev_dbg(dev, "%s: done\n", __func__);
 
 	return ret;
