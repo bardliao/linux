@@ -1603,6 +1603,7 @@ static int __maybe_unused intel_suspend(struct device *dev)
 		return 0;
 	}
 
+	dev_dbg(dev, "%s: start\n", __func__);
 	if (pm_runtime_suspended(dev)) {
 		dev_dbg(dev, "%s: pm_runtime status: suspended\n", __func__);
 
@@ -1640,6 +1641,7 @@ static int __maybe_unused intel_suspend(struct device *dev)
 
 	intel_shim_wake(sdw, false);
 
+	dev_dbg(dev, "%s: done\n", __func__);
 	return 0;
 }
 
@@ -1657,6 +1659,7 @@ static int intel_suspend_runtime(struct device *dev)
 		return 0;
 	}
 
+	dev_dbg(dev, "%s: start\n", __func__);
 	clock_stop_quirks = sdw->link_res->clock_stop_quirks;
 
 	if (clock_stop_quirks & SDW_INTEL_CLK_STOP_TEARDOWN) {
@@ -1702,6 +1705,7 @@ static int intel_suspend_runtime(struct device *dev)
 		ret = -EINVAL;
 	}
 
+	dev_dbg(dev, "%s: done\n", __func__);
 	return ret;
 }
 
