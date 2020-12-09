@@ -568,6 +568,8 @@ static int __maybe_unused rt711_dev_resume(struct device *dev)
 
 regmap_sync:
 	dev_dbg(&slave->dev, "%s: regmap_sync\n", __func__);
+	dev_dbg(&slave->dev, "%s: wait 1 sec\n", __func__);
+	msleep(1);
 	slave->unattach_request = 0;
 
 	regcache_cache_only(rt711->regmap, false);
