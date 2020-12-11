@@ -61,6 +61,7 @@ int sdw_slave_add(struct sdw_bus *bus,
 	init_completion(&slave->probe_complete);
 	slave->probed = false;
 	slave->first_interrupt_done = false;
+	ACPI_COMPANION_SET(&slave->dev, ACPI_COMPANION(bus->dev));
 
 	for (i = 0; i < SDW_MAX_PORTS; i++)
 		init_completion(&slave->port_ready[i]);
