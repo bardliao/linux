@@ -4265,22 +4265,43 @@ void set_primary_fwnode(struct device *dev, struct fwnode_handle *fwnode)
 	struct device *parent = dev->parent;
 	struct fwnode_handle *fn = dev->fwnode;
 
+	if (dev_name(dev)) {
+		if (strstr(dev_name(dev), "25d")) {
+			dev_info(dev, "bard: %s start dev->fwnode %p fwnode %p\n", __func__, dev->fwnode, fwnode);
+		}
+	}
 	if (fwnode) {
 		if (fwnode_is_primary(fn))
 			fn = fn->secondary;
 
 		if (fn) {
 			WARN_ON(fwnode->secondary);
+			if (fwnode->secondary)
+				dev_info(dev, "bard: %s fwnode->secondary %p\n", __func__, fwnode->secondary);
+
 			fwnode->secondary = fn;
 		}
 		dev->fwnode = fwnode;
 	} else {
 		if (fwnode_is_primary(fn)) {
 			dev->fwnode = fn->secondary;
-			if (!(parent && fn == parent->fwnode))
-				fn->secondary = ERR_PTR(-ENODEV);
+			if (!(parent && fn == parent->fwnode)) {
+				if (strstr(dev_name(dev), "25d")) {
+					dev_info(dev, "bard: %s !(parent && fn == parent->fwnode)\n", __func__);
+					if (parent)
+						dev_info(dev, "bard: %s parent %s parent->fwnode %p dev->fwnode %p\n", __func__, dev_name(parent), parent->fwnode, dev->fwnode);
+				}
+ 				fn->secondary = ERR_PTR(-ENODEV);
+			}
 		} else {
 			dev->fwnode = NULL;
+		}
+	}	
+	if (dev_name(dev)) {
+		if (strstr(dev_name(dev), "25d")) {
+			dev_info(dev, "bard: %s done dev->fwnode %p\n", __func__, dev->fwnode);
+		if (dev->fwnode)
+			dev_info(dev, "bard: %s dev->fwnode->secondary %p\n", __func__, dev->fwnode->secondary);
 		}
 	}
 }
@@ -4297,13 +4318,34 @@ EXPORT_SYMBOL_GPL(set_primary_fwnode);
  */
 void set_secondary_fwnode(struct device *dev, struct fwnode_handle *fwnode)
 {
+	if (dev_name(dev)) {
+		if (strstr(dev_name(dev), "25d")) {
+			dev_info(dev, "bard: %s start dev->fwnode %p fwnode %p\n", __func__, dev->fwnode, fwnode);
+		}
+	}
 	if (fwnode)
 		fwnode->secondary = ERR_PTR(-ENODEV);
 
-	if (fwnode_is_primary(dev->fwnode))
+	if (fwnode_is_primary(dev->fwnode)) {
 		dev->fwnode->secondary = fwnode;
-	else
+		if (dev_name(dev)) {
+			if (strstr(dev_name(dev), "25d")) {
+				dev_info(dev, "bard: %s fwnode_is_primary dev->fwnode %p dev->fwnode->secondary %p\n", __func__, dev->fwnode, dev->fwnode->secondary);
+			}
+		}
+	} else {
 		dev->fwnode = fwnode;
+		if (dev_name(dev)) {
+			if (strstr(dev_name(dev), "25d")) {
+				dev_info(dev, "bard: %s fwnode_is NOT primary dev->fwnode %p dev->fwnode->secondary %p\n", __func__, dev->fwnode, dev->fwnode->secondary);
+			}
+		}
+	}
+	if (dev_name(dev)) {
+		if (strstr(dev_name(dev), "25d")) {
+			dev_info(dev, "bard: %s done dev->fwnode %p\n", __func__, dev->fwnode);
+		}
+	}
 }
 EXPORT_SYMBOL_GPL(set_secondary_fwnode);
 
