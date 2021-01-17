@@ -946,6 +946,12 @@ static void cdns_update_slave_status_work(struct work_struct *work)
  */
 int sdw_cdns_exit_reset(struct sdw_cdns *cdns)
 {
+	int i;
+	int ret;
+	u32 val;
+
+	dev_info(cdns->dev, "bard: %s\n", __func__);
+	dump_stack();
 	/* program maximum length reset to be safe */
 	cdns_updatel(cdns, CDNS_MCP_CONTROL,
 		     CDNS_MCP_CONTROL_RST_DELAY,
@@ -961,6 +967,9 @@ int sdw_cdns_exit_reset(struct sdw_cdns *cdns)
 		     CDNS_MCP_CONFIG_UPDATE_BIT,
 		     CDNS_MCP_CONFIG_UPDATE_BIT);
 
+	ret = cdns_set_wait(cdns, CDNS_MCP_CONTROL, CDNS_MCP_CONTROL_HW_RST, 0);
+	val = cdns_readl(cdns, CDNS_MCP_CONTROL);
+	dev_info(cdns->dev, "bard: %s read CDNS_MCP_CONTROL 0x%x ret %d\n", __func__, val, ret);
 	/* don't wait here */
 	return 0;
 
@@ -1211,6 +1220,7 @@ int sdw_cdns_init(struct sdw_cdns *cdns)
 {
 	u32 val;
 
+	dev_info(cdns->dev, "bard: %s\n", __func__);
 	cdns_init_clock_ctrl(cdns);
 
 	/* reset msg_count to default value of FIFOLEVEL */
@@ -1396,6 +1406,8 @@ int sdw_cdns_clock_stop(struct sdw_cdns *cdns, bool block_wake)
 	bool slave_present = false;
 	struct sdw_slave *slave;
 	int ret;
+	int val;
+	int i;
 
 	/* Check suspend status */
 	if (sdw_cdns_is_clock_stop(cdns)) {
@@ -1403,6 +1415,9 @@ int sdw_cdns_clock_stop(struct sdw_cdns *cdns, bool block_wake)
 		return 0;
 	}
 
+	val = sdw_bread_no_pm_unlocked(&cdns->bus, 1, SDW_SCP_STAT);
+	dev_info(cdns->dev, "bard: %s %d read SDW_SCP_STAT=%d\n",
+		__func__, __LINE__, val);
 	/*
 	 * Before entering clock stop we mask the Slave
 	 * interrupts. This helps avoid having to deal with e.g. a
@@ -1410,6 +1425,9 @@ int sdw_cdns_clock_stop(struct sdw_cdns *cdns, bool block_wake)
 	 */
 	cdns_enable_slave_interrupts(cdns, false);
 
+	val = sdw_bread_no_pm_unlocked(&cdns->bus, 1, SDW_SCP_STAT);
+	dev_info(cdns->dev, "bard: %s %d read SDW_SCP_STAT=%d\n",
+		__func__, __LINE__, val);
 	/*
 	 * For specific platforms, it is required to be able to put
 	 * master into a state in which it ignores wake-up trials
@@ -1442,6 +1460,13 @@ int sdw_cdns_clock_stop(struct sdw_cdns *cdns, bool block_wake)
 		cdns_updatel(cdns, CDNS_MCP_CONTROL,
 			     CDNS_MCP_CONTROL_CMD_ACCEPT, 0);
 
+	val = sdw_bread_no_pm_unlocked(&cdns->bus, 1, SDW_SCP_STAT);
+	dev_info(cdns->dev, "bard: %s %d read SDW_SCP_STAT=%d\n",
+		__func__, __LINE__, val);
+	for (i = CDNS_MCP_CONFIG; i <= CDNS_MCP_PHYCTRL; i += sizeof(u32))
+		dev_info(cdns->dev, "bard: %s %d read 0x%x 0x%x\n",
+			__func__, __LINE__, i, cdns_readl(cdns, i));
+
 	/* commit changes */
 	ret = cdns_config_update(cdns);
 	if (ret < 0) {
@@ -1449,6 +1474,9 @@ int sdw_cdns_clock_stop(struct sdw_cdns *cdns, bool block_wake)
 		return ret;
 	}
 
+	val = sdw_bread_no_pm_unlocked(&cdns->bus, 1, SDW_SCP_STAT);
+	dev_info(cdns->dev, "bard: %s %d read SDW_SCP_STAT=%d\n",
+		__func__, __LINE__, val);
 	/* Prepare slaves for clock stop */
 	ret = sdw_bus_prep_clk_stop(&cdns->bus);
 	if (ret < 0) {

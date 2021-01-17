@@ -1286,6 +1286,9 @@ static int sdw_master_read_intel_prop(struct sdw_bus *bus)
 	if (quirk_mask & SDW_INTEL_QUIRK_MASK_BUS_DISABLE)
 		prop->hw_disabled = true;
 
+	if (bus->link_id == 2)
+		prop->hw_disabled = true;
+
 	prop->quirks = SDW_MASTER_QUIRKS_CLEAR_INITIAL_CLASH;
 
 	return 0;
@@ -1451,6 +1454,7 @@ int intel_master_startup(struct platform_device *pdev)
 		goto err_interrupt;
 	}
 
+	dev_info(cdns->dev, "bard: %s call sdw_cdns_exit_reset\n", __func__);
 	ret = sdw_cdns_exit_reset(cdns);
 	if (ret < 0) {
 		dev_err(dev, "unable to exit bus reset sequence\n");
@@ -1594,6 +1598,7 @@ static int __maybe_unused intel_suspend(struct device *dev)
 	struct sdw_bus *bus = &cdns->bus;
 	u32 clock_stop_quirks;
 	int ret;
+	int val;
 
 	if (bus->prop.hw_disabled) {
 		dev_dbg(dev, "SoundWire master %d is disabled, ignoring\n",
@@ -1648,6 +1653,7 @@ static int __maybe_unused intel_suspend_runtime(struct device *dev)
 	struct sdw_bus *bus = &cdns->bus;
 	u32 clock_stop_quirks;
 	int ret;
+	int val;
 
 	if (bus->prop.hw_disabled) {
 		dev_dbg(dev, "SoundWire master %d is disabled, ignoring\n",
@@ -1655,6 +1661,11 @@ static int __maybe_unused intel_suspend_runtime(struct device *dev)
 		return 0;
 	}
 
+	if (bus->link_id != 2) {
+		val = sdw_bread_no_pm_unlocked(bus, 1, SDW_SCP_STAT);
+		dev_info(dev, "bard: %s %d read SDW_SCP_STAT=%d\n",
+			__func__, __LINE__, val);
+	}
 	clock_stop_quirks = sdw->link_res->clock_stop_quirks;
 
 	if (clock_stop_quirks & SDW_INTEL_CLK_STOP_TEARDOWN) {
@@ -1713,6 +1724,7 @@ static int __maybe_unused intel_resume(struct device *dev)
 	int link_flags;
 	bool multi_link;
 	int ret;
+	int val;
 
 	if (bus->prop.hw_disabled) {
 		dev_dbg(dev, "SoundWire master %d is disabled, ignoring\n",
@@ -1769,6 +1781,7 @@ static int __maybe_unused intel_resume(struct device *dev)
 		return ret;
 	}
 
+	dev_info(cdns->dev, "bard: %s call sdw_cdns_exit_reset\n", __func__);
 	ret = sdw_cdns_exit_reset(cdns);
 	if (ret < 0) {
 		dev_err(dev, "unable to exit bus reset sequence during resume\n");
@@ -1809,6 +1822,7 @@ static int __maybe_unused intel_resume_runtime(struct device *dev)
 	bool multi_link;
 	int status;
 	int ret;
+	int val;
 
 	if (bus->prop.hw_disabled) {
 		dev_dbg(dev, "SoundWire master %d is disabled, ignoring\n",
@@ -1853,6 +1867,7 @@ static int __maybe_unused intel_resume_runtime(struct device *dev)
 			return ret;
 		}
 
+		dev_info(cdns->dev, "bard: %s call sdw_cdns_exit_reset\n", __func__);
 		ret = sdw_cdns_exit_reset(cdns);
 		if (ret < 0) {
 			dev_err(dev, "unable to exit bus reset sequence during resume\n");
@@ -1925,6 +1940,7 @@ static int __maybe_unused intel_resume_runtime(struct device *dev)
 		}
 
 		if (!clock_stop0) {
+			dev_info(cdns->dev, "bard: %s call sdw_cdns_exit_reset\n", __func__);
 			ret = sdw_cdns_exit_reset(cdns);
 			if (ret < 0) {
 				dev_err(dev, "unable to exit bus reset sequence during resume\n");

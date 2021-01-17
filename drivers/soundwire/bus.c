@@ -413,7 +413,7 @@ int sdw_write_no_pm(struct sdw_slave *slave, u32 addr, u8 value)
 }
 EXPORT_SYMBOL(sdw_write_no_pm);
 
-static int
+int
 sdw_bread_no_pm(struct sdw_bus *bus, u16 dev_num, u32 addr)
 {
 	struct sdw_msg msg;
@@ -431,6 +431,7 @@ sdw_bread_no_pm(struct sdw_bus *bus, u16 dev_num, u32 addr)
 
 	return buf;
 }
+EXPORT_SYMBOL(sdw_bread_no_pm);
 
 static int
 sdw_bwrite_no_pm(struct sdw_bus *bus, u16 dev_num, u32 addr, u8 value)
@@ -863,6 +864,7 @@ static int sdw_slave_clk_stop_prepare(struct sdw_slave *slave,
 	bool wake_en;
 	u32 val = 0;
 	int ret;
+	int i;
 
 	wake_en = slave->prop.wake_capable;
 
@@ -882,9 +884,13 @@ static int sdw_slave_clk_stop_prepare(struct sdw_slave *slave,
 
 	ret = sdw_write_no_pm(slave, SDW_SCP_SYSTEMCTRL, val);
 
-	if (ret != 0)
+	if (ret != 0) {
+		ret = sdw_read_no_pm(slave, SDW_SCP_STAT);
+		dev_info(&slave->dev, "bard: %s %d read SDW_SCP_STAT=%d\n",
+			__func__, __LINE__, ret);
 		dev_err(&slave->dev,
 			"Clock Stop prepare failed for slave: %d", ret);
+	}
 
 	return ret;
 }
@@ -947,6 +953,9 @@ int sdw_bus_prep_clk_stop(struct sdw_bus *bus)
 		slave_mode = sdw_get_clk_stop_mode(slave);
 		slave->curr_clk_stop_mode = slave_mode;
 
+		ret = sdw_read_no_pm(slave, SDW_SCP_STAT);
+		dev_info(&slave->dev, "bard: %s %d read SDW_SCP_STAT=%d\n",
+			__func__, __LINE__, ret);
 		ret = sdw_slave_clk_stop_callback(slave, slave_mode,
 						  SDW_CLK_PRE_PREPARE);
 		if (ret < 0) {
@@ -955,6 +964,9 @@ int sdw_bus_prep_clk_stop(struct sdw_bus *bus)
 			return ret;
 		}
 
+		ret = sdw_read_no_pm(slave, SDW_SCP_STAT);
+		dev_info(&slave->dev, "bard: %s %d read SDW_SCP_STAT=%d\n",
+			__func__, __LINE__, ret);
 		ret = sdw_slave_clk_stop_prepare(slave,
 						 slave_mode, true);
 		if (ret < 0) {
