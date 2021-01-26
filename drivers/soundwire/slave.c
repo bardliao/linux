@@ -95,7 +95,7 @@ static bool find_slave(struct sdw_bus *bus,
 		       struct acpi_device *adev,
 		       struct sdw_slave_id *id)
 {
-	unsigned long long addr;
+	unsigned long long addr, addr_new;
 	unsigned int link_id;
 	acpi_status status;
 
@@ -115,7 +115,26 @@ static bool find_slave(struct sdw_bus *bus,
 	if (link_id != bus->link_id)
 		return false;
 
-	sdw_extract_slave_id(bus, addr, id);
+	switch (addr)
+	{
+		case 0x00020025d071100:
+			addr_new = 0x00021025d071500;
+			dev_warn(bus->dev, "Replace 0x%llx with 0x%llx\n", addr, addr_new);
+			break;
+		case  0x120025d130800:
+			addr_new = 0x000120025d071100;
+			dev_warn(bus->dev, "Replace 0x%llx with 0x%llx\n", addr, addr_new);
+			break;
+		case  0x220025d071500:
+			addr_new = 0x000220025d130800;
+			dev_warn(bus->dev, "Replace 0x%llx with 0x%llx\n", addr, addr_new);
+			break;
+		default:
+			addr_new = addr;
+			break;
+	}
+
+	sdw_extract_slave_id(bus, addr_new, id);
 
 	return true;
 }
