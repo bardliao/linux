@@ -390,9 +390,6 @@ static int __maybe_unused rt711_sdca_dev_resume(struct device *dev)
 	struct rt711_sdca_priv *rt711 = dev_get_drvdata(dev);
 	unsigned long time;
 
-	if (!rt711->hw_init)
-		return 0;
-
 	if (!slave->unattach_request)
 		goto regmap_sync;
 
@@ -402,6 +399,9 @@ static int __maybe_unused rt711_sdca_dev_resume(struct device *dev)
 		dev_err(&slave->dev, "Initialization not complete, timed out\n");
 		return -ETIMEDOUT;
 	}
+
+	if (!rt711->hw_init)
+		return 0;
 
 regmap_sync:
 	slave->unattach_request = 0;
