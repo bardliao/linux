@@ -1645,35 +1645,11 @@ static int __maybe_unused intel_suspend(struct device *dev)
 	struct sdw_cdns *cdns = dev_get_drvdata(dev);
 	struct sdw_intel *sdw = cdns_to_intel(cdns);
 	struct sdw_bus *bus = &cdns->bus;
-	u32 clock_stop_quirks;
 	int ret;
 
 	if (bus->prop.hw_disabled) {
 		dev_dbg(dev, "SoundWire master %d is disabled, ignoring\n",
 			bus->link_id);
-		return 0;
-	}
-
-	if (pm_runtime_suspended(dev)) {
-		dev_dbg(dev, "%s: pm_runtime status: suspended\n", __func__);
-
-		clock_stop_quirks = sdw->link_res->clock_stop_quirks;
-
-		if ((clock_stop_quirks & SDW_INTEL_CLK_STOP_BUS_RESET ||
-		     !clock_stop_quirks) &&
-		    !pm_runtime_suspended(dev->parent)) {
-
-			/*
-			 * if we've enabled clock stop, and the parent
-			 * is still active, disable shim wake. The
-			 * SHIM registers are not accessible if the
-			 * parent is already pm_runtime suspended so
-			 * it's too late to change that configuration
-			 */
-
-			intel_shim_wake(sdw, false);
-		}
-
 		return 0;
 	}
 
@@ -1775,21 +1751,6 @@ static int __maybe_unused intel_resume(struct device *dev)
 
 	link_flags = md_flags >> (bus->link_id * 8);
 	multi_link = !(link_flags & SDW_INTEL_MASTER_DISABLE_MULTI_LINK);
-
-	if (pm_runtime_suspended(dev)) {
-		dev_dbg(dev, "%s: pm_runtime status was suspended, forcing active\n", __func__);
-
-		/* follow required sequence from runtime_pm.rst */
-		pm_runtime_disable(dev);
-		pm_runtime_set_active(dev);
-		pm_runtime_mark_last_busy(dev);
-		pm_runtime_enable(dev);
-
-		link_flags = md_flags >> (bus->link_id * 8);
-
-		if (!(link_flags & SDW_INTEL_MASTER_DISABLE_PM_RUNTIME_IDLE))
-			pm_runtime_idle(dev);
-	}
 
 	ret = intel_init(sdw);
 	if (ret) {
