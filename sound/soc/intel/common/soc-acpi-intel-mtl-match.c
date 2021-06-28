@@ -15,6 +15,31 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_mtl_machines[] = {
 };
 EXPORT_SYMBOL_GPL(snd_soc_acpi_intel_mtl_machines);
 
+static const struct snd_soc_acpi_endpoint single_endpoint = {
+	.num = 0,
+	.aggregated = 0,
+	.group_position = 0,
+	.group_id = 0,
+};
+
+static const struct snd_soc_acpi_adr_device rt701_0_adr[] = {
+	{
+		.adr = 0x000010025D070100ull,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+		.name_prefix = "rt700"
+	}
+};
+
+static const struct snd_soc_acpi_link_adr mtl_ipfpga[] = {
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt701_0_adr),
+		.adr_d = rt701_0_adr,
+	},
+	{}
+};
+
 /* this table is used when there is no I2S codec present */
 struct snd_soc_acpi_mach snd_soc_acpi_intel_mtl_sdw_machines[] = {
 	/* mockup tests need to be first */
@@ -38,6 +63,13 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_mtl_sdw_machines[] = {
 		.drv_name = "sof_sdw",
 		.fw_filename = "sof-mtl.ri",
 		.sof_tplg_filename = "sof-mtl-rt715-rt711-rt1308-mono.tplg",
+	},
+	{
+		.link_mask = BIT(0),
+		.links = mtl_ipfpga,
+		.drv_name = "sof_sdw",
+		.fw_filename = "sof-mtl.ri",
+		.sof_tplg_filename = "sof-mtl-rt700.tplg",
 	},
 	{},
 };
