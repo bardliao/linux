@@ -448,6 +448,12 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
 	},
 	{
+		.part_id = 0x701,
+		.direction = {true, true},
+		.dai_name = "rt700-aif1",
+		.init = sof_sdw_rt700_init,
+	},
+	{
 		.part_id = 0x711,
 		.version_id = 3,
 		.direction = {true, true},
