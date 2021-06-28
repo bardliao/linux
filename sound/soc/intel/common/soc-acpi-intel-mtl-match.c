@@ -39,6 +39,23 @@ static const struct snd_soc_acpi_link_adr mtl_rvp[] = {
 	},
 	{}
 };
+static const struct snd_soc_acpi_adr_device rt701_0_adr[] = {
+	{
+		.adr = 0x000010025D070100ull,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+		.name_prefix = "rt700"
+	}
+};
+
+static const struct snd_soc_acpi_link_adr mtl_ipfpga[] = {
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt701_0_adr),
+		.adr_d = rt701_0_adr,
+	},
+	{}
+};
 
 /* this table is used when there is no I2S codec present */
 struct snd_soc_acpi_mach snd_soc_acpi_intel_mtl_sdw_machines[] = {
@@ -60,6 +77,12 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_mtl_sdw_machines[] = {
 		.links = sdw_mockup_mic_headset_1amp,
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-mtl-rt715-rt711-rt1308-mono.tplg",
+	},
+	{
+		.link_mask = BIT(0),
+		.links = mtl_ipfpga,
+		.drv_name = "sof_sdw",
+		.sof_tplg_filename = "sof-mtl-rt700.tplg",
 	},
 	{
 		.link_mask = BIT(0),
