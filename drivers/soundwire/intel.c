@@ -1617,6 +1617,11 @@ static int intel_resume_child_device(struct device *dev, void *data)
 	return ret;
 }
 
+static int intel_find_attached_child_device(struct device *dev, void *data)
+{
+	return pm_runtime_enabled(dev);
+}
+
 static int __maybe_unused intel_pm_prepare(struct device *dev)
 {
 	struct sdw_cdns *cdns = dev_get_drvdata(dev);
@@ -1629,6 +1634,12 @@ static int __maybe_unused intel_pm_prepare(struct device *dev)
 		dev_dbg(dev, "SoundWire master %d is disabled, ignoring\n",
 			bus->link_id);
 		return 0;
+	}
+
+	ret = device_for_each_child(bus->dev, NULL, intel_find_attached_child_device);
+	if (!ret) {
+		dev_dbg(dev, "No child device pm runtime is enabled, resume device\n");
+		return pm_runtime_resume(dev);
 	}
 
 	clock_stop_quirks = sdw->link_res->clock_stop_quirks;
