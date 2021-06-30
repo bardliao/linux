@@ -156,6 +156,7 @@ int snd_hdac_i915_init(struct hdac_bus *bus)
 	acomp = bus->audio_component;
 	if (!acomp)
 		return -ENODEV;
+#if 0
 	if (!acomp->ops) {
 		if (!IS_ENABLED(CONFIG_MODULES) ||
 		    !request_module("i915")) {
@@ -164,6 +165,7 @@ int snd_hdac_i915_init(struct hdac_bus *bus)
 							     msecs_to_jiffies(60 * 1000));
 		}
 	}
+#endif
 	if (!acomp->ops) {
 		dev_info(bus->dev, "couldn't bind with audio component\n");
 		snd_hdac_acomp_exit(bus);
