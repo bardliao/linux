@@ -146,7 +146,7 @@ int snd_sof_volume_put(struct snd_kcontrol *kcontrol,
 					      SOF_IPC_COMP_SET_VALUE,
 					      SOF_CTRL_TYPE_VALUE_CHAN_SET,
 					      SOF_CTRL_CMD_VOLUME,
-					      true);
+					      false);
 	return change;
 }
 
