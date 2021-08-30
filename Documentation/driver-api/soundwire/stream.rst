@@ -320,6 +320,10 @@ the respective Master(s) and Slave(s) associated with stream. These APIs can
 only be invoked once by respective Master(s) and Slave(s). From ASoC DPCM
 framework, this stream state is linked to .hw_params() operation.
 
+Since the ALSA/ASoC framework will by construction invoke Master callbacks
+before Slave ones, sdw_stream_add_master() shall be called before any Slaves
+are added to the stream.
+
 .. code-block:: c
 
   int sdw_stream_add_master(struct sdw_bus * bus,

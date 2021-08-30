@@ -936,12 +936,13 @@ static struct sdw_master_runtime
 	struct sdw_master_runtime *m_rt;
 
 	/*
-	 * check if Master is already allocated (as a result of Slave adding
-	 * it first), if so skip allocation and go to configure
+	 * verify that Master is not already allocated
 	 */
 	m_rt = sdw_find_master_rt(bus, stream);
-	if (m_rt)
-		goto stream_config;
+	if (m_rt) {
+		m_rt = ERR_PTR(-EINVAL);
+		return m_rt;
+	}
 
 	m_rt = kzalloc(sizeof(*m_rt), GFP_KERNEL);
 	if (!m_rt)
@@ -954,7 +955,6 @@ static struct sdw_master_runtime
 
 	list_add_tail(&m_rt->bus_node, &bus->m_rt_list);
 
-stream_config:
 	m_rt->ch_count = stream_config->ch_count;
 	m_rt->bus = bus;
 	m_rt->stream = stream;
@@ -1301,27 +1301,30 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 	}
 
 	m_rt = sdw_alloc_master_rt(bus, stream_config, stream);
-	if (!m_rt) {
+	if (IS_ERR_OR_NULL(m_rt)) {
+		if (!m_rt)
+			ret = -ENOMEM;
+		else
+			ret = PTR_ERR(m_rt);
 		dev_err(bus->dev,
-			"Master runtime config failed for stream:%s\n",
+			"Master runtime alloc failed for stream:%s\n",
 			stream->name);
-		ret = -ENOMEM;
 		goto unlock;
 	}
 
 	ret = sdw_config_stream(bus->dev, stream, stream_config, false);
 	if (ret)
-		goto stream_error;
+		goto config_error;
 
 	ret = sdw_master_port_config(bus, m_rt, port_config, num_ports);
 	if (ret)
-		goto stream_error;
+		goto config_error;
 
 	stream->m_rt_count++;
 
 	goto unlock;
 
-stream_error:
+config_error:
 	sdw_release_master_stream(m_rt, stream);
 unlock:
 	mutex_unlock(&bus->bus_lock);
@@ -1338,7 +1341,7 @@ EXPORT_SYMBOL(sdw_stream_add_master);
  * @port_config: Port configuration for audio stream
  * @num_ports: Number of ports
  *
- * It is expected that Slave is added before adding Master
+ * It is an error if the Slave is added before the Master
  * to the Stream.
  *
  */
@@ -1355,44 +1358,35 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 	mutex_lock(&slave->bus->bus_lock);
 
 	/*
-	 * If this API is invoked by Slave first then m_rt is not valid.
-	 * So, allocate m_rt and add Slave to it.
+	 * make sure there's a master runtime for this stream
 	 */
-	m_rt = sdw_alloc_master_rt(slave->bus, stream_config, stream);
+	m_rt = sdw_find_master_rt(slave->bus, stream);
 	if (!m_rt) {
 		dev_err(&slave->dev,
-			"alloc master runtime failed for stream:%s\n",
+			"no allocated master runtime for stream:%s\n",
 			stream->name);
-		ret = -ENOMEM;
-		goto error;
+		ret = -EINVAL;
+		goto unlock;
 	}
 
 	s_rt = sdw_alloc_slave_rt(slave, stream_config, stream);
 	if (!s_rt) {
 		dev_err(&slave->dev,
-			"Slave runtime config failed for stream:%s\n",
+			"Slave runtime alloc failed for stream:%s\n",
 			stream->name);
 		ret = -ENOMEM;
-		goto stream_error;
+		goto unlock;
 	}
 
 	ret = sdw_config_stream(&slave->dev, stream, stream_config, true);
-	if (ret) {
-		/*
-		 * sdw_release_master_stream will release s_rt in slave_rt_list in
-		 * stream_error case, but s_rt is only added to slave_rt_list
-		 * when sdw_config_stream is successful, so free s_rt explicitly
-		 * when sdw_config_stream is failed.
-		 */
-		kfree(s_rt);
-		goto stream_error;
-	}
+	if (ret)
+		goto config_error;
 
 	list_add_tail(&s_rt->m_rt_node, &m_rt->slave_rt_list);
 
 	ret = sdw_slave_port_config(slave, s_rt, port_config, num_ports);
 	if (ret)
-		goto stream_error;
+		goto port_config_error;
 
 	/*
 	 * Change stream state to CONFIGURED on first Slave add.
@@ -1401,15 +1395,13 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 	 * change stream state to CONFIGURED.
 	 */
 	stream->state = SDW_STREAM_CONFIGURED;
-	goto error;
+	goto unlock;
 
-stream_error:
-	/*
-	 * we hit error so cleanup the stream, release all Slave(s) and
-	 * Master runtime
-	 */
-	sdw_release_master_stream(m_rt, stream);
-error:
+port_config_error:
+	list_del(&s_rt->m_rt_node);
+config_error:
+	kfree(s_rt);
+unlock:
 	mutex_unlock(&slave->bus->bus_lock);
 	return ret;
 }
