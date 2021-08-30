@@ -947,9 +947,9 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 		if (!snd_soc_dai_stream_valid(cpu_dai, substream->stream))
 			continue;
 
-		ret = snd_soc_dai_hw_params(cpu_dai, substream, params);
-		if (ret < 0)
-			goto out;
+		//ret = snd_soc_dai_hw_params(cpu_dai, substream, params);
+		//if (ret < 0)
+		//	goto out;
 
 		/* store the parameters for each DAI */
 		//soc_pcm_set_dai_params(cpu_dai, params);
@@ -1006,6 +1006,10 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 		 */
 		if (!snd_soc_dai_stream_valid(cpu_dai, substream->stream))
 			continue;
+
+		ret = snd_soc_dai_hw_params(cpu_dai, substream, params);
+		if (ret < 0)
+			goto out;
 
 		/* store the parameters for each DAI */
 		soc_pcm_set_dai_params(cpu_dai, params);
