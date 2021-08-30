@@ -952,8 +952,8 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 			goto out;
 
 		/* store the parameters for each DAI */
-		soc_pcm_set_dai_params(cpu_dai, params);
-		snd_soc_dapm_update_dai(substream, params, cpu_dai);
+		//soc_pcm_set_dai_params(cpu_dai, params);
+		//snd_soc_dapm_update_dai(substream, params, cpu_dai);
 	}
 
 	for_each_rtd_codec_dais(rtd, i, codec_dai) {
@@ -997,6 +997,19 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 
 		soc_pcm_set_dai_params(codec_dai, &codec_params);
 		snd_soc_dapm_update_dai(substream, &codec_params, codec_dai);
+	}
+
+	for_each_rtd_cpu_dais(rtd, i, cpu_dai) {
+		/*
+		 * Skip CPUs which don't support the current stream
+		 * type. See soc_pcm_init_runtime_hw() for more details
+		 */
+		if (!snd_soc_dai_stream_valid(cpu_dai, substream->stream))
+			continue;
+
+		/* store the parameters for each DAI */
+		soc_pcm_set_dai_params(cpu_dai, params);
+		snd_soc_dapm_update_dai(substream, params, cpu_dai);
 	}
 
 	ret = snd_soc_pcm_component_hw_params(substream, params);
