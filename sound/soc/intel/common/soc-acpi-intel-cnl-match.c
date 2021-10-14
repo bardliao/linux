@@ -53,7 +53,32 @@ static const struct snd_soc_acpi_link_adr up_extreme_rt5682_2[] = {
 	{}
 };
 
+static const struct snd_soc_acpi_adr_device rt1316_1_adr[] = {
+	{
+		.adr = 0x000130025d131601ull,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+		.name_prefix = "rt1316-1"
+	}
+};
+
+static const struct snd_soc_acpi_link_adr up_extreme_rt1316_1[] = {
+	{
+		.mask = BIT(1),
+		.num_adr = ARRAY_SIZE(rt1316_1_adr),
+		.adr_d = rt1316_1_adr,
+	},
+	{}
+};
+
 struct snd_soc_acpi_mach snd_soc_acpi_intel_cnl_sdw_machines[] = {
+	{
+		.link_mask = BIT(1),
+		.links = up_extreme_rt1316_1,
+		.drv_name = "sof_sdw",
+		.sof_fw_filename = "sof-cnl.ri",
+		.sof_tplg_filename = "sof-cnl-rt1316-sdw1.tplg"
+	},
 	{
 		.link_mask = BIT(2),
 		.links = up_extreme_rt5682_2,
