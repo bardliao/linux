@@ -1242,6 +1242,7 @@ DMIC:
 	}
 
 HDMI:
+	be_id = 5;
 	/* HDMI */
 	if (hdmi_num > 0) {
 		idisp_components = devm_kcalloc(dev, hdmi_num,
