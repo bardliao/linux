@@ -118,6 +118,8 @@ static int _sdw_program_slave_port_params(struct sdw_bus *bus,
 	if (ret < 0)
 		dev_err(bus->dev, "DPN_HCtrl register write failed\n");
 
+	dev_err(bus->dev, "bard: %s hstart %d, hstop %d blk_pkg_mode %d sample_interval %d offset1 %d offset2 %d\n",
+		__func__, t_params->hstart, t_params->hstop, t_params->blk_pkg_mode, t_params->sample_interval, t_params->offset1, t_params->offset2);
 	return ret;
 }
 
@@ -170,6 +172,7 @@ static int sdw_program_slave_port_params(struct sdw_bus *bus,
 		return ret;
 	}
 
+	dev_err(&s_rt->slave->dev, "bard: %s bps %d\n", __func__, p_params->bps);
 	if (!dpn_prop->read_only_wordlength) {
 		/* Program DPN_BlockCtrl1 register */
 		ret = sdw_write(s_rt->slave, addr2, (p_params->bps - 1));
@@ -343,6 +346,8 @@ static int sdw_enable_disable_master_ports(struct sdw_master_runtime *m_rt,
 	enable_ch.ch_mask = p_rt->ch_mask;
 	enable_ch.enable = en;
 
+	dev_err(bus->dev, "bard: %s port_num %d ch_mask %#x enable %d\n",
+		__func__, enable_ch.port_num, enable_ch.ch_mask, enable_ch.enable);
 	/* Perform Master port channel(s) enable/disable */
 	if (bus->port_ops->dpn_port_enable_ch) {
 		ret = bus->port_ops->dpn_port_enable_ch(bus,
@@ -1171,6 +1176,7 @@ static int sdw_config_stream(struct device *dev,
 	stream->type = stream_config->type;
 	stream->params.rate = stream_config->frame_rate;
 	stream->params.bps = stream_config->bps;
+	dev_err(dev, "bard: %s rate %d bps %d\n", __func__, stream->params.rate, stream->params.bps);
 
 	/* TODO: Update this check during Device-device support */
 	if (is_slave)

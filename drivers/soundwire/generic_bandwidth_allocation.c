@@ -328,6 +328,8 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
 
 			bus->params.row = sdw_rows[r];
 			bus->params.col = sdw_cols[c];
+			dev_err(bus->dev, "bard: %s row: %d col: %d\n",
+				__func__, bus->params.row, bus->params.col);
 			return 0;
 		}
 	}
