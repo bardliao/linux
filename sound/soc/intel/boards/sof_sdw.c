@@ -342,6 +342,14 @@ static const struct dmi_system_id sof_sdw_quirk_table[] = {
 		},
 		.driver_data = (void *)(RT711_JD1 | SOF_SDW_TGL_HDMI),
 	},
+	{
+		.callback = sof_sdw_quirk_cb,
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Intel Corporation"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Meteorlake RVP"),
+		},
+		.driver_data = (void *)(RT711_JD1 | SOF_SDW_PCH_DMIC),
+	},
 	{}
 };
 
