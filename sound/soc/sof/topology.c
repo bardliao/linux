@@ -1062,7 +1062,7 @@ static int sof_connect_dai_widget(struct snd_soc_component *scomp,
 	if (!dai->name) {
 		dev_err(scomp->dev, "error: can't connect DAI %s stream %s\n",
 			w->name, w->sname);
-		return -EINVAL;
+//		return -EINVAL;
 	}
 
 	return 0;

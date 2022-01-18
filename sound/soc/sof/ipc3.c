@@ -39,7 +39,7 @@ static const struct ipc_pm_ops ipc3_pm_ops = {
 };
 
 const struct ipc_ops ipc3_ops = {
-	.tplg = &ipc3_tplg_ops,
+	.tplg = &ipc4_tplg_ops,
 	.pm = &ipc3_pm_ops,
 	.pcm = &ipc3_pcm_ops,
 };

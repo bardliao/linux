@@ -1015,8 +1015,8 @@ struct snd_sof_ipc *snd_sof_ipc_init(struct snd_sof_dev *sdev)
 	ipc->ops = &ipc3_ops;
 
 	/* check for mandatory ops */
-	if (!ipc->ops->pcm || !ipc->ops->tplg || !ipc->ops->tplg->widget ||
-	    !ipc->ops->tplg->control) {
+	if (!ipc->ops->pcm || !ipc->ops->tplg || !ipc->ops->tplg->widget/* ||
+	    !ipc->ops->tplg->control*/) {
 		dev_err(sdev->dev, "Invalid IPC ops\n");
 		return NULL;
 	}
