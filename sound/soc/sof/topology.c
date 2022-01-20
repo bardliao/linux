@@ -1853,6 +1853,7 @@ static int sof_complete(struct snd_soc_component *scomp)
 	struct snd_sof_control *scontrol;
 	int ret;
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	/* first update all control IPC structures based on the IPC version */
 	if (ipc_tplg_ops->control_setup)
 		list_for_each_entry(scontrol, &sdev->kcontrol_list, list) {
@@ -1864,6 +1865,7 @@ static int sof_complete(struct snd_soc_component *scomp)
 			}
 		}
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	/*
 	 * then update all widget IPC structures. If any of the ipc_setup callbacks fail, the
 	 * topology will be removed and all widgets will be unloaded resulting in freeing all
@@ -1880,6 +1882,7 @@ static int sof_complete(struct snd_soc_component *scomp)
 		}
 	}
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	/* set the pipe_widget and apply the dynamic_pipeline_widget_flag */
 	list_for_each_entry(swidget, &sdev->widget_list, list) {
 		switch (swidget->id) {
@@ -1900,6 +1903,7 @@ static int sof_complete(struct snd_soc_component *scomp)
 		}
 	}
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	/* verify topology components loading including dynamic pipelines */
 	if (sof_debug_check_flag(SOF_DBG_VERIFY_TPLG)) {
 		if (ipc_tplg_ops->set_up_all_pipelines && ipc_tplg_ops->tear_down_all_pipelines) {
@@ -1919,10 +1923,12 @@ static int sof_complete(struct snd_soc_component *scomp)
 		}
 	}
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	/* set up static pipelines */
 	if (ipc_tplg_ops->set_up_all_pipelines)
 		return ipc_tplg_ops->set_up_all_pipelines(sdev, false);
 
+	pr_err("bard: %s %d return 0\n", __func__, __LINE__);
 	return 0;
 }
 
