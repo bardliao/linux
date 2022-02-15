@@ -1200,6 +1200,14 @@ static int sof_ipc4_route_free(struct snd_sof_dev *sdev, struct snd_sof_route *s
 	u32 header, extension;
 	int ret;
 
+	/*
+	 * when one of route endpoint widgets is in use by another pipeline, skip sending the
+	 * unbind IPC as it results in an error.
+	 * TODO: check if this issue exists in TGL as well
+	 */
+	if (src_widget->use_count > 1 || sink_widget->use_count > 1)
+		return 0;
+
 	dev_dbg(sdev->dev, "%s: unbind modules %s -> %s\n", __func__,
 		src_widget->widget->name, sink_widget->widget->name);
 
