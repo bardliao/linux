@@ -723,6 +723,10 @@ static void sof_ipc4_unprepare_copier_module(struct snd_sof_widget *swidget)
 
 	if (WIDGET_IS_AIF(swidget->id)) {
 		ipc4_copier = swidget->private;
+	} else {
+		struct snd_sof_dai *dai = swidget->private;
+
+		ipc4_copier = dai->private;
 	}
 
 	kfree(ipc4_copier->ipc_config_data);
@@ -793,7 +797,32 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 	}
 	case snd_soc_dapm_dai_in:
 	case snd_soc_dapm_dai_out:
+	{
+		struct snd_sof_dai *dai = swidget->private;
+
+		ipc4_copier = (struct sof_ipc4_copier *)dai->private;
+		copier_data = &ipc4_copier->data;
+		available_fmt = &ipc4_copier->available_fmt;
+		if (dir == SNDRV_PCM_STREAM_CAPTURE) {
+			available_fmt->ref_audio_fmt = available_fmt->out_audio_fmt;
+			ref_audio_fmt_size = sizeof(struct sof_ipc4_audio_format);
+
+			/*
+			 * modify the input params for the dai copier as it only supports
+			 * 32-bit always
+			 */
+			fmt = hw_param_mask(pipeline_params, SNDRV_PCM_HW_PARAM_FORMAT);
+			snd_mask_none(fmt);
+			snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S32_LE);
+		} else {
+			available_fmt->ref_audio_fmt = &available_fmt->base_config->audio_fmt;
+			ref_audio_fmt_size = sizeof(struct sof_ipc4_base_module_cfg);
+		}
+
+		ref_params = pipeline_params;
+
 		break;
+	}
 	default:
 		dev_err(sdev->dev, "unsupported type %d for copier %s",
 			swidget->id, swidget->widget->name);
@@ -897,9 +926,13 @@ static const struct sof_ipc_tplg_widget_ops tplg_ipc4_widget_ops[SND_SOC_DAPM_TY
 				  sof_ipc4_prepare_copier_module,
 				  sof_ipc4_unprepare_copier_module},
 	[snd_soc_dapm_dai_in] = {sof_ipc4_widget_setup_comp_dai, sof_ipc4_widget_free_comp_dai,
-				 dai_token_list, ARRAY_SIZE(dai_token_list), NULL, NULL, NULL},
+				 dai_token_list, ARRAY_SIZE(dai_token_list), NULL,
+				 sof_ipc4_prepare_copier_module,
+				 sof_ipc4_unprepare_copier_module},
 	[snd_soc_dapm_dai_out] = {sof_ipc4_widget_setup_comp_dai, sof_ipc4_widget_free_comp_dai,
-				  dai_token_list, ARRAY_SIZE(dai_token_list), NULL, NULL, NULL},
+				  dai_token_list, ARRAY_SIZE(dai_token_list), NULL,
+				  sof_ipc4_prepare_copier_module,
+				  sof_ipc4_unprepare_copier_module},
 	[snd_soc_dapm_scheduler] = {sof_ipc4_widget_setup_comp_pipeline, sof_ipc4_widget_free_comp,
 				    pipeline_token_list, ARRAY_SIZE(pipeline_token_list), NULL,
 				    NULL, NULL},
