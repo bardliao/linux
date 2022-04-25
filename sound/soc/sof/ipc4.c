@@ -556,6 +556,11 @@ static int ipc4_fw_ready(struct snd_sof_dev *sdev, struct sof_ipc4_msg *ipc4_msg
 		outbox_offset, outbox_size);
 	dev_dbg(sdev->dev, "debug box 0x%x\n", sdev->debug_box.offset);
 
+	/* HACK, etrace */
+	snd_sof_debugfs_add_region_item(sdev, SOF_FW_BLK_TYPE_SRAM,
+					0xe0000, 0x2000, "etrace",
+					SOF_DEBUGFS_ACCESS_D0_ONLY);
+
 	return sof_ipc4_init_msg_memory(sdev);
 }
 
