@@ -613,6 +613,12 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = "sdw-mockup-aif1",
 		.codec_type = SOF_SDW_CODEC_TYPE_MIC,
 	},
+	{
+		.part_id = 0x4243,
+		.direction = {true, true},
+		.dai_name = "cs42l43-dp5",
+		.init = sof_sdw_cs42l43_init,
+	},
 };
 
 static inline int find_codec_info_part(u64 adr)
