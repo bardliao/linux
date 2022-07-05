@@ -283,6 +283,43 @@ static const struct snd_soc_acpi_adr_device cs42l43_3_adr[] = {
 	}
 };
 
+
+static const struct snd_soc_acpi_adr_device cs42l43_sdw0_adr[] = {
+	{
+		.adr = 0x00003001fa424301,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+		.name_prefix = "cs42l43"
+	}
+};
+
+static const struct snd_soc_acpi_adr_device cs42l43_sdw3_adr[] = {
+	{
+		.adr = 0x00033001fa424301,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+		.name_prefix = "cs42l43"
+	}
+};
+
+static const struct snd_soc_acpi_link_adr up_extreme_cs42l43_sdw0[] = {
+	{
+		.mask = 0x1,
+		.num_adr = ARRAY_SIZE(cs42l43_sdw0_adr),
+		.adr_d = cs42l43_sdw0_adr,
+	},
+	{}
+};
+
+static const struct snd_soc_acpi_link_adr up_extreme_cs42l43_sdw3[] = {
+	{
+		.mask = 0x8,
+		.num_adr = ARRAY_SIZE(cs42l43_sdw3_adr),
+		.adr_d = cs42l43_sdw3_adr,
+	},
+	{}
+};
+
 static const struct snd_soc_acpi_link_adr tgl_rvp[] = {
 	{
 		.mask = BIT(0),
@@ -631,6 +668,18 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_tgl_sdw_machines[] = {
 		.links = tgl_rvp_headset_only,
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-tgl-rt711.tplg",
+	},
+		{
+		.link_mask = 0x1, /* m1 minicard on link 0 */
+		.links = up_extreme_cs42l43_sdw0,
+		.drv_name = "sof_sdw",
+		.sof_tplg_filename = "sof-tgl-sdw0-cs42l43.tplg"
+	},
+	{
+		.link_mask = 0x8, /* eight-c on link 3 */
+		.links = up_extreme_cs42l43_sdw3,
+		.drv_name = "sof_sdw",
+		.sof_tplg_filename = "sof-tgl-sdw3-cs42l43.tplg"
 	},
 	{},
 };
