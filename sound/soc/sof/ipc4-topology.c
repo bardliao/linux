@@ -1449,9 +1449,11 @@ static int sof_ipc4_widget_setup(struct snd_sof_dev *sdev, struct snd_sof_widget
 {
 	struct sof_ipc4_pipeline *pipeline;
 	struct sof_ipc4_msg *msg;
+	struct sof_ipc4_msg msg2;
 	void *ipc_data = NULL;
 	u32 ipc_size = 0;
 	int ret;
+	struct sof_ipc4_fw_module *swidget_mod;
 
 	switch (swidget->id) {
 	case snd_soc_dapm_scheduler:
@@ -1545,6 +1547,33 @@ static int sof_ipc4_widget_setup(struct snd_sof_dev *sdev, struct snd_sof_widget
 	ret = sof_ipc_tx_message(sdev->ipc, msg, ipc_size, NULL, 0);
 	if (ret < 0)
 		dev_err(sdev->dev, "failed to create module %s\n", swidget->widget->name);
+
+	if(!strcmp(swidget->widget->name, "copier.SSP.8.1")) {
+		u32 large_data[52] = {0x00000001, 0x0000bb80, 0x00000020, 0xFFFFFF10,
+								0x00000001, 0x00000000, 0x00002002, 0x0000bb80,
+								0x00000020, 0xFFFFFF10, 0x00000001, 0x00000000,
+								0x00002002};
+
+		swidget_mod = swidget->module_info;
+		dev_info(sdev->dev, "Setup pin1 for: %s\n", swidget->widget->name);
+
+		msg2.primary  = swidget_mod->man4_module_entry.id;
+		msg2.primary  |= SOF_IPC4_MOD_INSTANCE(swidget->instance_id);
+		msg2.primary  |= SOF_IPC4_MSG_TYPE_SET(SOF_IPC4_MOD_LARGE_CONFIG_SET);
+		msg2.primary  |= SOF_IPC4_MSG_DIR(SOF_IPC4_MSG_REQUEST);
+		msg2.primary  |= SOF_IPC4_MSG_TARGET(SOF_IPC4_MODULE_MSG);
+
+		msg2.extension = 0;
+		msg2.extension |= SOF_IPC4_MOD_EXT_MSG_SIZE(52);
+		msg2.extension |= SOF_IPC4_MOD_EXT_MSG_PARAM_ID(2);
+		msg2.extension |= SOF_IPC4_MOD_EXT_MSG_LAST_BLOCK(1);
+		msg2.extension |= SOF_IPC4_MOD_EXT_MSG_FIRST_BLOCK(1);
+
+		msg2.data_ptr = &large_data;
+
+		msg2.data_size = 52;
+		ret = sof_ipc_tx_message(sdev->ipc, &msg2, 52, NULL, 0);
+	}
 
 	return ret;
 }

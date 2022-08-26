@@ -184,6 +184,12 @@ struct sof_ipc4_copier {
 	int dai_index;
 };
 
+struct sof_ipc4_copier_sink_format {
+	u32 pin_id;
+	struct sof_ipc4_audio_format input_fmt;
+	struct sof_ipc4_audio_format output_fmt;
+};
+
 /**
  * struct sof_ipc4_ctrl_value_chan: generic channel mapped value data
  * @channel: Channel ID
