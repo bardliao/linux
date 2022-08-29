@@ -392,6 +392,8 @@ static int sof_ipc4_widget_setup_pcm(struct snd_sof_widget *swidget)
 	dev_dbg(scomp->dev, "host copier '%s' node_type %u\n", swidget->widget->name, node_type);
 
 	ipc4_copier->data.gtw_cfg.node_id = SOF_IPC4_NODE_TYPE(node_type);
+	pr_err("bard: %s %s ipc4_copier->data.gtw_cfg.node_id = %x\n",
+		__func__, swidget->widget->name, ipc4_copier->data.gtw_cfg.node_id);
 	ipc4_copier->gtw_attr = kzalloc(sizeof(*ipc4_copier->gtw_attr), GFP_KERNEL);
 	if (!ipc4_copier->gtw_attr) {
 		ret = -ENOMEM;
@@ -700,6 +702,9 @@ static int sof_ipc4_widget_setup_comp_pga(struct snd_sof_widget *swidget)
 			msg->primary |= fw_module->man4_module_entry.id;
 		}
 
+	/* HACK: bard: set source/sink pins*/
+	swidget->num_source_pins = 4;
+	swidget->num_sink_pins = 4;
 	return 0;
 err:
 	sof_ipc4_free_audio_fmt(&gain->available_fmt);
@@ -1145,9 +1150,18 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 			available_fmt->ref_audio_fmt = available_fmt->out_audio_fmt;
 			ref_audio_fmt_size = sizeof(struct sof_ipc4_audio_format);
 		}
+		ret = sof_ipc4_widget_assign_instance_id(sdev, swidget);
+		if (ret < 0) {
+			dev_err(sdev->dev, "failed to assign instance id for %s\n",
+				swidget->widget->name);
+			return ret;
+		}
 		copier_data->gtw_cfg.node_id &= ~SOF_IPC4_NODE_INDEX_MASK;
 		copier_data->gtw_cfg.node_id |=
-			SOF_IPC4_NODE_INDEX(platform_params->stream_tag - 1);
+		//	SOF_IPC4_NODE_INDEX(platform_params->stream_tag - 1);
+			SOF_IPC4_NODE_INDEX(swidget->instance_id);
+		pr_err("bard: %s %s ipc4_copier->data.gtw_cfg.node_id = %x\n",
+			__func__, swidget->widget->name, ipc4_copier->data.gtw_cfg.node_id);
 
 		/* set gateway attributes */
 		gtw_attr->lp_buffer_alloc = pipeline->lp_mode;
