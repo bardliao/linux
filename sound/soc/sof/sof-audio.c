@@ -250,6 +250,10 @@ static int sof_setup_pipeline_connections(struct snd_sof_dev *sdev,
 			if (!widget->dobj.private)
 				continue;
 
+			if (WIDGET_IS_DAI(widget->id)) {
+				pr_err("bard: %s end at %s\n", __func__, widget->name);
+				break;
+			}
 			snd_soc_dapm_widget_for_each_source_path(widget, p)
 				if (p->source->dobj.private) {
 					ret = sof_route_setup(sdev, p->source, widget);
@@ -320,6 +324,7 @@ sof_prepare_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_dapm_widget
 		goto sink_prepare;
 
 	/* prepare the source widget */
+	pr_err("bard: %s %s\n", __func__, widget->name);
 	ret = widget_ops[widget->id].ipc_prepare(swidget, fe_params, platform_params,
 					     pipeline_params, dir);
 	if (ret < 0) {
@@ -476,6 +481,13 @@ sof_walk_widgets_in_order(struct snd_sof_dev *sdev, struct snd_soc_dapm_widget_l
 	int i;
 
 	for_each_dapm_widgets(list, i, widget) {
+		pr_err("bard: %s walking %s %d %d %d\n",
+			__func__, widget->name, widget->power, widget->active, widget->power_check(widget));
+		if (WIDGET_IS_DAI(widget->id)) {
+			pr_err("bard: %s end at %s\n", __func__, widget->name);
+			break;
+		}
+
 		/* starting from AIF type widget */
 		if (!WIDGET_IS_AIF(widget->id))
 			continue;
@@ -536,6 +548,7 @@ int sof_widget_list_setup(struct snd_sof_dev *sdev, struct snd_sof_pcm *spcm,
 	if (!list)
 		return 0;
 
+	pr_err("bard: pcm name %s\n", spcm->pcm.pcm_name);
 	/*
 	 * Prepare widgets for set up. The prepare step is used to allocate memory, assign
 	 * instance ID and pick the widget configuration based on the runtime PCM params.

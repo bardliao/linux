@@ -1310,7 +1310,7 @@ static struct snd_soc_pcm_runtime *dpcm_get_be(struct snd_soc_card *card,
 	struct snd_soc_dai *dai;
 	int i;
 
-	dev_dbg(card->dev, "ASoC: find BE for widget %s\n", widget->name);
+	dev_err(card->dev, "bard: ASoC: find BE for widget %s\n", widget->name);
 
 	for_each_card_rtds(card, be) {
 
@@ -1320,7 +1320,7 @@ static struct snd_soc_pcm_runtime *dpcm_get_be(struct snd_soc_card *card,
 		for_each_rtd_dais(be, i, dai) {
 			w = snd_soc_dai_get_widget(dai, stream);
 
-			dev_dbg(card->dev, "ASoC: try BE : %s\n",
+			dev_err(card->dev, "ASoC: try BE : %s\n",
 				w ? w->name : "(not set)");
 
 			if (w == widget)
@@ -1351,6 +1351,7 @@ bool dpcm_end_walk_at_be(struct snd_soc_dapm_widget *widget, enum snd_soc_dapm_d
 	struct snd_soc_pcm_runtime *rtd;
 	int stream;
 
+	pr_err("bard: %s %d\n", widget->name, dir);
 	/* adjust dir to stream */
 	if (dir == SND_SOC_DAPM_DIR_OUT)
 		stream = SNDRV_PCM_STREAM_PLAYBACK;

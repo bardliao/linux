@@ -104,6 +104,11 @@ static int sof_ipc4_trigger_pipelines(struct snd_soc_component *component,
 		}
 
 		pipeline->state = state;
+
+		if (WIDGET_IS_DAI(widget->id)) {
+			pr_err("bard: %s end at %s\n", __func__, widget->name);
+			break;
+		}
 	}
 
 	return ret;

@@ -92,10 +92,16 @@ sof_pcm_setup_connected_widgets(struct snd_sof_dev *sdev, struct snd_soc_pcm_run
 	struct snd_soc_dai *dai;
 	int ret, j;
 
+	pr_err("bard: %s\n", __func__);
+	if (rtd->playback_widget)
+		pr_err("bard: playback widgets %s\n", rtd->playback_widget->name);
+	if (rtd->capture_widget)
+		pr_err("bard: capture widgets %s\n", rtd->capture_widget->name);
 	/* query DAPM for list of connected widgets and set them up */
 	for_each_rtd_cpu_dais(rtd, j, dai) {
 		struct snd_soc_dapm_widget_list *list;
 
+		pr_err("bard: dai %s\n", dai->name);
 		ret = snd_soc_dapm_dai_get_connected_widgets(dai, dir, &list,
 							     dpcm_end_walk_at_be);
 		if (ret < 0) {
