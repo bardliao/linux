@@ -68,6 +68,34 @@ static int sof_nocodec_bes_setup(struct device *dev,
 	card->dai_link = links;
 	card->num_links = link_num;
 
+	/* add BE for echo reference */
+	dlc = devm_kcalloc(dev, 3, sizeof(*dlc), GFP_KERNEL);
+	if (!dlc)
+		return -ENOMEM;
+
+	links[i].name = devm_kasprintf(dev, GFP_KERNEL,
+				       "SPK-reference");
+	if (!links[i].name)
+		return -ENOMEM;
+	links[i].stream_name = links[i].name;
+
+	links[i].cpus = &dlc[0];
+	links[i].codecs = &dlc[1];
+	links[i].platforms = &dlc[2];
+
+	links[i].num_cpus = 1;
+	links[i].num_codecs = 1;
+	links[i].num_platforms = 1;
+
+	links[i].id = i;
+	links[i].no_pcm = 1;
+	links[i].cpus->dai_name = "SSP0 Pin";
+	links[i].platforms->name = dev_name(dev->parent);
+	links[i].codecs->dai_name = "snd-soc-dummy-dai";
+	links[i].codecs->name = "snd-soc-dummy";
+	links[i].dpcm_capture = 1;
+	card->num_links++;
+
 	return 0;
 }
 
@@ -78,7 +106,8 @@ static int sof_nocodec_setup(struct device *dev,
 	struct snd_soc_dai_link *links;
 
 	/* create dummy BE dai_links */
-	links = devm_kcalloc(dev, num_dai_drivers, sizeof(struct snd_soc_dai_link), GFP_KERNEL);
+	/* num_dai_drivers + 1 for echo reference BE */
+	links = devm_kcalloc(dev, num_dai_drivers + 1, sizeof(struct snd_soc_dai_link), GFP_KERNEL);
 	if (!links)
 		return -ENOMEM;
 
