@@ -1519,6 +1519,11 @@ static int sof_widget_ready(struct snd_soc_component *scomp, int index,
 		break;
 	}
 
+	if (swidget->id == snd_soc_dapm_aif_in || swidget->id == snd_soc_dapm_dai_in)
+		swidget->dir = SNDRV_PCM_STREAM_PLAYBACK;
+	else if (swidget->id == snd_soc_dapm_aif_out || swidget->id == snd_soc_dapm_dai_out)
+		swidget->dir = SNDRV_PCM_STREAM_CAPTURE;
+
 	/* check token parsing reply */
 	if (ret < 0) {
 		dev_err(scomp->dev,
@@ -2142,6 +2147,18 @@ static int sof_set_widget_pipeline(struct snd_sof_dev *sdev, struct snd_sof_pipe
 	swidget->spipe = spipe;
 	swidget->dynamic_pipeline_widget = pipe_widget->dynamic_pipeline_widget;
 
+	/* set pipeline dir */
+	switch (swidget->id) {
+	case snd_soc_dapm_aif_in:
+	case snd_soc_dapm_aif_out:
+	case snd_soc_dapm_dai_in:
+	case snd_soc_dapm_dai_out:
+		pipe_widget->dir = swidget->dir;
+		break;
+	default:
+		break;
+	}
+
 	return 0;
 }
 
@@ -2152,6 +2169,7 @@ static int sof_complete(struct snd_soc_component *scomp)
 	const struct sof_ipc_tplg_ops *tplg_ops = sof_ipc_get_ops(sdev, tplg);
 	const struct sof_ipc_tplg_widget_ops *widget_ops;
 	struct snd_sof_control *scontrol;
+	struct snd_sof_widget *swidget;
 	struct snd_sof_pipeline *spipe;
 	int ret;
 
@@ -2171,7 +2189,6 @@ static int sof_complete(struct snd_soc_component *scomp)
 	/* set up the IPC structures for the pipeline widgets */
 	list_for_each_entry(spipe, &sdev->pipeline_list, list) {
 		struct snd_sof_widget *pipe_widget = spipe->pipe_widget;
-		struct snd_sof_widget *swidget;
 
 		/* Update the scheduler widget's IPC structure */
 		if (widget_ops && widget_ops[pipe_widget->id].ipc_setup) {
@@ -2201,6 +2218,21 @@ static int sof_complete(struct snd_soc_component *scomp)
 					}
 				}
 			}
+	}
+
+	/* set wisgets dir */
+	list_for_each_entry(swidget, &sdev->widget_list, list) {
+		switch (swidget->id) {
+		case snd_soc_dapm_aif_in:
+		case snd_soc_dapm_aif_out:
+		case snd_soc_dapm_dai_in:
+		case snd_soc_dapm_dai_out:
+		case snd_soc_dapm_scheduler:
+			break;
+		default:
+			swidget->dir = swidget->spipe->pipe_widget->dir;
+			break;
+		}
 	}
 
 	/* verify topology components loading including dynamic pipelines */
