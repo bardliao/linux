@@ -253,6 +253,7 @@ static int sof_setup_pipeline_connections(struct snd_sof_dev *sdev,
 					  struct snd_soc_dapm_widget_list *list, int dir)
 {
 	struct snd_soc_dapm_widget *widget;
+	struct snd_sof_widget *swidget;
 	struct snd_soc_dapm_path *p;
 	int ret;
 	int i;
@@ -272,6 +273,13 @@ static int sof_setup_pipeline_connections(struct snd_sof_dev *sdev,
 				if (!widget_in_list(list, p->sink))
 					continue;
 
+				swidget = p->sink->dobj.private;
+				if (!swidget)
+					continue;
+
+				if (swidget->dir != dir)
+					continue;
+
 				if (p->sink->dobj.private) {
 					ret = sof_route_setup(sdev, widget, p->sink);
 					if (ret < 0)
@@ -286,6 +294,13 @@ static int sof_setup_pipeline_connections(struct snd_sof_dev *sdev,
 
 			snd_soc_dapm_widget_for_each_source_path(widget, p) {
 				if (!widget_in_list(list, p->source))
+					continue;
+
+				swidget = p->source->dobj.private;
+				if (!swidget)
+					continue;
+
+				if (swidget->dir != dir)
 					continue;
 
 				if (p->source->dobj.private) {
@@ -368,6 +383,13 @@ sink_prepare:
 	snd_soc_dapm_widget_for_each_sink_path(widget, p) {
 		if (!widget_in_list(list, p->sink))
 			continue;
+		swidget = p->sink->dobj.private;
+		if (!swidget)
+			continue;
+
+		if (swidget->dir != dir)
+			continue;
+
 		if (!p->walking && p->sink->dobj.private) {
 			p->walking = true;
 			ret = sof_prepare_widgets_in_path(sdev, p->sink,  fe_params,
@@ -396,11 +418,12 @@ static int sof_free_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_dap
 				    int dir, struct snd_sof_pcm *spcm)
 {
 	struct snd_soc_dapm_widget_list *list = spcm->stream[dir].list;
+	struct snd_sof_widget *swidget = widget->dobj.private;
 	struct snd_soc_dapm_path *p;
 	int err;
 	int ret = 0;
 
-	if (widget->dobj.private) {
+	if (swidget && swidget->dir == dir) {
 		err = sof_widget_free(sdev, widget->dobj.private);
 		if (err < 0)
 			ret = err;
@@ -408,6 +431,7 @@ static int sof_free_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_dap
 
 	/* free all widgets in the sink paths even in case of error to keep use counts balanced */
 	snd_soc_dapm_widget_for_each_sink_path(widget, p) {
+		/* TODO: skip swidget->dir != dir */
 		if (!p->walking) {
 			if (!widget_in_list(list, p->sink))
 				continue;
@@ -439,7 +463,7 @@ static int sof_set_up_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_d
 	struct snd_soc_dapm_path *p;
 	int ret;
 
-	if (swidget) {
+	if (swidget && swidget->dir == dir) {
 		int i;
 
 		ret = sof_widget_setup(sdev, widget->dobj.private);
@@ -469,6 +493,13 @@ static int sof_set_up_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_d
 
 sink_setup:
 	snd_soc_dapm_widget_for_each_sink_path(widget, p) {
+		swidget = p->sink->dobj.private;
+		if (!swidget)
+			continue;
+
+		if (swidget->dir != dir)
+			continue;
+
 		if (!p->walking) {
 			if (!widget_in_list(list, p->sink))
 				continue;
@@ -496,6 +527,7 @@ sof_walk_widgets_in_order(struct snd_sof_dev *sdev, struct snd_sof_pcm *spcm,
 {
 	struct snd_soc_dapm_widget_list *list = spcm->stream[dir].list;
 	struct snd_soc_dapm_widget *widget;
+	struct snd_sof_widget *swidget;
 	char *str;
 	int ret = 0;
 	int i;
@@ -504,6 +536,11 @@ sof_walk_widgets_in_order(struct snd_sof_dev *sdev, struct snd_sof_pcm *spcm,
 		return 0;
 
 	for_each_dapm_widgets(list, i, widget) {
+		swidget = widget->dobj.private;
+
+		if (!swidget)
+			continue;
+
 		/* starting widget for playback is AIF type */
 		if (dir == SNDRV_PCM_STREAM_PLAYBACK && widget->id != snd_soc_dapm_aif_in)
 			continue;
