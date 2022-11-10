@@ -66,6 +66,73 @@
 /* A magic number from FW */
 #define ALH_MULTI_GTW_COUNT	8
 
+enum sof_ipc4_copier_module_config_params
+{
+    /*
+      Use LARGE_CONFIG_SET to initialize timestamp event. Ipc mailbox must
+      contain properly built CopierConfigTimestampInitData struct.
+    */
+	SOF_IPC4_COPIER_MODULE_CFG_PARAM_TIMESTAMP_INIT = 1,
+    /*
+      Use LARGE_CONFIG_SET to initialize copier sink. Ipc mailbox must contain
+      properly built CopierConfigSetSinkFormat struct.
+    */
+	SOF_IPC4_COPIER_MODULE_CFG_PARAM_SET_SINK_FORMAT,
+    /*
+      Use LARGE_CONFIG_SET to initialize and enable on Copier data segment
+      event. Ipc mailbox must contain properly built DataSegmentEnabled struct.
+    */
+	SOF_IPC4_COPIER_MODULE_CFG_PARAM_DATA_SEGMENT_ENABLED,
+    /*
+      Use LARGE_CONFIG_GET to retrieve Linear Link Position (LLP) value for non
+      HD-A gateways.
+
+      \see LlpReading
+    */
+	SOF_IPC4_COPIER_MODULE_CFG_PARAM_LLP_READING,
+    /*
+      Use LARGE_CONFIG_GET to retrieve Linear Link Position (LLP) value for non
+      HD-A gateways and corresponding total processed data
+
+      \see LlpReadingExtended
+
+      Sample code to retrieve LlpReadingExtended:
+      \code
+      Message::LargeConfigOp message(true, COPIER_MODULE_ID, KPB_INSTANCE_ID);
+      message.GetBits().large_param_id = COPIER_MODULE_CFG_PARAM_LLP_READING_EXTENDED;
+      message.GetBits().init_block = true;
+      message.GetBits().final_block = true;
+      message.GetBits().data_off_size = IPC_OUTPUT_MAILBOX;
+
+      LlpReadingExtended* output_mailbox = NULL;
+      send_ipc(message, input_mailbox, (uint8_t**)&output_mailbox);
+
+      \endcode
+    */
+	SOF_IPC4_COPIER_MODULE_CFG_PARAM_LLP_READING_EXTENDED,
+    /*
+      Use LARGE_CONFIG_SET to setup attenuation on output pins. Data is just
+      uint32_t.
+
+      \note Config is only allowed when output pin is set up for 32bit and
+            source is connected to Gateway
+    */
+	SOF_IPC4_COPIER_MODULE_CFG_ATTENUATION,
+};
+
+struct sof_ipc4_copier_config_set_sink_format
+{
+	//! Id of sink
+	uint32_t sink_id;
+	//! Input format used by the source
+	/*!
+	  \attention Must be the same as present if already initialized.
+	*/
+	struct sof_ipc4_audio_format source_fmt;
+	//! Output format used by the sink
+	struct sof_ipc4_audio_format sink_fmt;
+};
+
 /**
  * struct sof_ipc4_pipeline - pipeline config data
  * @priority: Priority of this pipeline

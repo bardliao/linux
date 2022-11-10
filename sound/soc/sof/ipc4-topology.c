@@ -1957,6 +1957,49 @@ static void sof_ipc4_put_queue_id(struct snd_sof_widget *swidget, int queue_id,
 	ida_free(queue_ida, queue_id);
 }
 
+static int sof_ipc4_set_sink_format(struct snd_sof_dev *sdev, struct snd_sof_widget *swidget)
+{
+	struct sof_ipc4_copier *ipc4_copier = swidget->private;
+	struct sof_ipc4_copier_config_set_sink_format format;
+	struct sof_ipc4_fw_module *fw_module;
+	struct sof_ipc4_msg msg = {{ 0 }};
+	u32 header, extension;
+#if 0
+	u32 large_data[52] = {0x00000001, 0x0000bb80, 0x00000020, 0xFFFFFF10,
+				0x00000001, 0x00000000, 0x00002002, 0x0000bb80,
+				0x00000020, 0xFFFFFF10, 0x00000001, 0x00000000,
+				0x00002002};
+#endif
+
+
+	fw_module = swidget->module_info;
+
+	pr_err("bard: sizeof sof_ipc4_audio_format %ld %ld\n", sizeof(format.source_fmt), sizeof(format));
+	format.sink_id = 1;
+	memcpy(&format.source_fmt, &ipc4_copier->data.base_config.audio_fmt, sizeof(format.source_fmt));
+	memcpy(&format.sink_fmt, &ipc4_copier->data.out_format, sizeof(format.sink_fmt));
+	msg.data_size = sizeof(format);
+	msg.data_ptr = &format;
+
+	header = fw_module->man4_module_entry.id;
+	header |= SOF_IPC4_MOD_INSTANCE(swidget->instance_id);
+	header |= SOF_IPC4_MSG_TYPE_SET(SOF_IPC4_MOD_LARGE_CONFIG_SET);
+	header |= SOF_IPC4_MSG_DIR(SOF_IPC4_MSG_REQUEST);
+	header |= SOF_IPC4_MSG_TARGET(SOF_IPC4_MODULE_MSG);
+
+	extension = 0;
+	extension |= SOF_IPC4_MOD_EXT_MSG_SIZE(msg.data_size);
+	extension |= SOF_IPC4_MOD_EXT_MSG_PARAM_ID(SOF_IPC4_COPIER_MODULE_CFG_PARAM_SET_SINK_FORMAT);
+	extension |= SOF_IPC4_MOD_EXT_MSG_LAST_BLOCK(1);
+	extension |= SOF_IPC4_MOD_EXT_MSG_FIRST_BLOCK(1);
+
+	msg.primary = header;
+	msg.extension = extension;
+
+	sof_ipc_tx_message(sdev->ipc, &msg, msg.data_size, NULL, 0);
+	return 0;
+}
+
 static int sof_ipc4_route_setup(struct snd_sof_dev *sdev, struct snd_sof_route *sroute)
 {
 	struct snd_sof_widget *src_widget = sroute->src_widget;
@@ -1975,6 +2018,10 @@ static int sof_ipc4_route_setup(struct snd_sof_dev *sdev, struct snd_sof_route *
 		return sroute->src_queue_id;
 	}
 
+	if (sroute->src_queue_id > 0 /* && WIDGET_IS_AIF_OR_DAI(src_widget->id) */) {
+		sof_ipc4_set_sink_format(sdev, src_widget);
+	}
+
 	sroute->dst_queue_id = sof_ipc4_get_queue_id(src_widget, sink_widget,
 						     SOF_PIN_TYPE_SINK);
 	if (sroute->dst_queue_id < 0) {
@@ -1983,6 +2030,10 @@ static int sof_ipc4_route_setup(struct snd_sof_dev *sdev, struct snd_sof_route *
 		sof_ipc4_put_queue_id(src_widget, sroute->src_queue_id,
 				      SOF_PIN_TYPE_SOURCE);
 		return sroute->dst_queue_id;
+	}
+
+	if (sroute->dst_queue_id > 0 /* && WIDGET_IS_AIF_OR_DAI(sink_widget->id) */) {
+		sof_ipc4_set_sink_format(sdev, sink_widget);
 	}
 
 	dev_dbg(sdev->dev, "bind %s:%d -> %s:%d\n",
