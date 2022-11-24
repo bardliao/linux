@@ -237,4 +237,5 @@ extern const struct snd_soc_component_driver soc_codec_dev_max98373_sdw;
 void max98373_reset(struct max98373_priv *max98373, struct device *dev);
 void max98373_slot_config(struct device *dev,
 			  struct max98373_priv *max98373);
+int max98373_digital_mute(struct snd_soc_dai *dai, int mute, int stream);
 #endif

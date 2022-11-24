@@ -501,6 +501,30 @@ void max98373_slot_config(struct device *dev,
 }
 EXPORT_SYMBOL_GPL(max98373_slot_config);
 
+int max98373_digital_mute(struct snd_soc_dai *dai, int mute, int stream)
+{
+	struct snd_soc_component *component = dai->component;
+	struct max98373_priv *max98373 = snd_soc_component_get_drvdata(component);
+	unsigned int val;
+
+	if (mute) {
+		/* mute digital volume, but don't change the cache value */
+		regcache_cache_bypass(max98373->regmap, true);
+		regmap_update_bits(max98373->regmap,
+			MAX98373_R203D_AMP_DIG_VOL_CTRL,
+			0x7f, 0x7f);
+		regcache_cache_bypass(max98373->regmap, false);
+	} else {
+		/* read digital volume from cache */
+		regmap_read(max98373->regmap, MAX98373_R203D_AMP_DIG_VOL_CTRL, &val);
+		/* restore digital volume */
+		regmap_write(max98373->regmap, MAX98373_R203D_AMP_DIG_VOL_CTRL, val);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(max98373_digital_mute);
+
 MODULE_DESCRIPTION("ALSA SoC MAX98373 driver");
 MODULE_AUTHOR("Ryan Lee <ryans.lee@maximintegrated.com>");
 MODULE_LICENSE("GPL");

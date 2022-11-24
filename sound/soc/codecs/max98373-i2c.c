@@ -405,6 +405,8 @@ static const struct snd_soc_dai_ops max98373_dai_ops = {
 	.set_fmt = max98373_dai_set_fmt,
 	.hw_params = max98373_dai_hw_params,
 	.set_tdm_slot = max98373_dai_tdm_slot,
+	.mute_stream = max98373_digital_mute,
+	.no_capture_mute = 1,
 };
 
 static bool max98373_readable_register(struct device *dev, unsigned int reg)

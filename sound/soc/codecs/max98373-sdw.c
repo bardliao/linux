@@ -746,6 +746,8 @@ static const struct snd_soc_dai_ops max98373_dai_sdw_ops = {
 	.set_stream = max98373_set_sdw_stream,
 	.shutdown = max98373_shutdown,
 	.set_tdm_slot = max98373_sdw_set_tdm_slot,
+	.mute_stream = max98373_digital_mute,
+	.no_capture_mute = 1,
 };
 
 static struct snd_soc_dai_driver max98373_sdw_dai[] = {
