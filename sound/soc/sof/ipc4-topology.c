@@ -1400,6 +1400,7 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 			struct sof_ipc4_copier *alh_copier;
 			struct snd_sof_widget *w;
 			u32 ch_mask = 0;
+			u32 ch_num = 0;
 			u32 ch_map;
 			int i;
 
@@ -1410,8 +1411,10 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 			/* Get channel_mask from ch_map */
 			ch_map = copier_data->base_config.audio_fmt.ch_map;
 			for (i = 0; ch_map; i++) {
-				if ((ch_map & 0xf) != 0xf)
+				if ((ch_map & 0xf) != 0xf) {
 					ch_mask |= BIT(i);
+					ch_num++;
+				}
 				ch_map >>= 4;
 			}
 
@@ -1430,6 +1433,14 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				alh_data = &alh_copier->data;
 				blob->alh_cfg.mapping[i].alh_id = alh_data->gtw_cfg.node_id;
 				blob->alh_cfg.mapping[i].channel_mask = ch_mask;
+				/* overwrite channel_mask for aggregated speaker feedback */
+				if (w->id == snd_soc_dapm_dai_out && blob->alh_cfg.count > 1) {
+					u32 step = ch_num / blob->alh_cfg.count;
+					u32 mask =  GENMASK(step - 1, 0);
+
+					blob->alh_cfg.mapping[i].channel_mask = mask << (step * i);
+				}
+
 				i++;
 			}
 			if (blob->alh_cfg.count > 1) {
