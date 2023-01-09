@@ -112,7 +112,7 @@ static const struct reg_sequence rt1316_blind_write[] = {
 	{ 0xc00b, 0x30 },
 	{ 0xc093, 0x80 },
 	{ 0xc09d, 0x80 },
-	{ 0xc0b0, 0x77 },
+	{ 0xc0b0, 0x66 },
 	{ 0xc010, 0xa5 },
 	{ 0xc050, 0x83 },
 	{ 0x2f55, 0x03 },
@@ -123,11 +123,11 @@ static const struct reg_sequence rt1316_blind_write[] = {
 
 	/* for IV sense */
 	{ 0x2232, 0x80 },
-	{ 0xc0b0, 0x77 },
+	{ 0xc0b0, 0x66 },
 	{ 0xc011, 0x00 },
 	{ 0xc020, 0x00 },
 	{ 0xc023, 0x00 },
-	{ 0x3101, 0x00 },
+	{ 0x3101, 0xc0 },
 	{ 0x3004, 0xa0 },
 	{ 0x3005, 0xb1 },
 	{ 0xc007, 0x11 },
@@ -445,6 +445,9 @@ static const struct snd_kcontrol_new rt1316_snd_controls[] = {
 	/* IV mixer Control */
 	SOC_DOUBLE("Isense Mixer Switch", 0xc605, 2, 0, 1, 1),
 	SOC_DOUBLE("Vsense Mixer Switch", 0xc605, 3, 1, 1, 1),
+
+	/* test */
+	SOC_DOUBLE("feedback Switch", 0xc0b0, 0, 4, 1, 0),
 };
 
 static const struct snd_kcontrol_new rt1316_sto_dac =
@@ -536,6 +539,8 @@ static int rt1316_sdw_hw_params(struct snd_pcm_substream *substream,
 	int retval;
 
 	dev_dbg(dai->dev, "%s %s", __func__, dai->name);
+
+	pr_err("bard: %s ch = %d\n", __func__, params_channels(params));
 	stream = snd_soc_dai_get_dma_data(dai, substream);
 
 	if (!stream)
