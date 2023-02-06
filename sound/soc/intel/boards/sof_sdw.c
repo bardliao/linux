@@ -1094,6 +1094,7 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 	for_each_pcm_streams(stream) {
 		char *name, *cpu_name;
 		int playback, capture;
+		int index;
 		static const char * const sdw_stream_name[] = {
 			"SDW%d-Playback",
 			"SDW%d-Capture",
@@ -1108,6 +1109,18 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 		if (!name)
 			return -ENOMEM;
 
+		for (index = 0; index < *link_index; index++) {
+			/*
+			 * Append codec dai name to dai link name if the dai link name is
+			 * duplicated.
+			 */
+			if (!strcmp(name, dai_links[index].name)) {
+				devm_kfree(dev, name);
+				name = devm_kasprintf(dev, GFP_KERNEL, "%s-%s",
+						      dai_links[index].name,
+						      codec_info_list[codec_index].dai_name);
+			}
+		}
 		/*
 		 * generate CPU DAI name base on the sdw link ID and
 		 * PIN ID with offset of 2 according to sdw dai driver.
