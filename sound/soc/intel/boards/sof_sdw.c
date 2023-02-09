@@ -551,12 +551,12 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 	{
 		.part_id = 0x711,
 		.version_id = 3,
-		.direction = {{true, true}},
-		.dai_name = {"rt711-sdca-aif1"},
-		.dai_num = 1,
+		.direction = {{true, true}, {false, true}},
+		.dai_name = {"rt711-sdca-aif1", "rt711-sdca-aif2"},
+		.dai_num = 2,
 		.init = sof_sdw_rt711_sdca_init,
 		.exit = sof_sdw_rt711_sdca_exit,
-		.codec_dai_type = {SOF_SDW_CODEC_TYPE_JACK},
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_JACK, SOF_SDW_CODEC_TYPE_AMP},
 	},
 	{
 		.part_id = 0x711,
