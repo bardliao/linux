@@ -56,15 +56,18 @@ enum {
 #define SOF_SDW_CODEC_TYPE_AMP		1
 #define SOF_SDW_CODEC_TYPE_MIC		2
 
+#define SOF_SDW_CODEC_MAX_DAI_NUM	3
+
 struct sof_sdw_codec_info {
 	const int part_id;
 	const int version_id;
 	const int codec_type;
 	int amp_num;
 	const u8 acpi_id[ACPI_ID_LEN];
-	const bool direction[2]; // playback & capture support
+	const bool direction[SOF_SDW_CODEC_MAX_DAI_NUM][2]; /* playback & capture support for each dai */
 	const bool ignore_pch_dmic;
-	const char *dai_name;
+	const char * const dai_name[SOF_SDW_CODEC_MAX_DAI_NUM];
+	const int dai_num;
 	const struct snd_soc_ops *ops;
 
 	int  (*init)(struct snd_soc_card *card,
