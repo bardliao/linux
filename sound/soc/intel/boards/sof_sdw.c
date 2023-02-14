@@ -1139,10 +1139,10 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 				 */
 				if (!strcmp(name, dai_links[index].name)) {
 					devm_kfree(dev, name);
-					name = devm_kasprintf(dev, GFP_KERNEL, "%s-%s",
+					name = devm_kasprintf(dev, GFP_KERNEL, "%s-%d",
 							      dai_links[index].name,
 							      codec_info_list[codec_index].
-							      dai_name[dai_index]);
+							      codec_dai_type[dai_index]);
 				}
 			}
 			/*
