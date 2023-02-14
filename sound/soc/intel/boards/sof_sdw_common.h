@@ -61,7 +61,7 @@ enum {
 struct sof_sdw_codec_info {
 	const int part_id;
 	const int version_id;
-	const int codec_type;
+	const int dai_type[SOF_SDW_CODEC_MAX_DAI_NUM];
 	int amp_num;
 	const u8 acpi_id[ACPI_ID_LEN];
 	const bool direction[SOF_SDW_CODEC_MAX_DAI_NUM][2]; /* playback & capture support for each dai */

@@ -546,7 +546,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"rt700-aif1"},
 		.dai_num = 1,
 		.init = sof_sdw_rt700_init,
-		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_JACK},
 	},
 	{
 		.part_id = 0x711,
@@ -556,7 +556,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_num = 1,
 		.init = sof_sdw_rt711_sdca_init,
 		.exit = sof_sdw_rt711_sdca_exit,
-		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_JACK},
 	},
 	{
 		.part_id = 0x711,
@@ -566,7 +566,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_num = 1,
 		.init = sof_sdw_rt711_init,
 		.exit = sof_sdw_rt711_exit,
-		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_JACK},
 	},
 	{
 		.part_id = 0x1308,
@@ -577,7 +577,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.ops = &sof_sdw_rt1308_i2s_ops,
 		.init = sof_sdw_rt_amp_init,
 		.exit = sof_sdw_rt_amp_exit,
-		.codec_type = SOF_SDW_CODEC_TYPE_AMP,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_AMP},
 	},
 	{
 		.part_id = 0x1316,
@@ -586,7 +586,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_num = 1,
 		.init = sof_sdw_rt_amp_init,
 		.exit = sof_sdw_rt_amp_exit,
-		.codec_type = SOF_SDW_CODEC_TYPE_AMP,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_AMP},
 	},
 	{
 		.part_id = 0x1318,
@@ -594,7 +594,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"rt1318-aif"},
 		.dai_num = 1,
 		.init = sof_sdw_rt_amp_init,
-		.codec_type = SOF_SDW_CODEC_TYPE_AMP,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_AMP},
 	},
 	{
 		.part_id = 0x714,
@@ -604,7 +604,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"rt715-aif2"},
 		.dai_num = 1,
 		.init = sof_sdw_rt715_sdca_init,
-		.codec_type = SOF_SDW_CODEC_TYPE_MIC,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_MIC},
 	},
 	{
 		.part_id = 0x715,
@@ -614,7 +614,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"rt715-aif2"},
 		.dai_num = 1,
 		.init = sof_sdw_rt715_sdca_init,
-		.codec_type = SOF_SDW_CODEC_TYPE_MIC,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_MIC},
 	},
 	{
 		.part_id = 0x714,
@@ -624,7 +624,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"rt715-aif2"},
 		.dai_num = 1,
 		.init = sof_sdw_rt715_init,
-		.codec_type = SOF_SDW_CODEC_TYPE_MIC,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_MIC},
 	},
 	{
 		.part_id = 0x715,
@@ -634,7 +634,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"rt715-aif2"},
 		.dai_num = 1,
 		.init = sof_sdw_rt715_init,
-		.codec_type = SOF_SDW_CODEC_TYPE_MIC,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_MIC},
 	},
 	{
 		.part_id = 0x8373,
@@ -643,7 +643,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_num = 1,
 		.init = sof_sdw_mx8373_init,
 		.codec_card_late_probe = sof_sdw_mx8373_late_probe,
-		.codec_type = SOF_SDW_CODEC_TYPE_AMP,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_AMP},
 	},
 	{
 		.part_id = 0x5682,
@@ -651,7 +651,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"rt5682-sdw"},
 		.dai_num = 1,
 		.init = sof_sdw_rt5682_init,
-		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_JACK},
 	},
 	{
 		.part_id = 0xaaaa, /* generic codec mockup */
@@ -660,7 +660,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"sdw-mockup-aif1"},
 		.dai_num = 1,
 		.init = NULL,
-		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_JACK},
 	},
 	{
 		.part_id = 0xaa55, /* headset codec mockup */
@@ -669,7 +669,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"sdw-mockup-aif1"},
 		.dai_num = 1,
 		.init = NULL,
-		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_JACK},
 	},
 	{
 		.part_id = 0x55aa, /* amplifier mockup */
@@ -678,7 +678,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_name = {"sdw-mockup-aif1"},
 		.dai_num = 1,
 		.init = NULL,
-		.codec_type = SOF_SDW_CODEC_TYPE_AMP,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_AMP},
 	},
 	{
 		.part_id = 0x5555,
@@ -686,7 +686,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.direction = {{false, true}},
 		.dai_num = 1,
 		.dai_name = {"sdw-mockup-aif1"},
-		.codec_type = SOF_SDW_CODEC_TYPE_MIC,
+		.codec_dai_type = {SOF_SDW_CODEC_TYPE_MIC},
 	},
 };
 
@@ -738,7 +738,7 @@ static int get_sdw_dailink_info(struct device *dev, const struct snd_soc_acpi_li
 				int *sdw_be_num, int *sdw_cpu_dai_num)
 {
 	const struct snd_soc_acpi_link_adr *link;
-	int _codec_type = SOF_SDW_CODEC_TYPE_JACK;
+	int _codec_dai_type = SOF_SDW_CODEC_TYPE_JACK;
 	bool group_visited[SDW_MAX_GROUPS];
 	bool no_aggregation;
 	int i;
@@ -764,11 +764,13 @@ static int get_sdw_dailink_info(struct device *dev, const struct snd_soc_acpi_li
 		if (codec_index < 0)
 			return codec_index;
 
-		if (codec_info_list[codec_index].codec_type < _codec_type)
+		if (codec_info_list[codec_index].codec_dai_type[0] < _codec_dai_type)
 			dev_warn(dev,
 				 "Unexpected address table ordering. Expected order: jack -> amp -> mic\n");
 
-		_codec_type = codec_info_list[codec_index].codec_type;
+		/* _codec_dai_type = the last codec_dai_type of the codec */
+		_codec_dai_type = codec_info_list[codec_index].
+				  codec_dai_type[codec_info_list[codec_index].dai_num - 1];
 
 		endpoint = link->adr_d->endpoints;
 
@@ -1097,21 +1099,21 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 	if (codec_info_list[codec_index].ignore_pch_dmic)
 		*ignore_pch_dmic = true;
 
-	/* Shift the first amplifier's *link_id to SDW_AMP_DAI_ID */
-	if (codec_info_list[codec_index].codec_type == SOF_SDW_CODEC_TYPE_AMP &&
-	    *link_id < SDW_AMP_DAI_ID)
-		*link_id = SDW_AMP_DAI_ID;
-
-	/*
-	 * DAI ID is fixed at SDW_DMIC_DAI_ID for MICs to
-	 * keep sdw DMIC and HDMI setting static in UCM
-	 */
-	if (codec_info_list[codec_index].codec_type == SOF_SDW_CODEC_TYPE_MIC &&
-	    *link_id < SDW_DMIC_DAI_ID)
-		*link_id = SDW_DMIC_DAI_ID;
-
 	cpu_dai_index = *cpu_id;
 	for (dai_index = 0; dai_index < codec_info_list[codec_index].dai_num; dai_index++) {
+		/* Shift the first amplifier's *link_id to SDW_AMP_DAI_ID */
+		if (codec_info_list[codec_index].codec_dai_type[dai_index] == SOF_SDW_CODEC_TYPE_AMP &&
+		    *link_id < SDW_AMP_DAI_ID)
+			*link_id = SDW_AMP_DAI_ID;
+
+		/*
+		 * DAI ID is fixed at SDW_DMIC_DAI_ID for MICs to
+		 * keep sdw DMIC and HDMI setting static in UCM
+		 */
+		if (codec_info_list[codec_index].codec_dai_type[dai_index] == SOF_SDW_CODEC_TYPE_MIC &&
+		    *link_id < SDW_DMIC_DAI_ID)
+			*link_id = SDW_DMIC_DAI_ID;
+
 		for_each_pcm_streams(stream) {
 			char *name, *cpu_name;
 			int playback, capture;
