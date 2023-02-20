@@ -604,6 +604,44 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
 	},
 	{
+		.part_id = 0x712,
+		.version_id = 3,
+		.dais =
+		{
+			{
+				.direction = {true, true},
+				.dai_name = "rt712-sdca-aif1",
+				.dai_type = SOF_SDW_DAI_TYPE_JACK,
+				.dailink = {0,1},
+				.init = sof_sdw_rt712_sdca_init,
+				.exit = sof_sdw_rt712_sdca_exit,
+			},
+			{
+				.direction = {true, false},
+				.dai_name = "rt712-sdca-aif2",
+				.dai_type = SOF_SDW_DAI_TYPE_AMP,
+				.dailink = {2,3},
+				.init = sof_sdw_rt712_spk_init,
+			},
+		},
+		.dai_num = 2,
+	},
+	{
+		.part_id = 0x1712,
+		.version_id = 3,
+		.dais =
+		{
+			{
+				.direction = {false, true},
+				.dai_name = "rt712-sdca-dmic-aif1",
+				.dai_type = SOF_SDW_DAI_TYPE_MIC,
+				.dailink = {0,4},
+				.init = sof_sdw_rt712_sdca_dmic_init,
+			},
+		},
+		.dai_num = 1,
+	},
+	{
 		.part_id = 0x711,
 		.version_id = 2,
 		.direction = {true, true},
