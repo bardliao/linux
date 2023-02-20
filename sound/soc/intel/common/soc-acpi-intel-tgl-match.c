@@ -179,6 +179,15 @@ static const struct snd_soc_acpi_adr_device rt1316_0_single_adr[] = {
 	}
 };
 
+static const struct snd_soc_acpi_adr_device rt712_0_single_adr[] = {
+	{
+		.adr = 0x000030025D071201ull,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+		.name_prefix = "rt712"
+	}
+};
+
 static const struct snd_soc_acpi_adr_device rt1316_1_group1_adr[] = {
 	{
 		.adr = 0x000131025D131601ull, /* unique ID is set for some reason */
@@ -371,6 +380,15 @@ static const struct snd_soc_acpi_link_adr tgl_1316_only[] = {
 	{}
 };
 
+static const struct snd_soc_acpi_link_adr tgl_712_only[] = {
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt712_0_single_adr),
+		.adr_d = rt712_0_single_adr,
+	},
+	{}
+};
+
 static const struct snd_soc_acpi_codecs tgl_max98373_amp = {
 	.num_codecs = 1,
 	.codecs = {"MX98373"}
@@ -455,7 +473,7 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_tgl_sdw_machines[] = {
 	},
 	{
 		.link_mask = 0xF, /* 4 active links required */
-		.links = tgl_1316_only,
+		.links = tgl_712_only,
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-tgl-rt1316.tplg",
 	},
