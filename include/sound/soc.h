@@ -682,6 +682,8 @@ struct snd_soc_dai_link {
 	struct snd_soc_dai_link_component *platforms;
 	unsigned int num_platforms;
 
+	unsigned int *codec_cpu_dai_maps;
+
 	int id;	/* optional ID for machine driver link identification */
 
 	const struct snd_soc_pcm_stream *params;

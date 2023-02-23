@@ -4444,8 +4444,9 @@ void snd_soc_dapm_connect_dai_link_widgets(struct snd_soc_card *card)
 				dapm_connect_dai_pair(card, rtd, codec_dai,
 						      asoc_rtd_to_cpu(rtd, i));
 		} else {
-			dev_err(card->dev,
-				"N cpus to M codecs link is not supported yet\n");
+			for_each_rtd_codec_dais(rtd, i, codec_dai)
+				dapm_connect_dai_pair(card, rtd, codec_dai,
+						      asoc_rtd_to_cpu(rtd, rtd->dai_link->codec_cpu_dai_maps[i]));
 		}
 	}
 }

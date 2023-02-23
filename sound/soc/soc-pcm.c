@@ -2785,9 +2785,7 @@ static int soc_get_playback_capture(struct snd_soc_pcm_runtime *rtd,
 			} else if (rtd->dai_link->num_cpus == rtd->dai_link->num_codecs) {
 				cpu_dai = asoc_rtd_to_cpu(rtd, i);
 			} else {
-				dev_err(rtd->card->dev,
-					"N cpus to M codecs link is not supported yet\n");
-				return -EINVAL;
+				cpu_dai = asoc_rtd_to_cpu(rtd, rtd->dai_link->codec_cpu_dai_maps[i]);
 			}
 
 			if (snd_soc_dai_stream_valid(codec_dai, SNDRV_PCM_STREAM_PLAYBACK) &&

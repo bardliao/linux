@@ -781,7 +781,7 @@ static void init_dai_link(struct device *dev, struct snd_soc_dai_link *dai_links
 			  struct snd_soc_dai_link_component *cpus, int cpus_num,
 			  struct snd_soc_dai_link_component *codecs, int codecs_num,
 			  int (*init)(struct snd_soc_pcm_runtime *rtd),
-			  const struct snd_soc_ops *ops)
+			  const struct snd_soc_ops *ops, unsigned int *dai_maps)
 {
 	dev_dbg(dev, "create dai link %s, id %d\n", name, be_id);
 	dai_links->id = be_id;
@@ -797,6 +797,7 @@ static void init_dai_link(struct device *dev, struct snd_soc_dai_link *dai_links
 	dai_links->dpcm_capture = capture;
 	dai_links->init = init;
 	dai_links->ops = ops;
+	dai_links->codec_cpu_dai_maps = dai_maps;
 }
 
 static bool is_unique_device(const struct snd_soc_acpi_link_adr *link,
@@ -1027,6 +1028,7 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 	struct snd_soc_dai_link_component *codecs;
 	int cpu_dai_id[SDW_MAX_CPU_DAIS];
 	int cpu_dai_num, cpu_dai_index;
+	unsigned int *dai_maps;
 	unsigned int group_id;
 	int codec_idx = 0;
 	int i = 0, j = 0;
@@ -1144,11 +1146,14 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 
 		playback = (stream == SNDRV_PCM_STREAM_PLAYBACK);
 		capture = (stream == SNDRV_PCM_STREAM_CAPTURE);
+		dai_maps = devm_kcalloc(dev, codec_num, sizeof(*dai_maps), GFP_KERNEL);
+		for (i = 0; i < codec_num; i++)
+			*(dai_maps + i) = i;
 		init_dai_link(dev, dai_links + *link_index, (*link_id)++, name,
 			      playback, capture,
 			      cpus + *cpu_id, cpu_dai_num,
 			      codecs, codec_num,
-			      NULL, &sdw_ops);
+			      NULL, &sdw_ops, dai_maps);
 
 		/*
 		 * SoundWire DAILINKs use 'stream' functions and Bank Switch operations
@@ -1382,7 +1387,7 @@ SSP:
 			      playback, capture,
 			      cpus + cpu_id, 1,
 			      ssp_components, 1,
-			      NULL, info->ops);
+			      NULL, info->ops, NULL);
 
 		ret = info->init(card, NULL, links + link_index, info, 0);
 		if (ret < 0)
@@ -1403,7 +1408,7 @@ DMIC:
 			      0, 1, // DMIC only supports capture
 			      cpus + cpu_id, 1,
 			      dmic_component, 1,
-			      sof_sdw_dmic_init, NULL);
+			      sof_sdw_dmic_init, NULL, NULL);
 		INC_ID(be_id, cpu_id, link_index);
 
 		cpus[cpu_id].dai_name = "DMIC16k Pin";
@@ -1412,7 +1417,7 @@ DMIC:
 			      cpus + cpu_id, 1,
 			      dmic_component, 1,
 			      /* don't call sof_sdw_dmic_init() twice */
-			      NULL, NULL);
+			      NULL, NULL, NULL);
 		INC_ID(be_id, cpu_id, link_index);
 	}
 
@@ -1455,7 +1460,7 @@ HDMI:
 			      1, 0, // HDMI only supports playback
 			      cpus + cpu_id, 1,
 			      idisp_components + i, 1,
-			      sof_sdw_hdmi_init, NULL);
+			      sof_sdw_hdmi_init, NULL, NULL);
 		INC_ID(be_id, cpu_id, link_index);
 	}
 
@@ -1481,7 +1486,7 @@ HDMI:
 
 		cpus[cpu_id].dai_name = cpu_name;
 		init_dai_link(dev, links + link_index, be_id, name, 1, 1,
-				cpus + cpu_id, 1, ssp_components, 1, NULL, NULL);
+				cpus + cpu_id, 1, ssp_components, 1, NULL, NULL, NULL);
 	}
 
 	card->dai_link = links;
