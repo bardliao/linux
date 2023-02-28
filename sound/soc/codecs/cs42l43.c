@@ -160,6 +160,42 @@ CS42L43_IRQ_COMPLETE(spkr_startup)
 CS42L43_IRQ_COMPLETE(spkl_startup)
 CS42L43_IRQ_COMPLETE(load_detect)
 
+static irqreturn_t cs42l43_mic_shutter(int irq, void *data)
+{
+	struct cs42l43_codec *priv = data;
+	struct snd_kcontrol *kctl;
+
+	dev_dbg(priv->dev, "Microphone shutter changed\n");
+
+	if (priv->component) {
+		kctl = snd_soc_card_get_kcontrol(priv->component->card,
+						 "Microphone Shutter Switch");
+
+		snd_ctl_notify(priv->component->card->snd_card,
+			       SNDRV_CTL_EVENT_MASK_VALUE, &kctl->id);
+	}
+
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t cs42l43_spk_shutter(int irq, void *data)
+{
+	struct cs42l43_codec *priv = data;
+	struct snd_kcontrol *kctl;
+
+	dev_dbg(priv->dev, "Speaker shutter changed\n");
+
+	if (priv->component) {
+		kctl = snd_soc_card_get_kcontrol(priv->component->card,
+						 "Speaker Shutter Switch");
+
+		snd_ctl_notify(priv->component->card->snd_card,
+			       SNDRV_CTL_EVENT_MASK_VALUE, &kctl->id);
+	}
+
+	return IRQ_HANDLED;
+}
+
 static const unsigned int cs42l43_sample_rates[] = {
 	8000, 16000, 24000, 32000, 44100, 48000, 96000, 192000,
 };
@@ -1988,11 +2024,48 @@ static irqreturn_t cs42l43_request_irq(struct cs42l43_codec *priv,
 	return 0;
 }
 
+static int cs42l43_shutter_irq(struct cs42l43_codec *priv,
+			       struct irq_domain *dom, unsigned int shutter,
+			       const char * const open_name,
+			       const char * const close_name,
+			       irq_handler_t handler)
+{
+	unsigned int open_irq, close_irq;
+	int ret;
+
+	switch (shutter) {
+	case 0x1:
+		dev_warn(priv->dev, "Manual shutters, notifications not available\n");
+		return 0;
+	case 0x2:
+		open_irq = CS42L43_GPIO1_RISE;
+		close_irq = CS42L43_GPIO1_FALL;
+		break;
+	case 0x4:
+		open_irq = CS42L43_GPIO2_RISE;
+		close_irq = CS42L43_GPIO2_FALL;
+		break;
+	case 0x8:
+		open_irq = CS42L43_GPIO3_RISE;
+		close_irq = CS42L43_GPIO3_FALL;
+		break;
+	default:
+		return 0;
+	}
+
+	ret = cs42l43_request_irq(priv, dom, close_name, close_irq, handler);
+	if (ret)
+		return ret;
+
+	return cs42l43_request_irq(priv, dom, open_name, open_irq, handler);
+}
+
 static int cs42l43_codec_probe(struct platform_device *pdev)
 {
 	struct cs42l43 *cs42l43 = dev_get_drvdata(pdev->dev.parent);
 	struct cs42l43_codec *priv;
 	struct irq_domain *dom;
+	unsigned int val;
 	int i, ret;
 
 	dom = irq_find_matching_fwnode(dev_fwnode(cs42l43->dev), DOMAIN_BUS_ANY);
@@ -2026,8 +2099,9 @@ static int cs42l43_codec_probe(struct platform_device *pdev)
 
 	pm_runtime_set_autosuspend_delay(priv->dev, 100);
 	pm_runtime_use_autosuspend(priv->dev);
+	pm_runtime_set_active(priv->dev);
+	pm_runtime_get_noresume(priv->dev);
 	pm_runtime_enable(priv->dev);
-	pm_runtime_idle(priv->dev);
 
 	for (i = 0; i < ARRAY_SIZE(cs42l43_irqs); i++) {
 		ret = cs42l43_request_irq(priv, dom, cs42l43_irqs[i].name,
@@ -2035,6 +2109,26 @@ static int cs42l43_codec_probe(struct platform_device *pdev)
 		if (ret)
 			goto err_pm;
 	}
+
+	//FIXME: How do we know the shutters are configured yet?
+	ret = regmap_read(priv->regmap, CS42L43_SHUTTER_CONTROL, &val);
+	if (ret) {
+		dev_err(priv->dev, "Failed to check shutter source: %d\n", ret);
+		goto err_pm;
+	}
+
+	ret = cs42l43_shutter_irq(priv, dom, val & CS42L43_MIC_SHUTTER_CFG_MASK,
+				  "mic shutter open", "mic shutter close",
+				  cs42l43_mic_shutter);
+	if (ret)
+		goto err_pm;
+
+	ret = cs42l43_shutter_irq(priv, dom, (val & CS42L43_SPK_SHUTTER_CFG_MASK) >>
+				  CS42L43_SPK_SHUTTER_CFG_SHIFT,
+				  "spk shutter open", "spk shutter close",
+				  cs42l43_spk_shutter);
+	if (ret)
+		goto err_pm;
 
 	// Don't use devm as we need to get against the MFD device
 	priv->mclk = clk_get_optional(cs42l43->dev, "mclk");
@@ -2051,11 +2145,15 @@ static int cs42l43_codec_probe(struct platform_device *pdev)
 		goto err_clk;
 	}
 
+	pm_runtime_mark_last_busy(priv->dev);
+	pm_runtime_put_autosuspend(priv->dev);
+
 	return 0;
 
 err_clk:
 	clk_put(priv->mclk);
 err_pm:
+	pm_runtime_put_sync(priv->dev);
 	pm_runtime_disable(priv->dev);
 
 	return ret;
