@@ -1011,6 +1011,8 @@ static int get_slave_info(const struct snd_soc_acpi_link_adr *adr_link,
 	return 0;
 }
 
+static const char * const type_strings[] = {"jack", "amp", "mic"};
+
 static int create_sdw_dailink(struct snd_soc_card *card,
 			      struct device *dev, int *link_index,
 			      struct snd_soc_dai_link *dai_links,
@@ -1094,6 +1096,7 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 	for_each_pcm_streams(stream) {
 		char *name, *cpu_name;
 		int playback, capture;
+		int index;
 		static const char * const sdw_stream_name[] = {
 			"SDW%d-Playback",
 			"SDW%d-Capture",
@@ -1126,6 +1129,18 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 			}
 
 			cpus[cpu_dai_index++].dai_name = cpu_name;
+		}
+
+		for (index = 0; index < *link_index; index++) {
+			/*
+			 * Append codec type to dai link name if the dai link name is duplicated.
+			 */
+			if (!strcmp(name, dai_links[index].name)) {
+				devm_kfree(dev, name);
+				name = devm_kasprintf(dev, GFP_KERNEL, "%s-%s",
+						      dai_links[index].name,
+						      type_strings[codec_info_list[codec_index].codec_type]);
+			}
 		}
 
 		/*
