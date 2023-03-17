@@ -571,6 +571,18 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
 	},
 	{
+		.part_id = 0x3556,
+		.direction = {true, true},
+		.dai_name = "cs35l56-sdw1",
+		.codec_type = SOF_SDW_CODEC_TYPE_AMP,
+	},
+	{
+		.part_id = 0x4243,
+		.direction = {true, true},
+		.dai_name = "cs4243-aif",
+		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
+	},
+	{
 		.part_id = 0xaaaa, /* generic codec mockup */
 		.version_id = 0,
 		.direction = {true, true},
