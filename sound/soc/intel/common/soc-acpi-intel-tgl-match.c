@@ -267,6 +267,15 @@ static const struct snd_soc_acpi_adr_device cs35l56_1_adr[] = {
 	}
 };
 
+static const struct snd_soc_acpi_adr_device cs42l43_3_adr[] = {
+	{
+		.adr = 0x00033001fa424301ull,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+		.name_prefix = "cs42l43-3"
+	}
+};
+
 static const struct snd_soc_acpi_link_adr tgl_rvp[] = {
 	{
 		.mask = BIT(0),
@@ -434,6 +443,14 @@ static const struct snd_soc_acpi_link_adr tgl_cs35l56_cs42l43[] = {
 		.num_adr = ARRAY_SIZE(cs35l56_1_adr),
 		.adr_d = cs35l56_1_adr,
 	},
+#if 0
+	{
+		.mask = BIT(3),
+		.num_adr = ARRAY_SIZE(cs42l43_3_adr),
+		.adr_d = cs42l43_3_adr,
+	},
+#endif
+	{}
 };
 
 static const struct snd_soc_acpi_link_adr tgl_1316_only[] = {
