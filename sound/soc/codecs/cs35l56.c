@@ -737,7 +737,10 @@ static int cs35l56_sdw_dai_set_stream(struct snd_soc_dai *dai,
 	if (!sdw_stream)
 		return 0;
 
-	snd_soc_dai_dma_data_set(dai, direction, sdw_stream);
+	if (direction == SNDRV_PCM_STREAM_PLAYBACK)
+		dai->playback_dma_data = sdw_stream;
+	else
+		dai->capture_dma_data = sdw_stream;
 
 	return 0;
 }
