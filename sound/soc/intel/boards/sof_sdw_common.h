@@ -68,6 +68,7 @@ struct sof_sdw_dai_info {
 	const bool direction[2]; /* playback & capture support */
 	const char *dai_name;
 	const int dai_type;
+	const int dailink[2]; /* dailink id for each direction */
 	int  (*init)(struct snd_soc_card *card,
 		     const struct snd_soc_acpi_link_adr *link,
 		     struct snd_soc_dai_link *dai_links,
