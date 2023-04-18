@@ -515,6 +515,44 @@ int sdw_trigger(struct snd_pcm_substream *substream, int cmd)
 	return ret;
 }
 
+int sdw_hw_params(struct snd_pcm_substream *substream,
+		  struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
+	struct snd_soc_dai *cpu_dai;
+	struct snd_soc_dai *codec_dai;
+	unsigned int ch_mask;
+	int step;
+	int i;
+	int j;
+
+	if (!rtd->dai_link->codec_ch_maps)
+		return 0;
+
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		step = 0;
+		ch_mask = GENMASK(params_channels(params) - 1, 0);
+	} else {
+		step = rtd->dai_link->num_codecs;
+		ch_mask = GENMASK(params_channels(params) / step - 1, 0);
+	}
+
+	/*
+	 * The captured data will be combined from each cpu DAI if the dai
+	 * link has more than one codec DAIs. Set codec channel mask and
+	 * ASoC will set the corresponding channel numbers for each cpu dai.
+	 */
+	for_each_rtd_cpu_dais(rtd, i, cpu_dai) {
+		for_each_rtd_codec_dais(rtd, j, codec_dai) {
+			if (rtd->dai_link->codec_ch_maps[j].connected_cpu_id != i)
+				continue;
+			rtd->dai_link->codec_ch_maps[j].ch_mask = ch_mask << (j * step);
+		}
+	}
+	return 0;
+}
+
+
 int sdw_hw_free(struct snd_pcm_substream *substream)
 {
 	struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
@@ -543,6 +581,7 @@ static const struct snd_soc_ops sdw_ops = {
 	.startup = sdw_startup,
 	.prepare = sdw_prepare,
 	.trigger = sdw_trigger,
+	.hw_params = sdw_hw_params,
 	.hw_free = sdw_hw_free,
 	.shutdown = sdw_shutdown,
 };
@@ -1040,6 +1079,17 @@ static int get_slave_info(const struct snd_soc_acpi_link_adr *adr_link,
 	return 0;
 }
 
+static void set_dailink_map(struct snd_soc_dai_link_codec_ch_map *sdw_codec_ch_maps,
+			    int codec_num, int cpu_num)
+{
+	int step;
+	int i;
+
+	step = codec_num / cpu_num;
+	for (i = 0; i < codec_num; i++)
+		sdw_codec_ch_maps[i].connected_cpu_id = i / step;
+}
+
 static const char * const type_strings[] = {"SimpleJack", "SmartAmp", "SmartMic"};
 
 static int create_sdw_dailink(struct snd_soc_card *card,
@@ -1056,6 +1106,7 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 			      bool append_codec_type,
 			      int adr_index)
 {
+	struct snd_soc_dai_link_codec_ch_map *sdw_codec_ch_maps;
 	const struct snd_soc_acpi_link_adr *link_next;
 	struct snd_soc_dai_link_component *codecs;
 	int cpu_dai_id[SDW_MAX_CPU_DAIS];
@@ -1076,6 +1127,11 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 
 	codecs = devm_kcalloc(dev, codec_num, sizeof(*codecs), GFP_KERNEL);
 	if (!codecs)
+		return -ENOMEM;
+
+	sdw_codec_ch_maps = devm_kcalloc(dev, codec_num,
+					 sizeof(*sdw_codec_ch_maps), GFP_KERNEL);
+	if (!sdw_codec_ch_maps)
 		return -ENOMEM;
 
 	/* generate codec name on different links in the same group */
@@ -1197,6 +1253,8 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 		 */
 		dai_links[*link_index].nonatomic = true;
 
+		set_dailink_map(sdw_codec_ch_maps, codec_num, cpu_dai_num);
+		dai_links[*link_index].codec_ch_maps = sdw_codec_ch_maps;
 		ret = set_codec_init_func(card, link, dai_links + (*link_index)++,
 					  playback, group_id);
 		if (ret < 0) {
