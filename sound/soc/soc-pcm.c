@@ -1048,12 +1048,25 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 	}
 
 	for_each_rtd_cpu_dais(rtd, i, cpu_dai) {
+		unsigned int ch_map = 0;
+		int j;
+
 		/*
 		 * Skip CPUs which don't support the current stream
 		 * type. See soc_pcm_init_runtime_hw() for more details
 		 */
 		if (!snd_soc_dai_stream_valid(cpu_dai, substream->stream))
 			continue;
+
+		/* get cpu dai channel map */
+		for_each_rtd_codec_dais(rtd, j, codec_dai) {
+			if (!rtd->dai_link->codec_ch_maps)
+				continue;
+			if (rtd->dai_link->codec_ch_maps[j].connected_cpu_id != i)
+				continue;
+			ch_map |= rtd->dai_link->codec_ch_maps[j].ch_map;
+			pr_err("bard: %s codec %d, ch_map %#x\n", __func__, j, ch_map);
+		}
 
 		ret = snd_soc_dai_hw_params(cpu_dai, substream, params);
 		if (ret < 0)
@@ -2803,6 +2816,10 @@ static int soc_get_playback_capture(struct snd_soc_pcm_runtime *rtd,
 				cpu_dai = asoc_rtd_to_cpu(rtd, 0);
 			} else if (rtd->dai_link->num_cpus == rtd->dai_link->num_codecs) {
 				cpu_dai = asoc_rtd_to_cpu(rtd, i);
+			} else if (rtd->dai_link->codec_ch_maps) {
+				int cpu_id = rtd->dai_link->codec_ch_maps[i].connected_cpu_id;
+
+				cpu_dai = asoc_rtd_to_cpu(rtd, cpu_id);
 			} else {
 				dev_err(rtd->card->dev,
 					"N cpus to M codecs link is not supported yet\n");
