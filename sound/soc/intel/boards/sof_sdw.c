@@ -521,13 +521,20 @@ static int sdw_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
 	struct snd_soc_dai *cpu_dai;
 	struct snd_soc_dai *codec_dai;
+	unsigned int ch_mask;
+	int step;
 	int i;
 	int j;
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		return 0;
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		step = 0;
+		ch_mask = GENMASK(params_channels(params) - 1, 0);
+	} else {
+		step = rtd->dai_link->num_cpus;
+		ch_mask = GENMASK(params_channels(params) / step - 1, 0);
+	}
 
-	pr_err("bard: %s channels %d\n", __func__, params_channels(params));
+	pr_err("bard: %s channels %d ch_mask %#x step %d\n", __func__, params_channels(params), ch_mask, step);
 	/*
 	 * The captured data will be combined from each cpu DAI if the dai
 	 * link has more than one cpu DAIs. Therefore, the channel number
@@ -536,10 +543,10 @@ static int sdw_hw_params(struct snd_pcm_substream *substream,
 	for_each_rtd_cpu_dais(rtd, i, cpu_dai) {
 		for_each_rtd_codec_dais(rtd, j, codec_dai) {
 			if (!rtd->dai_link->codec_ch_maps)
-				continue;
+				break;
 			if (rtd->dai_link->codec_ch_maps[j].connected_cpu_id != i)
 				continue;
-			rtd->dai_link->codec_ch_maps[j].ch_map = 0x3 << j;
+			rtd->dai_link->codec_ch_maps[j].ch_map = ch_mask << (j * step);
 			pr_err("bard: %s codec %d ch_map=%#x\n",
 				__func__, j, rtd->dai_link->codec_ch_maps[j].ch_map);
 		}
@@ -1217,7 +1224,7 @@ static void set_dailink_map(struct snd_soc_dai_link_codec_ch_map *sdw_codec_ch_m
 	step = codec_num / cpu_num;
 	for (i = 0; i < codec_num; i++) {
 		sdw_codec_ch_maps[i].connected_cpu_id = i / step;
-		sdw_codec_ch_maps[i].connected_cpu_id = 0; //hack
+//		sdw_codec_ch_maps[i].connected_cpu_id = 0; //hack
 		pr_err("bard: setting codec %d map to cpu %d\n", i, sdw_codec_ch_maps[i].connected_cpu_id);
 	}
 }
