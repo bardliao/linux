@@ -648,7 +648,7 @@ struct snd_soc_dai_link_component {
 
 struct snd_soc_dai_link_codec_ch_map {
 	unsigned int connected_cpu_id;
-	unsigned int ch_map;
+	unsigned int ch_mask;
 };
 
 struct snd_soc_dai_link {

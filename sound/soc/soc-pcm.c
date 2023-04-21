@@ -1048,7 +1048,7 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 	}
 
 	for_each_rtd_cpu_dais(rtd, i, cpu_dai) {
-		unsigned int ch_map = 0;
+		unsigned int ch_mask = 0;
 		int j;
 
 		/*
@@ -1064,11 +1064,10 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 				break;
 			if (rtd->dai_link->codec_ch_maps[j].connected_cpu_id != i)
 				continue;
-			ch_map |= rtd->dai_link->codec_ch_maps[j].ch_map;
-			pr_err("bard: %s codec %d, ch_map %#x\n", __func__, j, ch_map);
+			ch_mask |= rtd->dai_link->codec_ch_maps[j].ch_mask;
 		}
-		if (ch_map)
-			soc_pcm_codec_params_fixup(params, ch_map);
+		if (ch_mask)
+			soc_pcm_codec_params_fixup(params, ch_mask);
 
 		ret = snd_soc_dai_hw_params(cpu_dai, substream, params);
 		if (ret < 0)
