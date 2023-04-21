@@ -1061,12 +1061,14 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 		/* get cpu dai channel map */
 		for_each_rtd_codec_dais(rtd, j, codec_dai) {
 			if (!rtd->dai_link->codec_ch_maps)
-				continue;
+				break;
 			if (rtd->dai_link->codec_ch_maps[j].connected_cpu_id != i)
 				continue;
 			ch_map |= rtd->dai_link->codec_ch_maps[j].ch_map;
 			pr_err("bard: %s codec %d, ch_map %#x\n", __func__, j, ch_map);
 		}
+		if (ch_map)
+			soc_pcm_codec_params_fixup(params, ch_map);
 
 		ret = snd_soc_dai_hw_params(cpu_dai, substream, params);
 		if (ret < 0)
