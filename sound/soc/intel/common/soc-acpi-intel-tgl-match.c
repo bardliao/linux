@@ -176,6 +176,12 @@ static const struct snd_soc_acpi_adr_device rt712_0_single_adr[] = {
 		.num_endpoints = 1,
 		.endpoints = &single_endpoint,
 		.name_prefix = "rt712"
+	},
+	{
+		.adr = 0x000030025D171201ull,
+		.num_endpoints = 1,
+		.endpoints = &single_endpoint,
+		.name_prefix = "rt712-dmic"
 	}
 };
 
@@ -377,11 +383,13 @@ static const struct snd_soc_acpi_link_adr tgl_712_only[] = {
 		.num_adr = ARRAY_SIZE(rt712_0_single_adr),
 		.adr_d = rt712_0_single_adr,
 	},
+#if 0
 	{
 		.mask = BIT(1),
 		.num_adr = ARRAY_SIZE(rt1712_1_single_adr),
 		.adr_d = rt1712_1_single_adr,
 	},
+#endif
 	{}
 };
 

@@ -1104,11 +1104,10 @@ static int set_codec_init_func(struct snd_soc_card *card,
 
 			if (codec_index < 0)
 				return codec_index;
-
 			/* The group_id is > 0 iff the codec is aggregated */
 			if (link->adr_d[i].endpoints->group_id != group_id)
 				continue;
-
+			pr_err("bard: init %s\n", codec_info_list[codec_index].dais[dai_index].dai_name);
 			if (codec_info_list[codec_index].dais[dai_index].init)
 				codec_info_list[codec_index].dais[dai_index].init(card,
 						link,
@@ -1787,6 +1786,7 @@ static struct snd_soc_dai_link *mc_find_codec_dai_used(struct snd_soc_card *card
 
 	for_each_card_prelinks(card, i, link) {
 		for (j = 0; j < link->num_codecs; j++) {
+			pr_err("bard: looking for %s\n", dai_name);
 			/* Check each codec in a link */
 			if (!strcmp(link->codecs[j].dai_name, dai_name))
 				return link;
@@ -1802,6 +1802,7 @@ static void mc_dailink_exit_loop(struct snd_soc_card *card)
 	int i, j;
 
 	for (i = 0; i < ARRAY_SIZE(codec_info_list); i++) {
+		pr_err("bard: %d: part_id %#x\n", i, codec_info_list[i].part_id);
 		for (j = 0; j < codec_info_list[i].dai_num; j++) {
 			/* Check each dai in codec_info_lis to see if it is used in the link */
 			if (!codec_info_list[i].dais[j].exit)
@@ -1814,6 +1815,7 @@ static void mc_dailink_exit_loop(struct snd_soc_card *card)
 			if (link) {
 				/* Do the .exit function if the codec dai is used in the link */
 				ret = codec_info_list[i].dais[j].exit(card, link);
+				pr_err("bard: run %s exit i %d j %d\n", codec_info_list[i].dais[j].dai_name, i, j);
 				if (ret)
 					dev_warn(card->dev,
 						 "codec exit failed %d\n",
@@ -1821,6 +1823,7 @@ static void mc_dailink_exit_loop(struct snd_soc_card *card)
 				break;
 			}
 		}
+
 	}
 }
 
