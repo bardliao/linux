@@ -209,7 +209,14 @@ static const struct snd_soc_acpi_adr_device rt1316_0_group1_adr[] = {
 		.num_endpoints = 1,
 		.endpoints = &spk_l_endpoint,
 		.name_prefix = "rt1316-1"
+	},
+	{
+		.adr = 0x000031025D131601ull,
+		.num_endpoints = 1,
+		.endpoints = &spk_r_endpoint,
+		.name_prefix = "rt1316-2"
 	}
+
 };
 
 static const struct snd_soc_acpi_adr_device rt1318_1_group1_adr[] = {
@@ -417,11 +424,13 @@ static const struct snd_soc_acpi_link_adr tgl_1316_1318[] = {
 		.num_adr = ARRAY_SIZE(rt1316_0_group1_adr),
 		.adr_d = rt1316_0_group1_adr,
 	},
+#if 0
 	{
 		.mask = BIT(1),
 		.num_adr = ARRAY_SIZE(rt1318_1_group1_adr),
 		.adr_d = rt1318_1_group1_adr,
 	},
+#endif
 	{}
 };
 
