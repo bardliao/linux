@@ -136,6 +136,15 @@ config BRCMSTB_L2_IRQ
 	select GENERIC_IRQ_CHIP
 	select IRQ_DOMAIN
 
+config IRQ_CS42L43
+	tristate "Cirrus Logic CS42L43 IRQ Controller"
+	depends on MFD_CS42L43
+	select REGMAP_IRQ
+	help
+	  Select this to support the IRQ functions of the Cirrus Logic
+	  CS42L43 PC CODEC, note the IRQs are required for most other
+	  functions of the device.
+
 config DAVINCI_CP_INTC
 	bool
 	select GENERIC_IRQ_CHIP
