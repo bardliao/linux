@@ -1,0 +1,212 @@
+# SPDX-License-Identifier: GPL-2.0-only OR BSD-2-Clause
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/mfd/cirrus,cs42l43.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Cirrus Logic CS42L43 Audio CODEC
+
+maintainers:
+  - patches@opensource.cirrus.com
+
+description: |
+  The CS42L43 is an audio CODEC with integrated MIPI SoundWire interface
+  (Version 1.2.1 compliant), I2C, SPI, and I2S/TDM interfaces designed
+  for portable applications. It provides a high dynamic range, stereo
+  DAC for headphone output, two integrated Class D amplifiers for
+  loudspeakers, and two ADCs for wired headset microphone input or
+  stereo line input. PDM inputs are provided for digital microphones.
+
+required:
+  - compatible
+  - reg
+  - VDD_P-supply
+  - VDD_A-supply
+  - VDD_D-supply
+  - VDD_IO-supply
+  - VDD_CP-supply
+
+additionalProperties: false
+
+properties:
+  compatible:
+    enum:
+      - cirrus,cs42l43
+
+  reg:
+    maxItems: 1
+
+  VDD_P-supply:
+    description:
+      Power supply for the high voltage interface.
+
+  VDD_A-supply:
+    description:
+      Power supply for internal analog circuits.
+
+  VDD_D-supply:
+    description:
+      Power supply for internal digital circuits.
+
+  VDD_IO-supply:
+    description:
+      Power supply for external interface and internal digital logic.
+
+  VDD_CP-supply:
+    description:
+      Power supply for the amplifier 3 and 4 charge pump.
+
+  VDD_AMP-supply:
+    description:
+      Power supply for amplifier 1 and 2.
+
+  reset-gpios:
+    maxItems: 1
+
+  gpio-controller: true
+
+  '#gpio-cells':
+    const: 2
+
+  gpio-ranges:
+    items:
+      - description: A phandle to the CODEC pinctrl node
+        minimum: 0
+      - const: 0
+      - const: 0
+      - const: 3
+
+  interrupt-controller: true
+
+  '#interrupt-cells':
+    const: 2
+
+  interrupts:
+    maxItems: 1
+
+  '#sound-dai-cells':
+    const: 1
+
+  clocks:
+    items:
+      - description: Synchronous audio clock provided on mclk_in.
+
+  clock-names:
+    const: mclk
+
+  pinctrl:
+    type: object
+
+    allOf:
+      - $ref: "../pinctrl/pinctrl.yaml#"
+
+    properties:
+      pin-settings:
+        type: object
+
+        additionalProperties: false
+
+        patternProperties:
+          '-pins$':
+            type: object
+
+            allOf:
+              - $ref: "../pinctrl/pincfg-node.yaml#"
+              - $ref: "../pinctrl/pinmux-node.yaml#"
+
+            oneOf:
+              - required: [ groups ]
+              - required: [ pins ]
+
+            unevaluatedProperties: false
+
+            properties:
+              groups:
+                enum: [ gpio1, gpio2, gpio3, asp, pdmout2, pdmout1, i2c, spi ]
+
+              pins:
+                enum: [ gpio1, gpio2, gpio3,
+                        asp_dout, asp_fsync, asp_bclk,
+                        pdmout2_clk, pdmout2_data, pdmout1_clk, pdmout1_data,
+                        i2c_sda, i2c_scl,
+                        spi_miso, spi_sck, spi_ssb ]
+
+              function:
+                enum: [ gpio, spdif, irq, mic-shutter, spk-shutter ]
+
+              drive-strength:
+                description: Set drive strength in mA
+                enum: [ 1, 2, 4, 8, 9, 10, 12, 16 ]
+
+              input-debounce:
+                description: Set input debounce in uS
+                enum: [ 0, 85 ]
+
+  spi:
+    type: object
+
+    allOf:
+      - $ref: "../spi/spi-controller.yaml#"
+
+    unevaluatedProperties: false
+
+examples:
+  - |
+    i2c@e0004000 {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        reg = <0xe0004000 0x1000>;
+
+        cs42l43: codec@1a {
+            compatible = "cirrus,cs42l43";
+            reg = <0x1a>;
+
+            VDD_P-supply = <&vdd5v0>;
+            VDD_D-supply = <&vdd1v8>;
+            VDD_A-supply = <&vdd1v8>;
+            VDD_IO-supply = <&vdd1v8>;
+            VDD_CP-supply = <&vdd1v8>;
+            VDD_AMP-supply = <&vdd5v0>;
+
+            reset-gpios = <&gpio 0>;
+
+            gpio-controller;
+            #gpio-cells = <2>;
+            gpio-ranges = <&cs42l43_pins 0 0 3>;
+
+            interrupt-controller;
+            #interrupt-cells = <2>;
+            interrupt-parent = <&gpio>;
+            interrupts = <56 8>;
+
+            #sound-dai-cells = <1>;
+
+            clocks = <&clks 0>;
+            clock-names = "mclk";
+
+            cs42l43_pins: pinctrl {
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinsettings>;
+
+                pinsettings: pin-settings {
+                    shutter-pins {
+                        groups = "gpio3";
+                        function = "mic-shutter";
+                    };
+                };
+            };
+
+            spi {
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                cs-gpios = <&cs42l43 1 0>;
+
+                sensor@0 {
+                    compatible = "bosch,bme680";
+                    reg = <0>;
+                    spi-max-frequency = <1400000>;
+                };
+            };
+        };
+    };
