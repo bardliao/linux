@@ -4908,6 +4908,7 @@ F:	Documentation/devicetree/bindings/mfd/cirrus,cs*
 F:	Documentation/devicetree/bindings/sound/cirrus,cs*
 F:	drivers/irqchip/irq-cs42l43*
 F:	drivers/mfd/cs42l43*
+F:	drivers/pinctrl/cirrus/pinctrl-cs42l43*
 F:	include/dt-bindings/sound/cs*
 F:	include/linux/irqchip/cs42l43*
 F:	include/linux/mfd/cs42l43*
