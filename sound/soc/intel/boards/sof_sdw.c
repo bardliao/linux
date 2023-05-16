@@ -22,6 +22,14 @@ MODULE_PARM_DESC(quirk, "Board-specific quirk override");
 
 #define INC_ID(BE, CPU, LINK)	do { (BE)++; (CPU)++; (LINK)++; } while (0)
 
+/* To store SDW Pin index for each SoundWire link */
+static unsigned int sdw_pin_index[] = {
+	SDW_INTEL_BIDIR_PDI_BASE,
+	SDW_INTEL_BIDIR_PDI_BASE,
+	SDW_INTEL_BIDIR_PDI_BASE,
+	SDW_INTEL_BIDIR_PDI_BASE,
+};
+
 static void log_quirks(struct device *dev)
 {
 	if (SOF_RT711_JDSRC(sof_sdw_quirk))
@@ -1192,10 +1200,10 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 	int cpu_dai_num, cpu_dai_index;
 	unsigned int group_id;
 	int codec_idx = 0;
-	int i = 0, j = 0;
 	int codec_index;
 	int codec_num;
 	int stream;
+	int i = 0;
 	int ret;
 	int k;
 
@@ -1281,7 +1289,7 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 		for (k = 0; k < cpu_dai_num; k++) {
 			cpu_name = devm_kasprintf(dev, GFP_KERNEL,
 						  "SDW%d Pin%d", cpu_dai_id[k],
-						  j + SDW_INTEL_BIDIR_PDI_BASE);
+						  sdw_pin_index[cpu_dai_id[k]]++);
 			if (!cpu_name)
 				return -ENOMEM;
 
@@ -1330,7 +1338,6 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 		}
 
 		*cpu_id += cpu_dai_num;
-		j++;
 	}
 
 	return 0;
