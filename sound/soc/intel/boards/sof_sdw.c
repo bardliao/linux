@@ -907,6 +907,18 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_num = 1,
 	},
 	{
+		.part_id = 0x3556,
+		.dais = {
+			{
+				.direction = {true, true},
+				.dai_name = "cs35l56-sdw1",
+				.dai_type = SOF_SDW_DAI_TYPE_AMP,
+				.dailink = {SDW_AMP_OUT_DAI_ID, SDW_AMP_IN_DAI_ID},
+			}
+		},
+		.dai_num = 1,
+	},
+	{
 		.part_id = 0x4242,
 		.dais = {
 			{
@@ -916,6 +928,17 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 				.dailink = {SDW_JACK_OUT_DAI_ID, SDW_JACK_IN_DAI_ID},
 				.init = sof_sdw_cs42l42_init,
 			},
+		},
+	},
+	{
+		.part_id = 0x4243,
+		.dais = {
+			{
+				.direction = {true, true},
+				.dai_name = "cs42l43-dp5",
+				.dai_type = SOF_SDW_DAI_TYPE_JACK,
+				.dailink = {SDW_JACK_OUT_DAI_ID, SDW_JACK_IN_DAI_ID},
+			}
 		},
 		.dai_num = 1,
 	},
@@ -1173,19 +1196,26 @@ static int create_codec_dai_name(struct device *dev,
 		class_id = SDW_CLASS_ID(adr);
 
 		comp_index = i - adr_index + offset;
-		if (is_unique_device(link, sdw_version, mfg_id, part_id,
-				     class_id, i)) {
-			codec_str = "sdw:%01x:%04x:%04x:%02x";
-			codec[comp_index].name =
-				devm_kasprintf(dev, GFP_KERNEL, codec_str,
-					       link_id, mfg_id, part_id,
-					       class_id);
+
+		/* HACK for cs42l43 */
+		if (part_id==0x4243) {
+			codec[comp_index].name = devm_kasprintf(dev, GFP_KERNEL,
+					"cs42l43-codec");
 		} else {
-			codec_str = "sdw:%01x:%04x:%04x:%02x:%01x";
-			codec[comp_index].name =
-				devm_kasprintf(dev, GFP_KERNEL, codec_str,
-					       link_id, mfg_id, part_id,
-					       class_id, unique_id);
+			if (is_unique_device(link, sdw_version, mfg_id, part_id,
+					     class_id, i)) {
+				codec_str = "sdw:%01x:%04x:%04x:%02x";
+				codec[comp_index].name =
+					devm_kasprintf(dev, GFP_KERNEL, codec_str,
+						       link_id, mfg_id, part_id,
+						       class_id);
+			} else {
+				codec_str = "sdw:%01x:%04x:%04x:%02x:%01x";
+				codec[comp_index].name =
+					devm_kasprintf(dev, GFP_KERNEL, codec_str,
+						       link_id, mfg_id, part_id,
+						       class_id, unique_id);
+			}
 		}
 
 		if (!codec[comp_index].name)
