@@ -578,8 +578,8 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 	},
 	{
 		.part_id = 0x4243,
-		.direction = {true, true},
-		.dai_name = "cs4243-aif",
+		.direction = {true, false},
+		.dai_name = "cs42l43-dp5",
 		.codec_type = SOF_SDW_CODEC_TYPE_JACK,
 	},
 	{
@@ -808,6 +808,11 @@ static int create_codec_dai_name(struct device *dev,
 		class_id = SDW_CLASS_ID(adr);
 
 		comp_index = i + offset;
+		/* HACK for cs42l43 */
+		if (part_id==0x4243) {
+			codec[comp_index].name = devm_kasprintf(dev, GFP_KERNEL,
+					"cs42l43-codec");
+		} else {
 		if (is_unique_device(link, sdw_version, mfg_id, part_id,
 				     class_id, i)) {
 			codec_str = "sdw:%01x:%04x:%04x:%02x";
@@ -821,6 +826,7 @@ static int create_codec_dai_name(struct device *dev,
 				devm_kasprintf(dev, GFP_KERNEL, codec_str,
 					       link_id, mfg_id, part_id,
 					       class_id, unique_id);
+		}
 		}
 
 		if (!codec[comp_index].name)

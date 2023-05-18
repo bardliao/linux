@@ -408,6 +408,11 @@ static const struct snd_soc_acpi_link_adr tgl_3_in_1_sdca_mono[] = {
 
 static const struct snd_soc_acpi_link_adr tgl_cs35l56_cs42l43[] = {
 	{
+		.mask = BIT(3),
+		.num_adr = ARRAY_SIZE(cs42l43_3_adr),
+		.adr_d = cs42l43_3_adr,
+	},
+	{
 		.mask = BIT(0),
 		.num_adr = ARRAY_SIZE(cs35l56_0_adr),
 		.adr_d = cs35l56_0_adr,
@@ -417,13 +422,6 @@ static const struct snd_soc_acpi_link_adr tgl_cs35l56_cs42l43[] = {
 		.num_adr = ARRAY_SIZE(cs35l56_1_adr),
 		.adr_d = cs35l56_1_adr,
 	},
-#if 0
-	{
-		.mask = BIT(3),
-		.num_adr = ARRAY_SIZE(cs42l43_3_adr),
-		.adr_d = cs42l43_3_adr,
-	},
-#endif
 	{}
 };
 
