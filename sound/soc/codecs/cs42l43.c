@@ -2068,6 +2068,7 @@ static int cs42l43_codec_probe(struct platform_device *pdev)
 	unsigned int val;
 	int i, ret;
 
+	pr_err("bard: %s\n", __func__);
 	dom = irq_find_matching_fwnode(dev_fwnode(cs42l43->dev), DOMAIN_BUS_ANY);
 	if (!dom)
 		return -EPROBE_DEFER;

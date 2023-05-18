@@ -27,6 +27,7 @@ int cs42l43_sdw_add_slave(struct snd_pcm_substream *substream,
 	struct sdw_port_config pconfig = {0};
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	if (!sdw_stream)
 		return -EINVAL;
 

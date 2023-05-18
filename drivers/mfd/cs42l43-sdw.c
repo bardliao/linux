@@ -156,6 +156,7 @@ static int cs42l43_sdw_probe(struct sdw_slave *sdw, const struct sdw_device_id *
 	struct cs42l43 *cs42l43;
 	struct device *dev = &sdw->dev;
 
+	pr_err("bard: %s\n", __func__);
 	cs42l43 = devm_kzalloc(dev, sizeof(*cs42l43), GFP_KERNEL);
 	if (!cs42l43)
 		return -ENOMEM;
