@@ -765,7 +765,8 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 				.dai_type = SOF_SDW_DAI_TYPE_JACK,
 				.dailink = {SDW_JACK_OUT_DAI_ID, SDW_JACK_IN_DAI_ID},
 			}
-		}
+		},
+		.dai_num = 1,
 	},
 	{
 		.part_id = 0xaaaa, /* generic codec mockup */
