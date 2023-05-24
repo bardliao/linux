@@ -516,6 +516,7 @@ static int sof_ipc4_pcm_dai_link_fixup(struct snd_soc_pcm_runtime *rtd,
 {
 	struct snd_soc_component *component = snd_soc_rtdcom_lookup(rtd, SOF_AUDIO_PCM_DRV_NAME);
 	struct snd_sof_dai *dai = snd_sof_find_dai(component, rtd->dai_link->name);
+	struct snd_mask *fmt = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
 	struct snd_sof_dev *sdev = snd_soc_component_get_drvdata(component);
 	struct snd_soc_dai *cpu_dai = asoc_rtd_to_cpu(rtd, 0);
 	struct sof_ipc4_copier *ipc4_copier;
@@ -560,6 +561,26 @@ static int sof_ipc4_pcm_dai_link_fixup(struct snd_soc_pcm_runtime *rtd,
 	case SOF_DAI_INTEL_SSP:
 		ipc4_ssp_dai_config_pcm_params_match(sdev, (char *)rtd->dai_link->name, params);
 		break;
+	case SOF_DAI_INTEL_ALH:
+		dev_info(component->dev, "bard: format %#x\n", ipc4_copier->frame_fmt);
+
+		snd_mask_none(fmt);
+		switch (ipc4_copier->frame_fmt) {
+		case SOF_IPC_FRAME_S16_LE:
+			dev_info(component->dev, "bard: %s use 16 bit format for sdw devices\n", dai->name);
+			snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S16_LE);
+			break;
+		case SOF_IPC_FRAME_S24_4LE:
+			dev_info(component->dev, "bard: %s use 24 bit format for sdw devices\n", dai->name);
+			snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S24_LE);
+			break;
+		case SOF_IPC_FRAME_S32_LE:
+			dev_info(component->dev, "bard: %s use 32 bit format for sdw devices\n", dai->name);
+			snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S32_LE);
+			break;
+		default:
+			break;
+		}
 	default:
 		break;
 	}

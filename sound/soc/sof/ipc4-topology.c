@@ -103,6 +103,8 @@ static const struct sof_topology_token dai_tokens[] = {
 		offsetof(struct sof_ipc4_copier, dai_type)},
 	{SOF_TKN_DAI_INDEX, SND_SOC_TPLG_TUPLE_TYPE_WORD, get_token_u32,
 		offsetof(struct sof_ipc4_copier, dai_index)},
+	{SOF_TKN_COMP_FORMAT, SND_SOC_TPLG_TUPLE_TYPE_STRING, get_token_comp_format,
+		offsetof(struct sof_ipc4_copier, frame_fmt)},
 };
 
 /* Component extended tokens */
@@ -502,6 +504,7 @@ static int sof_ipc4_widget_setup_comp_dai(struct snd_sof_widget *swidget)
 		goto free_available_fmt;
 	}
 
+	ipc4_copier->frame_fmt = -1;
 	ret = sof_update_ipc_object(scomp, ipc4_copier,
 				    SOF_DAI_TOKENS, swidget->tuples,
 				    swidget->num_tuples, sizeof(u32), 1);
@@ -510,6 +513,7 @@ static int sof_ipc4_widget_setup_comp_dai(struct snd_sof_widget *swidget)
 		goto free_available_fmt;
 	}
 
+	pr_err("bard: %s format %#x\n", swidget->widget->name, ipc4_copier->frame_fmt);
 	dev_dbg(scomp->dev, "dai %s node_type %u dai_type %u dai_index %d\n", swidget->widget->name,
 		node_type, ipc4_copier->dai_type, ipc4_copier->dai_index);
 
