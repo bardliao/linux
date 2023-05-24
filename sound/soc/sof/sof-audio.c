@@ -396,6 +396,11 @@ sof_unprepare_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_dapm_widg
 	const struct sof_ipc_tplg_widget_ops *widget_ops;
 	struct snd_soc_dapm_path *p;
 
+	if (widget->id == 0) {
+		dev_dbg(sdev->dev, "%s: %s is a virtual widget, return directly\n",
+			__func__, widget->name);
+		return;
+	}
 	/* skip if the widget is in use or if it is already unprepared */
 	if (!swidget || !swidget->prepared || swidget->use_count > 0)
 		goto sink_unprepare;
@@ -433,6 +438,11 @@ sof_prepare_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_dapm_widget
 	struct snd_soc_dapm_path *p;
 	int ret;
 
+	if (widget->id == 0) {
+		dev_dbg(sdev->dev, "%s: %s is a virtual widget, return directly\n",
+			__func__, widget->name);
+		return 0;
+	}
 	widget_ops = tplg_ops ? tplg_ops->widget : NULL;
 	if (!widget_ops)
 		return 0;
@@ -488,6 +498,11 @@ static int sof_free_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_dap
 	int err;
 	int ret = 0;
 
+	if (widget->id == 0) {
+		dev_dbg(sdev->dev, "%s: %s is a virtual widget, return directly\n",
+			__func__, widget->name);
+		return 0;
+	}
 	if (widget->dobj.private) {
 		err = sof_widget_free(sdev, widget->dobj.private);
 		if (err < 0)
@@ -527,6 +542,11 @@ static int sof_set_up_widgets_in_path(struct snd_sof_dev *sdev, struct snd_soc_d
 	struct snd_soc_dapm_path *p;
 	int ret;
 
+	if (widget->id == 0) {
+		dev_dbg(sdev->dev, "%s: %s is a virtual widget, return directly\n",
+			__func__, widget->name);
+		return 0;
+	}
 	if (swidget) {
 		int i;
 
