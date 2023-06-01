@@ -861,7 +861,11 @@ static int hda_init(struct snd_sof_dev *sdev)
 	sdev->bar[HDA_DSP_HDA_BAR] = bus->remap_addr;
 
 	/* init i915 and HDMI codecs */
+#if 0
 	ret = hda_codec_i915_init(sdev);
+#else
+	ret = 0;
+#endif
 	if (ret < 0)
 		dev_warn(sdev->dev, "init of i915 and HDMI codec failed\n");
 
