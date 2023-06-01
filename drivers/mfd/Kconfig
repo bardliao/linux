@@ -260,6 +260,15 @@ config MFD_CS42L43_SDW
 	  Select this to support the Cirrus Logic CS42L43 PC CODEC with
 	  headphone and class D speaker drivers over SoundWire.
 
+config MFD_CS42L43_SKIP_PATCHING
+	bool "Cirrus Logic CS42L43 Skip Patching"
+	depends on MFD_CS42L43
+	help
+	  Select this to skip patching the firmware on cs42l43, if something
+	  else in the system has not patched the device before passing control
+	  to the kernel this will result in the microphone and speaker
+	  shutters being non-functional. If in any doubt at all select N here.
+
 config MFD_MADERA
 	tristate "Cirrus Logic Madera codecs"
 	select MFD_CORE
