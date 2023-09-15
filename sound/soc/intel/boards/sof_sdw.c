@@ -39,6 +39,8 @@ static void log_quirks(struct device *dev)
 		dev_err(dev, "quirk SOF_SDW_NO_AGGREGATION enabled but no longer supported\n");
 	if (sof_sdw_quirk & SOF_CODEC_SPKR)
 		dev_dbg(dev, "quirk SOF_CODEC_SPKR enabled\n");
+	if (sof_sdw_quirk & SOF_CS42L43_AMPS)
+		dev_dbg(dev, "quirk SOF_CS42L43_AMPS enabled\n");
 }
 
 static int sof_sdw_quirk_cb(const struct dmi_system_id *id)
@@ -1033,8 +1035,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 				.dai_type = SOF_SDW_DAI_TYPE_AMP,
 				.dailink = {SDW_AMP_OUT_DAI_ID, SDW_UNUSED_DAI_ID},
 				.init = sof_sdw_cs42l43_spk_init,
-				.rtd_init = cs42l43_spk_rtd_init,
-				.quirk = SOF_CODEC_SPKR,
+				.quirk = SOF_CODEC_SPKR | SOF_CS42L43_AMPS,
 			},
 		},
 		.dai_num = 4,
@@ -1728,7 +1729,7 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 {
 	struct device *dev = card->dev;
 	struct snd_soc_acpi_mach *mach = dev_get_platdata(card->dev);
-	int sdw_be_num = 0, ssp_num = 0, dmic_num = 0, bt_num = 0;
+	int sdw_be_num = 0, ssp_num = 0, dmic_num = 0, bt_num = 0, c2c_num = 0;
 	struct mc_private *ctx = snd_soc_card_get_drvdata(card);
 	struct snd_soc_acpi_mach_params *mach_params = &mach->mach_params;
 	struct snd_soc_codec_conf *codec_conf;
@@ -1760,6 +1761,11 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 	if (!sof_ends) {
 		ret = -ENOMEM;
 		goto err_dai;
+	}
+
+	if (sof_sdw_quirk & SOF_CS42L43_AMPS) {
+		num_devs += 2;
+		c2c_num++;
 	}
 
 	/* will be populated when acpi endpoints are parsed */
@@ -1805,12 +1811,12 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 	if (sof_sdw_quirk & SOF_SSP_BT_OFFLOAD_PRESENT)
 		bt_num = 1;
 
-	dev_dbg(dev, "sdw %d, ssp %d, dmic %d, hdmi %d, bt: %d\n",
+	dev_dbg(dev, "sdw %d, ssp %d, dmic %d, hdmi %d, bt: %d c2c: %d\n",
 		sdw_be_num, ssp_num, dmic_num,
-		ctx->hdmi.idisp_codec ? hdmi_num : 0, bt_num);
+		ctx->hdmi.idisp_codec ? hdmi_num : 0, bt_num, c2c_num);
 
 	/* allocate BE dailinks */
-	num_links = sdw_be_num + ssp_num + dmic_num + hdmi_num + bt_num;
+	num_links = sdw_be_num + ssp_num + dmic_num + hdmi_num + bt_num + c2c_num;
 	dai_links = devm_kcalloc(dev, num_links, sizeof(*dai_links), GFP_KERNEL);
 	if (!dai_links) {
 		ret = -ENOMEM;

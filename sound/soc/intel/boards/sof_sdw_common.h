@@ -55,6 +55,7 @@ enum {
 #define SOF_SDW_NO_AGGREGATION		BIT(14)
 /* If a CODEC has an optional speaker output, this quirk will enable it */
 #define SOF_CODEC_SPKR			BIT(15)
+#define SOF_CS42L43_AMPS		BIT(16)
 
 /* BT audio offload: reserve 3 bits for future */
 #define SOF_BT_OFFLOAD_SSP_SHIFT	15
@@ -177,6 +178,12 @@ int sof_sdw_cs42l43_spk_init(struct snd_soc_card *card,
 
 /* CS AMP support */
 int sof_sdw_cs_amp_init(struct snd_soc_card *card,
+			struct snd_soc_dai_link **dai_links,
+			struct sof_sdw_codec_info *info,
+			struct snd_soc_codec_conf **codec_conf,
+			bool playback);
+
+int bridge_cs35l56_init(struct snd_soc_card *card,
 			struct snd_soc_dai_link **dai_links,
 			struct sof_sdw_codec_info *info,
 			struct snd_soc_codec_conf **codec_conf,

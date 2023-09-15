@@ -154,7 +154,13 @@ int sof_sdw_cs42l43_spk_init(struct snd_soc_card *card,
 	if (!playback)
 		return 0;
 
-	info->amp_num++;
+	if (sof_sdw_quirk & SOF_CS42L43_AMPS) {
+		bridge_cs35l56_init(card, dai_links, info, codec_conf, playback);
+	} else {
+		(*dai_links)->init = cs42l43_spk_rtd_init;
+
+		info->amp_num++;
+	}
 
 	return 0;
 }
