@@ -145,8 +145,9 @@ int cs42l43_spk_rtd_init(struct snd_soc_pcm_runtime *rtd)
 }
 
 int sof_sdw_cs42l43_spk_init(struct snd_soc_card *card,
-			     struct snd_soc_dai_link *dai_links,
+			     struct snd_soc_dai_link **dai_links,
 			     struct sof_sdw_codec_info *info,
+			     struct snd_soc_codec_conf **codec_conf,
 			     bool playback)
 {
 	/* Do init on playback link only. */

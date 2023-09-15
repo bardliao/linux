@@ -139,8 +139,9 @@ static int mx8373_sdw_late_probe(struct snd_soc_card *card)
 }
 
 int sof_sdw_maxim_init(struct snd_soc_card *card,
-		       struct snd_soc_dai_link *dai_links,
+		       struct snd_soc_dai_link **dai_links,
 		       struct sof_sdw_codec_info *info,
+		       struct snd_soc_codec_conf **codec_conf,
 		       bool playback)
 {
 	info->amp_num++;
@@ -154,7 +155,7 @@ int sof_sdw_maxim_init(struct snd_soc_card *card,
 		break;
 	case SOF_SDW_PART_ID_MAX98373:
 		info->codec_card_late_probe = mx8373_sdw_late_probe;
-		dai_links->ops = &max_98373_sdw_ops;
+		(*dai_links)->ops = &max_98373_sdw_ops;
 		break;
 	default:
 		dev_err(card->dev, "Invalid maxim_part_id %#x\n", maxim_part_id);

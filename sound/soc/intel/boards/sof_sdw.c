@@ -1345,13 +1345,13 @@ static struct sof_sdw_dailink *find_dailink(struct sof_sdw_dailink *dailinks,
 
 static int parse_sdw_endpoints(struct snd_soc_card *card,
 			       struct sof_sdw_dailink *sof_dais,
-			       struct sof_sdw_endpoint *sof_ends)
+			       struct sof_sdw_endpoint *sof_ends,
+			       struct snd_soc_codec_conf **codec_conf)
 {
 	struct device *dev = card->dev;
 	struct mc_private *ctx = snd_soc_card_get_drvdata(card);
 	struct snd_soc_acpi_mach *mach = dev_get_platdata(dev);
 	struct snd_soc_acpi_mach_params *mach_params = &mach->mach_params;
-	struct snd_soc_codec_conf *codec_conf = card->codec_conf;
 	const struct snd_soc_acpi_link_adr *adr_link;
 	struct sof_sdw_endpoint *sof_end = sof_ends;
 	int num_dais = 0;
@@ -1387,9 +1387,9 @@ static int parse_sdw_endpoints(struct snd_soc_card *card,
 			if (!codec_name)
 				return -ENOMEM;
 
-			codec_conf->dlc.name = codec_name;
-			codec_conf->name_prefix = adr_dev->name_prefix;
-			codec_conf++;
+			(*codec_conf)->dlc.name = codec_name;
+			(*codec_conf)->name_prefix = adr_dev->name_prefix;
+			(*codec_conf)++;
 
 			dev_dbg(dev, "Adding prefix %s for %s\n",
 				adr_dev->name_prefix, codec_name);
@@ -1454,15 +1454,13 @@ static int parse_sdw_endpoints(struct snd_soc_card *card,
 		ctx->append_dai_type |= (num_link_dailinks > 1);
 	}
 
-	WARN_ON(codec_conf != card->codec_conf + card->num_configs);
-
 	return num_dais;
 }
 
 static int create_sdw_dailink(struct snd_soc_card *card,
 			      struct sof_sdw_dailink *sof_dai,
 			      struct snd_soc_dai_link **dai_links,
-			      int *be_id)
+			      int *be_id, struct snd_soc_codec_conf **codec_conf)
 {
 	struct device *dev = card->dev;
 	struct mc_private *ctx = snd_soc_card_get_drvdata(card);
@@ -1567,9 +1565,9 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 
 		list_for_each_entry(sof_end, &sof_dai->endpoints, list) {
 			if (sof_end->dai_info->init)
-				sof_end->dai_info->init(card, *dai_links,
+				sof_end->dai_info->init(card, dai_links,
 							sof_end->codec_info,
-							playback);
+							codec_conf, playback);
 		}
 
 		(*dai_links)++;
@@ -1580,7 +1578,8 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 
 static int create_sdw_dailinks(struct snd_soc_card *card,
 			       struct snd_soc_dai_link **dai_links, int *be_id,
-			       struct sof_sdw_dailink *sof_dais)
+			       struct sof_sdw_dailink *sof_dais,
+			       struct snd_soc_codec_conf **codec_conf)
 {
 	struct mc_private *ctx = snd_soc_card_get_drvdata(card);
 	int ret, i;
@@ -1592,7 +1591,8 @@ static int create_sdw_dailinks(struct snd_soc_card *card,
 	while (sof_dais->initialised) {
 		int current_be_id;
 
-		ret = create_sdw_dailink(card, sof_dais, dai_links, &current_be_id);
+		ret = create_sdw_dailink(card, sof_dais, dai_links, &current_be_id,
+					 codec_conf);
 		if (ret)
 			return ret;
 
@@ -1630,7 +1630,7 @@ static int create_ssp_dailinks(struct snd_soc_card *card,
 		if (ret)
 			return ret;
 
-		ret = ssp_info->dais[0].init(card, *dai_links, ssp_info, 0);
+		ret = ssp_info->dais[0].init(card, dai_links, ssp_info, NULL, 0);
 		if (ret < 0)
 			return ret;
 
@@ -1772,7 +1772,7 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 	card->codec_conf = codec_conf;
 	card->num_configs = num_devs;
 
-	ret = parse_sdw_endpoints(card, sof_dais, sof_ends);
+	ret = parse_sdw_endpoints(card, sof_dais, sof_ends, &codec_conf);
 	if (ret < 0)
 		goto err_end;
 
@@ -1822,10 +1822,12 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 
 	/* SDW */
 	if (sdw_be_num) {
-		ret = create_sdw_dailinks(card, &dai_links, &be_id, sof_dais);
+		ret = create_sdw_dailinks(card, &dai_links, &be_id, sof_dais, &codec_conf);
 		if (ret)
 			goto err_end;
 	}
+
+	WARN_ON(codec_conf != card->codec_conf + card->num_configs);
 
 	/* SSP */
 	if (ssp_num) {

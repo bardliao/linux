@@ -281,8 +281,9 @@ int sof_sdw_rt_amp_exit(struct snd_soc_card *card, struct snd_soc_dai_link *dai_
 }
 
 int sof_sdw_rt_amp_init(struct snd_soc_card *card,
-			struct snd_soc_dai_link *dai_links,
+			struct snd_soc_dai_link **dai_links,
 			struct sof_sdw_codec_info *info,
+			struct snd_soc_codec_conf **codec_conf,
 			bool playback)
 {
 	struct mc_private *ctx = snd_soc_card_get_drvdata(card);
@@ -296,7 +297,8 @@ int sof_sdw_rt_amp_init(struct snd_soc_card *card,
 	info->amp_num++;
 
 	if (info->amp_num == 2) {
-		sdw_dev1 = bus_find_device_by_name(&sdw_bus_type, NULL, dai_links->codecs[0].name);
+		sdw_dev1 = bus_find_device_by_name(&sdw_bus_type, NULL,
+						   (*dai_links)->codecs[0].name);
 		if (!sdw_dev1)
 			return -EPROBE_DEFER;
 
@@ -307,7 +309,8 @@ int sof_sdw_rt_amp_init(struct snd_soc_card *card,
 		}
 		ctx->amp_dev1 = sdw_dev1;
 
-		sdw_dev2 = bus_find_device_by_name(&sdw_bus_type, NULL, dai_links->codecs[1].name);
+		sdw_dev2 = bus_find_device_by_name(&sdw_bus_type, NULL,
+						   (*dai_links)->codecs[1].name);
 		if (!sdw_dev2)
 			return -EPROBE_DEFER;
 
