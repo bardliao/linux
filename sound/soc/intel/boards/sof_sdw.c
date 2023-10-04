@@ -1377,8 +1377,11 @@ static void set_dailink_map(struct snd_soc_dai_link_codec_ch_map *sdw_codec_ch_m
 	int i;
 
 	step = codec_num / cpu_num;
-	for (i = 0; i < codec_num; i++)
+	for (i = 0; i < codec_num; i++) {
 		sdw_codec_ch_maps[i].connected_cpu_id = i / step;
+		if (sdw_codec_ch_maps[i].connected_cpu_id >= cpu_num)
+			sdw_codec_ch_maps[i].connected_cpu_id = cpu_num - 1;
+	}
 }
 
 static inline int find_codec_info_dai(const char *dai_name, int *dai_index)
