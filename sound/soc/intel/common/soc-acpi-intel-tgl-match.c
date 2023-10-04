@@ -74,7 +74,7 @@ static const struct snd_soc_acpi_adr_device rt711_0_adr[] = {
 	{
 		.adr = 0x000020025D071100ull,
 		.num_endpoints = 1,
-		.endpoints = &single_endpoint,
+		.endpoints = &spk_3_endpoint,
 		.name_prefix = "rt711"
 	}
 };
@@ -246,14 +246,14 @@ static const struct snd_soc_acpi_adr_device rt714_3_adr[] = {
 
 static const struct snd_soc_acpi_link_adr tgl_rvp[] = {
 	{
-		.mask = BIT(0),
-		.num_adr = ARRAY_SIZE(rt711_0_adr),
-		.adr_d = rt711_0_adr,
-	},
-	{
 		.mask = BIT(1),
 		.num_adr = ARRAY_SIZE(rt1308_1_dual_adr),
 		.adr_d = rt1308_1_dual_adr,
+	},
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt711_0_adr),
+		.adr_d = rt711_0_adr,
 	},
 	{}
 };
