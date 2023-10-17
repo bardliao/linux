@@ -612,11 +612,12 @@ static int sof_ipc4_pcm_dai_link_fixup(struct snd_soc_pcm_runtime *rtd,
 	if (ret)
 		return ret;
 
-	if (single_fmt) {
+//	if (single_fmt) {
 		snd_mask_none(fmt);
-		valid_bits = SOF_IPC4_AUDIO_FORMAT_CFG_V_BIT_DEPTH(ipc4_fmt->fmt_cfg);
+//		valid_bits = SOF_IPC4_AUDIO_FORMAT_CFG_V_BIT_DEPTH(ipc4_fmt->fmt_cfg);
+		valid_bits = 24;
 		dev_dbg(component->dev, "Set %s to %d bit format\n", dai->name, valid_bits);
-	}
+//	}
 
 	/* Set format if it is specified */
 	switch (valid_bits) {

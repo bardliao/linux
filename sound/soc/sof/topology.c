@@ -1086,9 +1086,12 @@ static int sof_connect_dai_widget(struct snd_soc_component *scomp,
 			 * to ensure BE will connect to the right DAI
 			 * widget.
 			 */
+			pr_err("bard: %s cpu_dai %s w %s\n", __func__, cpu_dai->name, w->name);
 			if (!snd_soc_dai_get_widget(cpu_dai, stream)) {
 				snd_soc_dai_set_widget(cpu_dai, stream, w);
 				break;
+			} else {
+				pr_err("bard: %s -> w: %s %p\n", cpu_dai->name, snd_soc_dai_get_widget(cpu_dai, stream)->name, snd_soc_dai_get_widget(cpu_dai, stream));
 			}
 		}
 		if (i == rtd->dai_link->num_cpus) {
@@ -1134,12 +1137,14 @@ static void sof_disconnect_dai_widget(struct snd_soc_component *scomp,
 	list_for_each_entry(rtd, &card->rtd_list, list) {
 		/* does stream match DAI link ? */
 		if (!rtd->dai_link->stream_name ||
-		    strcmp(sname, rtd->dai_link->stream_name))
+		    !strstr(rtd->dai_link->stream_name, w->sname))
 			continue;
 
 		for_each_rtd_cpu_dais(rtd, i, cpu_dai)
 			if (snd_soc_dai_get_widget(cpu_dai, stream) == w) {
 				snd_soc_dai_set_widget(cpu_dai, stream, NULL);
+				pr_err("bard: %s %s\n", __func__, w->name);
+
 				break;
 			}
 	}
