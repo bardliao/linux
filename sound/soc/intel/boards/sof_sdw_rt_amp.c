@@ -194,6 +194,7 @@ int rt_amp_spk_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	int ret;
 	int i;
 
+	pr_err("bard: %s\n", __func__);
 	rt_amp_map = get_codec_name_and_route(rtd, codec_name);
 
 	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
@@ -295,6 +296,7 @@ int sof_sdw_rt_amp_init(struct snd_soc_card *card,
 		return 0;
 
 	info->amp_num++;
+	pr_err("bard: %s info->amp_num %d\n", __func__, info->amp_num);
 
 	if (info->amp_num == 2) {
 		sdw_dev1 = bus_find_device_by_name(&sdw_bus_type, NULL, dai_links->codecs[0].name);

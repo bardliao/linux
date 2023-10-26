@@ -93,6 +93,7 @@ int rt_sdca_jack_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_jack *jack;
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	codec_dai = get_codec_dai_by_name(rtd, jack_codecs, ARRAY_SIZE(jack_codecs));
 	if (!codec_dai)
 		return -EINVAL;
@@ -192,6 +193,7 @@ int sof_sdw_rt_sdca_jack_init(struct snd_soc_card *card,
 	struct device *sdw_dev;
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	/*
 	 * headset should be initialized once.
 	 * Do it with dai link for playback.
