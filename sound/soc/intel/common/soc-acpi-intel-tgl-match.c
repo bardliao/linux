@@ -185,7 +185,7 @@ static const struct snd_soc_acpi_adr_device rt711_sdca_0_adr[] = {
 	{
 		.adr = 0x000030025D071101ull,
 		.num_endpoints = 1,
-		.endpoints = &single_endpoint,
+		.endpoints = &spk_2_endpoint,
 		.name_prefix = "rt711"
 	}
 };
@@ -359,11 +359,6 @@ static const struct snd_soc_acpi_link_adr tgl_sdw_rt711_link1_rt1308_link2_rt715
 
 static const struct snd_soc_acpi_link_adr tgl_3_in_1_sdca[] = {
 	{
-		.mask = BIT(0),
-		.num_adr = ARRAY_SIZE(rt711_sdca_0_adr),
-		.adr_d = rt711_sdca_0_adr,
-	},
-	{
 		.mask = BIT(1),
 		.num_adr = ARRAY_SIZE(rt1316_1_group1_adr),
 		.adr_d = rt1316_1_group1_adr,
@@ -372,6 +367,11 @@ static const struct snd_soc_acpi_link_adr tgl_3_in_1_sdca[] = {
 		.mask = BIT(2),
 		.num_adr = ARRAY_SIZE(rt1316_2_group1_adr),
 		.adr_d = rt1316_2_group1_adr,
+	},
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt711_sdca_0_adr),
+		.adr_d = rt711_sdca_0_adr,
 	},
 	{
 		.mask = BIT(3),
