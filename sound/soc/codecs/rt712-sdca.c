@@ -1210,12 +1210,12 @@ int rt712_sdca_init(struct device *dev, struct regmap *regmap,
 	/* JD source uses JD1 in default */
 	rt712->jd_src = RT712_JD1;
 
-	if (slave->id.part_id != RT712_PART_ID_713)
+//	if (slave->id.part_id != RT712_PART_ID_713)
 		ret =  devm_snd_soc_register_component(dev,
 				&soc_sdca_dev_rt712, rt712_sdca_dai, ARRAY_SIZE(rt712_sdca_dai));
-	else
-		ret =  devm_snd_soc_register_component(dev,
-				&soc_sdca_dev_rt712, rt712_sdca_dai, 1);
+//	else
+//		ret =  devm_snd_soc_register_component(dev,
+//				&soc_sdca_dev_rt712, rt712_sdca_dai, 1);
 	if (ret < 0)
 		return ret;
 

@@ -745,6 +745,12 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.version_id = 3,
 		.dais =	{
 			{
+				.direction = {true, false},
+				.dai_name = "rt712-sdca-aif2",
+				.dai_type = SOF_SDW_DAI_TYPE_AMP,
+				.dailink = {SDW_AMP_OUT_DAI_ID, SDW_UNUSED_DAI_ID},
+			},
+			{
 				.direction = {true, true},
 				.dai_name = "rt712-sdca-aif1",
 				.dai_type = SOF_SDW_DAI_TYPE_JACK,
@@ -754,7 +760,7 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 				.rtd_init = rt_sdca_jack_rtd_init,
 			},
 		},
-		.dai_num = 1,
+		.dai_num = 2,
 	},
 	{
 		.part_id = 0x1713,
