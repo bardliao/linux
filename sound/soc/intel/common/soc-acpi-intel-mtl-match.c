@@ -180,7 +180,8 @@ static const struct snd_soc_acpi_adr_device rt713_0_single_adr[] = {
 	{
 		.adr = 0x000031025D071301ull,
 		.num_endpoints = 1,
-		.endpoints = &single_endpoint,
+		.endpoints = &spk_2_endpoint,
+		//.endpoints = &single_endpoint,
 		.name_prefix = "rt713"
 	}
 };
@@ -412,11 +413,6 @@ static const struct snd_soc_acpi_link_adr mtl_sdw_rt1318_l12_rt714_l0[] = {
 
 static const struct snd_soc_acpi_link_adr mtl_rt713_l0_rt1316_l12_rt1713_l3[] = {
 	{
-		.mask = BIT(0),
-		.num_adr = ARRAY_SIZE(rt713_0_single_adr),
-		.adr_d = rt713_0_single_adr,
-	},
-	{
 		.mask = BIT(1),
 		.num_adr = ARRAY_SIZE(rt1316_1_group2_adr),
 		.adr_d = rt1316_1_group2_adr,
@@ -425,6 +421,11 @@ static const struct snd_soc_acpi_link_adr mtl_rt713_l0_rt1316_l12_rt1713_l3[] = 
 		.mask = BIT(2),
 		.num_adr = ARRAY_SIZE(rt1316_2_group2_adr),
 		.adr_d = rt1316_2_group2_adr,
+	},
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt713_0_single_adr),
+		.adr_d = rt713_0_single_adr,
 	},
 	{
 		.mask = BIT(3),

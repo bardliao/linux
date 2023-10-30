@@ -27,8 +27,8 @@ static const struct snd_soc_dapm_widget rt712_spk_widgets[] = {
  * if two rt712s are used.
  */
 static const struct snd_soc_dapm_route rt712_spk_map[] = {
-	{ "Speaker", NULL, "rt712 SPOL" },
-	{ "Speaker", NULL, "rt712 SPOR" },
+	{ "Speaker", NULL, "rt713 SPOL" },
+	{ "Speaker", NULL, "rt713 SPOR" },
 };
 
 static const struct snd_kcontrol_new rt712_spk_controls[] = {

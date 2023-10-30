@@ -1268,6 +1268,7 @@ int rt712_sdca_io_init(struct device *dev, struct sdw_slave *slave)
 
 	rt712_sdca_index_read(rt712, RT712_VENDOR_REG, RT712_JD_PRODUCT_NUM, &val);
 	rt712->hw_id = (val & 0xf000) >> 12;
+	rt712->hw_id = RT712_DEV_ID_712; //HACK
 
 	rt712_sdca_index_write(rt712, RT712_VENDOR_REG, RT712_ANALOG_BIAS_CTL3, 0xaa81);
 	rt712_sdca_index_write(rt712, RT712_VENDOR_REG, RT712_LDO2_3_CTL1, 0xa1e0);
