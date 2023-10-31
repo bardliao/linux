@@ -35,7 +35,7 @@ static const struct snd_kcontrol_new rt712_spk_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Speaker"),
 };
 
-static int rt712_spk_init(struct snd_soc_pcm_runtime *rtd)
+int rt712_spk_rtd_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_card *card = rtd->card;
 	int ret;
@@ -67,22 +67,11 @@ static int rt712_spk_init(struct snd_soc_pcm_runtime *rtd)
 	return ret;
 }
 
-int sof_sdw_rt712_spk_init(struct snd_soc_card *card,
-			   const struct snd_soc_acpi_link_adr *link,
-			   struct snd_soc_dai_link *dai_links,
-			   struct sof_sdw_codec_info *info,
-			   bool playback)
-{
-	dai_links->init = rt712_spk_init;
-
-	return 0;
-}
-
 static const char * dmics[] = {
 	"rt712-sdca-dmic"
 };
 
-static int rt712_sdca_dmic_rtd_init(struct snd_soc_pcm_runtime *rtd)
+int rt712_sdca_dmic_rtd_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_card *card = rtd->card;
 	struct snd_soc_dai *codec_dai;
@@ -98,17 +87,6 @@ static int rt712_sdca_dmic_rtd_init(struct snd_soc_pcm_runtime *rtd)
 					  card->components, component->name_prefix);
 	if (!card->components)
 		return -ENOMEM;
-
-	return 0;
-}
-
-int sof_sdw_rt712_sdca_dmic_init(struct snd_soc_card *card,
-				 const struct snd_soc_acpi_link_adr *link,
-				 struct snd_soc_dai_link *dai_links,
-				 struct sof_sdw_codec_info *info,
-				 bool playback)
-{
-	dai_links->init = rt712_sdca_dmic_rtd_init;
 
 	return 0;
 }
