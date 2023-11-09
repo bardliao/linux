@@ -298,7 +298,7 @@ out:
 	return ret;
 }
 
-static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
+static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq, unsigned int lane)
 {
 	struct sdw_master_prop *prop = &bus->prop;
 	int frame_int, frame_freq;
@@ -314,7 +314,7 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
 			frame_freq = clk_freq / frame_int;
 
 			if ((clk_freq - (frame_freq * SDW_FRAME_CTRL_BITS)) <
-			    bus->params.bandwidth)
+			    bus->params.bandwidth[lane])
 				continue;
 
 			bus->params.row = sdw_rows[r];
@@ -331,7 +331,7 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
  *
  * @bus: SDW Bus instance
  */
-static int sdw_compute_bus_params(struct sdw_bus *bus)
+static int sdw_compute_bus_params(struct sdw_bus *bus, unsigned int lane)
 {
 	unsigned int curr_dr_freq = 0;
 	struct sdw_master_prop *mstr_prop = &bus->prop;
@@ -359,7 +359,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 				(bus->params.max_dr_freq >>  clk_buf[i]) :
 				clk_buf[i] * SDW_DOUBLE_RATE_FACTOR;
 
-		if (curr_dr_freq <= bus->params.bandwidth)
+		if (curr_dr_freq <= bus->params.bandwidth[lane])
 			continue;
 
 		break;
@@ -373,11 +373,11 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 
 	if (i == clk_values) {
 		dev_err(bus->dev, "%s: could not find clock value for bandwidth %d\n",
-			__func__, bus->params.bandwidth);
+			__func__, bus->params.bandwidth[lane]);
 		return -EINVAL;
 	}
 
-	ret = sdw_select_row_col(bus, curr_dr_freq);
+	ret = sdw_select_row_col(bus, curr_dr_freq, lane);
 	if (ret < 0) {
 		dev_err(bus->dev, "%s: could not find frame configuration for bus dr_freq %d\n",
 			__func__, curr_dr_freq);
@@ -393,12 +393,12 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
  *
  * @bus: SDW Bus instance
  */
-int sdw_compute_params(struct sdw_bus *bus)
+int sdw_compute_params(struct sdw_bus *bus, unsigned int lane)
 {
 	int ret;
 
 	/* Computes clock frequency, frame shape and frame frequency */
-	ret = sdw_compute_bus_params(bus);
+	ret = sdw_compute_bus_params(bus, lane);
 	if (ret < 0)
 		return ret;
 

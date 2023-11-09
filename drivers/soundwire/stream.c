@@ -1352,9 +1352,11 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 			       bool update_params)
 {
 	struct sdw_master_runtime *m_rt;
+	struct sdw_port_runtime *p_rt;
 	struct sdw_bus *bus;
 	struct sdw_master_prop *prop;
 	struct sdw_bus_params params;
+	int ch_count;
 	int ret;
 
 	/* Prepare  Master(s) and Slave(s) port(s) associated with stream */
@@ -1370,18 +1372,21 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 		}
 
 		if (update_params) {
-			/* Increment cumulative bus bandwidth */
-			/* TODO: Update this during Device-Device support */
-			bus->params.bandwidth += m_rt->stream->params.rate *
-				m_rt->ch_count * m_rt->stream->params.bps;
+			list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
+				/* Increment cumulative bus bandwidth */
+				/* TODO: Update this during Device-Device support */
+				ch_count = hweight32(p_rt->ch_mask);
+				bus->params.bandwidth[p_rt->lane] += m_rt->stream->params.rate *
+					ch_count * m_rt->stream->params.bps;
 
-			/* Compute params */
-			if (bus->compute_params) {
-				ret = bus->compute_params(bus);
-				if (ret < 0) {
-					dev_err(bus->dev, "Compute params failed: %d\n",
-						ret);
-					goto restore_params;
+				/* Compute params */
+				if (bus->compute_params) {
+					ret = bus->compute_params(bus, p_rt->lane);
+					if (ret < 0) {
+						dev_err(bus->dev, "Compute params failed: %d\n",
+							ret);
+						goto restore_params;
+					}
 				}
 			}
 		}
@@ -1636,7 +1641,9 @@ EXPORT_SYMBOL(sdw_disable_stream);
 static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 {
 	struct sdw_master_runtime *m_rt;
+	struct sdw_port_runtime *p_rt;
 	struct sdw_bus *bus;
+	int ch_count;
 	int ret = 0;
 
 	list_for_each_entry(m_rt, &stream->master_list, stream_node) {
@@ -1649,17 +1656,20 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 			return ret;
 		}
 
-		/* TODO: Update this during Device-Device support */
-		bus->params.bandwidth -= m_rt->stream->params.rate *
-			m_rt->ch_count * m_rt->stream->params.bps;
+		list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
+			/* TODO: Update this during Device-Device support */
+			ch_count = hweight32(p_rt->ch_mask);
+			bus->params.bandwidth[p_rt->lane] -= m_rt->stream->params.rate *
+				ch_count * m_rt->stream->params.bps;
 
-		/* Compute params */
-		if (bus->compute_params) {
-			ret = bus->compute_params(bus);
-			if (ret < 0) {
-				dev_err(bus->dev, "Compute params failed: %d\n",
-					ret);
-				return ret;
+			/* Compute params */
+			if (bus->compute_params) {
+				ret = bus->compute_params(bus, p_rt->lane);
+				if (ret < 0) {
+					dev_err(bus->dev, "Compute params failed: %d\n",
+						ret);
+					return ret;
+				}
 			}
 		}
 
