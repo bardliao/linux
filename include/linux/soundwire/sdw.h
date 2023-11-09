@@ -615,7 +615,7 @@ struct sdw_bus_params {
 	enum sdw_reg_bank next_bank;
 	unsigned int max_dr_freq;
 	unsigned int curr_dr_freq;
-	unsigned int bandwidth;
+	unsigned int bandwidth[SDW_MAX_LANES];
 	unsigned int col;
 	unsigned int row;
 	int s_data_mode;
@@ -932,7 +932,7 @@ struct sdw_bus {
 	struct lock_class_key bus_lock_key;
 	struct mutex msg_lock;
 	struct lock_class_key msg_lock_key;
-	int (*compute_params)(struct sdw_bus *bus);
+	int (*compute_params)(struct sdw_bus *bus, unsigned int bandwidth);
 	const struct sdw_master_ops *ops;
 	const struct sdw_master_port_ops *port_ops;
 	struct sdw_bus_params params;
@@ -1042,7 +1042,7 @@ struct sdw_stream_runtime {
 struct sdw_stream_runtime *sdw_alloc_stream(const char *stream_name);
 void sdw_release_stream(struct sdw_stream_runtime *stream);
 
-int sdw_compute_params(struct sdw_bus *bus);
+int sdw_compute_params(struct sdw_bus *bus, unsigned int bandwidth);
 
 int sdw_stream_add_master(struct sdw_bus *bus,
 		struct sdw_stream_config *stream_config,
