@@ -1207,6 +1207,7 @@ static int rt722_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 	num_channels = params_channels(params);
 	port_config.ch_mask = GENMASK(num_channels - 1, 0);
 	port_config.num = port;
+	port_config.lane_mask = 0x7;
 
 	retval = sdw_stream_add_slave(rt722->slave, &stream_config,
 					&port_config, 1, sdw_stream);
