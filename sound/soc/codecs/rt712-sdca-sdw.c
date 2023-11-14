@@ -228,6 +228,11 @@ static int rt712_sdca_read_prop(struct sdw_slave *slave)
 	/* wake-up event */
 	prop->wake_capable = 1;
 
+	/* HACK */
+	prop->lane_control_support = true;
+	prop->lane_maps[0] = 0;
+	prop->lane_maps[1] = 2;
+	prop->lane_maps[2] = 1;
 	return 0;
 }
 
