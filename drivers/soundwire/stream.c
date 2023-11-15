@@ -1359,6 +1359,7 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 	int ch_count;
 	int ret;
 
+	pr_err("bard: %s start\n", __func__);
 	/* Prepare  Master(s) and Slave(s) port(s) associated with stream */
 	list_for_each_entry(m_rt, &stream->master_list, stream_node) {
 		bus = m_rt->bus;
@@ -1371,8 +1372,10 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 			return -EINVAL;
 		}
 
+		pr_err("bard: %s m_rt %p\n", __func__, m_rt);
 		if (update_params) {
 			list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
+				pr_err("bard: %s p_rt %p lane %d\n", __func__, p_rt, p_rt->lane);
 				/* Increment cumulative bus bandwidth */
 				/* TODO: Update this during Device-Device support */
 				ch_count = hweight32(p_rt->ch_mask);
@@ -1885,6 +1888,7 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 	int ret;
 	int i;
 
+	pr_err("bard: %s\n", __func__);
 	mutex_lock(&bus->bus_lock);
 
 	/*
@@ -1924,6 +1928,7 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 		stream->m_rt_count++;
 	}
 
+	pr_err("bard: %s m_rt_count %d\n", __func__, stream->m_rt_count);
 	ret = sdw_master_rt_config(m_rt, stream_config);
 	if (ret < 0)
 		goto unlock;
@@ -2042,6 +2047,7 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 	int ret;
 	int i;
 
+	pr_err("bard: %s\n", __func__);
 	mutex_lock(&slave->bus->bus_lock);
 
 	/*
