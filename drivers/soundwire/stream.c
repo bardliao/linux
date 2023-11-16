@@ -1882,9 +1882,16 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 			  unsigned int num_ports,
 			  struct sdw_stream_runtime *stream)
 {
+	struct sdw_slave_prop *slave_prop;
 	struct sdw_master_runtime *m_rt;
+	struct sdw_slave_runtime *s_rt;
+	struct sdw_port_runtime *p_rt;
 	bool alloc_master_rt = false;
+	bool is_lane_set = false;
+	int lane[SDW_MAX_LANES];
+	int port_index = 0;
 	int ret;
+	int i;
 
 	mutex_lock(&bus->bus_lock);
 
@@ -1933,8 +1940,37 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 	if (ret)
 		goto unlock;
 
+	/* Set data lane for each port */
+	for (port_index = 0; port_index < num_ports; port_index++) {
+		is_lane_set = false;
+		list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
+			slave_prop = &s_rt->slave->prop;
+			list_for_each_entry(p_rt, &s_rt->port_list, port_node) {
+				if (port_config[port_index].ch_mask & p_rt->ch_mask) {
+					lane[port_index] = slave_prop->lane_maps[p_rt->lane];
+					is_lane_set = true;
+					break;
+				}
+			}
+			if (is_lane_set)
+				break;
+		}
+		if (!is_lane_set) {
+			ret = -EINVAL;
+			dev_err(bus->dev, "Can't find the lane for port %d",
+				port_config[port_index].num);
+			goto unlock;
+		}
+	}
+
 	ret = sdw_master_port_config(m_rt, port_config);
 
+	/* p_rt->lane will not be set in sdw_master_port_config, set it here */
+	i = 0;
+	list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
+		p_rt->lane = lane[i];
+		i++;
+	}
 	goto unlock;
 
 alloc_error:
