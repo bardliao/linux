@@ -211,6 +211,9 @@ static int rt1316_read_prop(struct sdw_slave *slave)
 	prop->source_ports = 0x04; /* BITMAP: 00000100 */
 	prop->sink_ports = 0x2; /* BITMAP:  00000010 */
 
+	prop->lane_maps[0] = 0;
+	prop->lane_maps[2] = 3;
+
 	nval = hweight32(prop->source_ports);
 	prop->src_dpn_prop = devm_kcalloc(&slave->dev, nval,
 		sizeof(*prop->src_dpn_prop), GFP_KERNEL);
@@ -533,6 +536,8 @@ static int rt1316_sdw_hw_params(struct snd_pcm_substream *substream,
 		port_config.num = 1;
 	else
 		port_config.num = 2;
+
+	port_config.lane_mask = 0x5; //HACK
 
 	retval = sdw_stream_add_slave(rt1316->sdw_slave, &stream_config,
 				&port_config, 1, sdw_stream);
