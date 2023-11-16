@@ -1875,9 +1875,15 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 			  unsigned int num_ports,
 			  struct sdw_stream_runtime *stream)
 {
+	struct sdw_slave_prop *slave_prop;
 	struct sdw_master_runtime *m_rt;
+	struct sdw_slave_runtime *s_rt;
+	struct sdw_port_runtime *p_rt;
 	bool alloc_master_rt = false;
+	int lane[SDW_MAX_LANES];
+	int port_index = 0;
 	int ret;
+	int i;
 
 	mutex_lock(&bus->bus_lock);
 
@@ -1926,8 +1932,33 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 	if (ret)
 		goto unlock;
 
+	list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
+		slave_prop = &s_rt->slave->prop;
+		list_for_each_entry(p_rt, &s_rt->port_list, port_node) {
+			if (port_index >= num_ports) {
+				dev_err(bus->dev, "%d ports is not enough for Peripherals\n",
+					num_ports);
+				ret = -EINVAL;
+				goto unlock;
+			}
+			lane[port_index] = slave_prop->lane_maps[p_rt->lane];
+			port_index++;
+		}
+	}
+	if (port_index != num_ports) {
+		dev_err(bus->dev, "num_ports: %d, but only %d port lanes are set for the Peripherals\n",
+			num_ports, port_index);
+
+		ret = -EINVAL;
+		goto unlock;
+	}
 	ret = sdw_master_port_config(m_rt, port_config);
 
+	i = 0;
+	list_for_each_entry(p_rt, &s_rt->port_list, port_node) {
+		p_rt->lane = lane[i];
+		i++;
+	}
 	goto unlock;
 
 alloc_error:
