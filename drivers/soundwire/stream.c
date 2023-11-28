@@ -1995,12 +1995,21 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 			 unsigned int num_ports,
 			 struct sdw_stream_runtime *stream)
 {
+	struct sdw_slave_prop *slave_prop = &slave->prop;
+	int available_bandwidth[SDW_MAX_LANES];
+	struct sdw_bus *bus = slave->bus;
 	struct sdw_slave_runtime *s_rt;
 	struct sdw_master_runtime *m_rt;
+	struct sdw_port_runtime *p_rt;
 	bool alloc_master_rt = false;
 	bool alloc_slave_rt = false;
-
+	int lane[SDW_MAX_LANES];
+	int required_bandwidth;
+	int port_index = 0;
+	int ch_count;
+	int m_lane;
 	int ret;
+	int i;
 
 	mutex_lock(&slave->bus->bus_lock);
 
@@ -2044,6 +2053,33 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 			goto alloc_error;
 	}
 
+	slave_prop = &s_rt->slave->prop;
+	if (!slave_prop->lane_control_support)
+		goto skip_lane_allocation;
+
+	for (i = 0; i < SDW_MAX_LANES; i++)
+		available_bandwidth[i] = bus->params.max_dr_freq - bus->params.bandwidth[i];
+
+	/* find available lane */
+	for (port_index = 0; port_index < num_ports; port_index++) {
+		ch_count = hweight32(port_config[port_index].ch_mask);
+		required_bandwidth = stream_config->frame_rate * ch_count *
+				     stream_config->bps;
+		for (i = 0; i < SDW_MAX_LANES; i++) {
+			if (!(port_config[port_index].lane_mask & BIT(i)))
+				continue;
+
+			m_lane = slave_prop->lane_maps[i];
+			/* Check if m_lane has enough bandwidth */
+			if (available_bandwidth[m_lane] >= required_bandwidth) {
+				lane[port_index] = i;
+				available_bandwidth[m_lane] -= required_bandwidth;
+				break;
+			}
+		}
+	}
+skip_lane_allocation:
+
 	ret =  sdw_master_rt_config(m_rt, stream_config);
 	if (ret)
 		goto unlock;
@@ -2059,6 +2095,12 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 	ret = sdw_slave_port_config(slave, s_rt, port_config);
 	if (ret)
 		goto unlock;
+
+	i = 0;
+	list_for_each_entry(p_rt, &s_rt->port_list, port_node) {
+		p_rt->lane = lane[i];
+		i++;
+	}
 
 	/*
 	 * Change stream state to CONFIGURED on first Slave add.
