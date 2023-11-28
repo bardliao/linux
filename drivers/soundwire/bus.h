@@ -97,7 +97,7 @@ int sdw_find_col_index(int col);
  */
 struct sdw_port_runtime {
 	int num;
-	int ch_mask;
+	u32 ch_mask;
 	struct sdw_transport_params transport_params;
 	struct sdw_port_params port_params;
 	struct list_head port_node;
