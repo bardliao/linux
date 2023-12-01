@@ -961,10 +961,12 @@ void sdw_show_ping_status(struct sdw_bus *bus, bool sync_delay);
  *
  * @num: Port number
  * @ch_mask: channels mask for port
+ * @lane_mask: Which lanes are available
  */
 struct sdw_port_config {
 	unsigned int num;
 	unsigned int ch_mask;
+	unsigned int lane_mask;
 };
 
 /**
