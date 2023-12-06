@@ -2091,11 +2091,14 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 	}
 
 	slave_prop = &s_rt->slave->prop;
-	if (!slave_prop->lane_control_support)
-		goto skip_lane_allocation;
+//	if (!slave_prop->lane_control_support)
+//		goto skip_lane_allocation;
 
-	for (i = 0; i < SDW_MAX_LANES; i++)
+	for (i = 0; i < SDW_MAX_LANES; i++) {
 		available_bandwidth[i] = bus->params.max_dr_freq - bus->params.bandwidth[i];
+		available_bandwidth[i] = 3072000 - bus->params.bandwidth[i];
+		pr_info("bard: available_bandwidth[%d] = %d\n", i,  available_bandwidth[i]);
+	}
 
 	/* find available lane */
 	for (port_index = 0; port_index < num_ports; port_index++) {
@@ -2115,7 +2118,7 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 			}
 		}
 	}
-skip_lane_allocation:
+//skip_lane_allocation:
 
 	ret =  sdw_master_rt_config(m_rt, stream_config);
 	if (ret)
