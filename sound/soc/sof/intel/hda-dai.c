@@ -248,7 +248,6 @@ static int __maybe_unused hda_dai_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 
 	hext_stream = ops->get_hext_stream(sdev, dai, substream);
-
 	flags |= SOF_DAI_CONFIG_FLAGS_2_STEP_STOP << SOF_DAI_CONFIG_FLAGS_QUIRK_SHIFT;
 	data.dai_data = hdac_stream(hext_stream)->stream_tag - 1;
 
@@ -393,7 +392,7 @@ static int non_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	/* configure TLV */
 	ipc4_copier = widget_to_copier(w);
 
-	dma_config_tlv = &ipc4_copier->dma_config_tlv;
+	dma_config_tlv = &ipc4_copier->dma_config_tlv[0];
 	dma_config_tlv->type = SOF_IPC4_GTW_DMA_CONFIG_ID;
 	/* dma_config_priv_size is zero */
 	dma_config_tlv->length = sizeof(dma_config_tlv->dma_config);
