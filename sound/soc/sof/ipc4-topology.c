@@ -1681,6 +1681,7 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 		 */
 		if (ipc4_copier->dai_type == SOF_DAI_INTEL_ALH) {
 			struct sof_ipc4_alh_configuration_blob *blob;
+			struct sof_ipc4_dma_config *dma_config;
 			struct sof_ipc4_copier_data *alh_data;
 			struct sof_ipc4_copier *alh_copier;
 			struct snd_sof_widget *w;
@@ -1735,6 +1736,10 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 					blob->alh_cfg.mapping[i].channel_mask = ch_mask;
 				else
 					blob->alh_cfg.mapping[i].channel_mask = mask << (step * i);
+
+				dma_config = &ipc4_copier->dma_config_tlv[i].dma_config;
+				dma_config->dma_stream_channel_map.mapping[0].channel_mask =
+					blob->alh_cfg.mapping[i].channel_mask;
 
 				i++;
 			}
