@@ -74,6 +74,12 @@ struct sdw_intel_ops sdw_callback = {
 static int sdw_ace2x_params_stream(struct device *dev,
 				   struct sdw_intel_stream_params_data *params_data)
 {
+	int ret;
+
+	ret = sdw_params_stream(dev, params_data);
+	if (ret)
+		return ret;
+
 	return sdw_hda_dai_hw_params(params_data->substream,
 				     params_data->hw_params,
 				     params_data->dai,

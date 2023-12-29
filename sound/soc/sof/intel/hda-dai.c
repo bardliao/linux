@@ -229,8 +229,6 @@ static int __maybe_unused hda_dai_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(dai, substream->stream);
 	const struct hda_dai_widget_dma_ops *ops = hda_dai_get_ops(substream, dai);
 	struct hdac_ext_stream *hext_stream;
-	struct snd_sof_dai_config_data data = { 0 };
-	unsigned int flags = SOF_DAI_CONFIG_FLAGS_HW_PARAMS;
 	struct snd_sof_dev *sdev = widget_to_sdev(w);
 	int ret;
 
@@ -247,11 +245,7 @@ static int __maybe_unused hda_dai_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		return ret;
 
-	hext_stream = ops->get_hext_stream(sdev, dai, substream);
-	flags |= SOF_DAI_CONFIG_FLAGS_2_STEP_STOP << SOF_DAI_CONFIG_FLAGS_QUIRK_SHIFT;
-	data.dai_data = hdac_stream(hext_stream)->stream_tag - 1;
-
-	return hda_dai_config(w, flags, &data);
+	return 0;
 }
 
 /*
