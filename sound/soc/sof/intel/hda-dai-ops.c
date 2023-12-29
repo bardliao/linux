@@ -466,13 +466,6 @@ static struct hdac_ext_stream *sdw_hda_ipc4_get_hext_stream(struct snd_sof_dev *
 
 	blob = (struct sof_ipc4_alh_configuration_blob *)ipc4_copier->copier_config;
 
-	/*
-	 * Starting with ACE_2_0, re-setting the device_count is mandatory to avoid using
-	 * the multi-gateway firmware configuration. The DMA hardware can take care of
-	 * multiple links without needing any firmware assistance
-	 */
-	blob->alh_cfg.device_count = 1;
-
 	return hda_ipc4_get_hext_stream(sdev, cpu_dai, substream);
 }
 
