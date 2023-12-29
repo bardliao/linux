@@ -74,6 +74,21 @@ struct sdw_intel_ops sdw_callback = {
 static int sdw_ace2x_params_stream(struct device *dev,
 				   struct sdw_intel_stream_params_data *params_data)
 {
+	struct snd_soc_dai *d = params_data->dai;
+	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(d, params_data->substream->stream);
+	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(params_data->substream);
+	struct snd_sof_dai_config_data data = { 0 };
+	struct snd_soc_dai *dai;
+	int cpu_dai_id;
+
+	for_each_rtd_cpu_dais(rtd, cpu_dai_id, dai) {
+		if (dai == d) {
+			break;
+		}
+	}
+	data.dai_index = cpu_dai_id;
+	data.dai_data = params_data->alh_stream_id;
+	hda_dai_config(w, SOF_DAI_CONFIG_FLAGS_HW_PARAMS, &data);
 	return sdw_hda_dai_hw_params(params_data->substream,
 				     params_data->hw_params,
 				     params_data->dai,
