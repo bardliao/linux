@@ -321,6 +321,7 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 	dai_runtime->suspended = false;
 	dai_runtime->pdi = pdi;
 
+	pdi->intel_alh_id = (sdw->instance << 8) + pdi->num;
 	/* Inform DSP about PDI stream number */
 	ret = intel_params_stream(sdw, substream, dai, params,
 				  sdw->instance,
