@@ -1748,7 +1748,9 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				i++;
 			}
 			if (blob->alh_cfg.device_count > 1) {
+				int node_type = 0;
 				int group_id;
+				int ret;
 
 				group_id = ida_alloc_max(&alh_group_ida, ALH_MULTI_GTW_COUNT - 1,
 							 GFP_KERNEL);
@@ -1756,10 +1758,20 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				if (group_id < 0)
 					return group_id;
 
+				ret = sof_update_ipc_object(scomp, &node_type, SOF_COPIER_TOKENS,
+							    swidget->tuples, swidget->num_tuples,
+							    sizeof(node_type), 1);
+				if (ret) {
+					dev_err(scomp->dev,
+						"parse alh copier node type token failed %d\n",
+						ret);
+					return ret;
+				}
+
 				/* add multi-gateway base */
 				group_id += ALH_MULTI_GTW_BASE;
-				copier_data->gtw_cfg.node_id &= ~SOF_IPC4_NODE_INDEX_MASK;
-				copier_data->gtw_cfg.node_id |= SOF_IPC4_NODE_INDEX(group_id);
+				copier_data->gtw_cfg.node_id = SOF_IPC4_NODE_TYPE(node_type) |
+							       SOF_IPC4_NODE_INDEX(group_id);
 			}
 		}
 	}
