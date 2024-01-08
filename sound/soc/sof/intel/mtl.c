@@ -245,6 +245,7 @@ int mtl_dsp_pre_fw_run(struct snd_sof_dev *sdev)
 	u32 pgs;
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	/* Set the DSP subsystem power on */
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_BAR, MTL_HFDSSCS,
 				MTL_HFDSSCS_SPA_MASK, MTL_HFDSSCS_SPA_MASK);
@@ -504,6 +505,7 @@ int mtl_dsp_cl_init(struct snd_sof_dev *sdev, int stream_tag, bool imr_boot)
 	 * timing window. Follow the recommendations and skip this part.
 	 */
 
+	pr_info("bard: %s done\n", __func__);
 	return 0;
 
 err:

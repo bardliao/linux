@@ -244,6 +244,7 @@ static void hdaml_link_enable_interrupt(u32 __iomem *lctl, bool enable)
 {
 	u32 val;
 
+	pr_info("bard: %s enable %d\n", __func__, enable);
 	val = readl(lctl);
 	if (enable)
 		val |= AZX_ML_LCTL_INTEN;
@@ -486,6 +487,7 @@ void hdac_bus_eml_enable_interrupt(struct hdac_bus *bus, bool alt, int elid, boo
 	struct hdac_ext2_link *h2link;
 	struct hdac_ext_link *hlink;
 
+	pr_info("bard: %s enable %d\n", __func__, enable);
 	h2link = find_ext2_link(bus, alt, elid);
 	if (!h2link)
 		return;
@@ -865,6 +867,7 @@ int hda_bus_ml_resume(struct hdac_bus *bus)
 	struct hdac_ext_link *hlink;
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	/* power up links that were active before suspend */
 	list_for_each_entry(hlink, &bus->hlink_list, list) {
 		struct hdac_ext2_link *h2link = hdac_ext_link_to_ext2(hlink);
@@ -884,6 +887,7 @@ int hda_bus_ml_suspend(struct hdac_bus *bus)
 	struct hdac_ext_link *hlink;
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	list_for_each_entry(hlink, &bus->hlink_list, list) {
 		struct hdac_ext2_link *h2link = hdac_ext_link_to_ext2(hlink);
 

@@ -80,6 +80,7 @@ void hda_codec_jack_wake_enable(struct snd_sof_dev *sdev, bool enable)
 	struct hda_codec *codec;
 	unsigned int mask = 0;
 
+	pr_info("bard: %s enable %d\n", __func__, enable);
 	if (IS_ENABLED(CONFIG_SND_SOC_SOF_NOCODEC_DEBUG_SUPPORT) &&
 	    sof_debug_check_flag(SOF_DBG_FORCE_NOCODEC))
 		return;
@@ -90,6 +91,7 @@ void hda_codec_jack_wake_enable(struct snd_sof_dev *sdev, bool enable)
 				mask |= BIT(codec->core.addr);
 	}
 
+	pr_info("bard: %s mask %#x\n", __func__, mask);
 	snd_hdac_chip_updatew(bus, WAKEEN, STATESTS_INT_MASK, mask);
 }
 EXPORT_SYMBOL_NS_GPL(hda_codec_jack_wake_enable, SND_SOC_SOF_HDA_AUDIO_CODEC);

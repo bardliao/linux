@@ -189,6 +189,7 @@ int hda_dsp_ctrl_init_chip(struct snd_sof_dev *sdev)
 	struct hdac_stream *stream;
 	int sd_offset, ret = 0;
 
+	pr_info("bard: %s bus->chip_init %d\n", __func__, bus->chip_init);
 	if (bus->chip_init)
 		return 0;
 

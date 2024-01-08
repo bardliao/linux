@@ -160,6 +160,7 @@ static int intel_link_power_up(struct sdw_intel *sdw)
 	*shim_mask |= BIT(link_id);
 
 	sdw->cdns.link_up = true;
+	pr_info("bard: %s set link_up = %d\n", __func__, sdw->cdns.link_up);
 
 	intel_shim_vs_init(sdw);
 
@@ -178,6 +179,7 @@ static int intel_link_power_down(struct sdw_intel *sdw)
 	mutex_lock(sdw->link_res->shim_lock);
 
 	sdw->cdns.link_up = false;
+	pr_info("bard: %s set link_up = %d\n", __func__, sdw->cdns.link_up);
 
 	*shim_mask &= ~BIT(link_id);
 

@@ -1239,6 +1239,7 @@ void hda_sdw_int_enable(struct snd_sof_dev *sdev, bool enable)
 	u32 interface_mask = hda_get_interface_mask(sdev);
 	const struct sof_intel_dsp_desc *chip;
 
+	pr_info("bard: %s enable %d\n", __func__, enable);
 	if (!(interface_mask & BIT(SOF_DAI_INTEL_ALH)))
 		return;
 

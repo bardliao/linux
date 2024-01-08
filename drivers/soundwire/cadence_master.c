@@ -908,6 +908,7 @@ irqreturn_t sdw_cdns_irq(int irq, void *dev_id)
 	u32 int_status;
 
 	/* Check if the link is up */
+	pr_info("bard: %s cdns->link_up %d\n", __func__, cdns->link_up);
 	if (!cdns->link_up)
 		return IRQ_NONE;
 
