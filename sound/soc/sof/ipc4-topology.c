@@ -1720,7 +1720,9 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				dai = w->private;
 				alh_copier = (struct sof_ipc4_copier *)dai->private;
 				alh_data = &alh_copier->data;
-				blob->alh_cfg.mapping[i].device = alh_data->gtw_cfg.node_id;
+
+				blob->alh_cfg.mapping[dai->cpu_dai_id].device =
+					alh_data->gtw_cfg.node_id;
 				/*
 				 * Set the same channel mask for playback as the audio data is
 				 * duplicated for all speakers. For capture, split the channels
