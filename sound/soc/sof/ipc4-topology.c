@@ -599,6 +599,7 @@ static int sof_ipc4_widget_setup_comp_dai(struct snd_sof_widget *swidget)
 
 			blob->alh_cfg.device_count++;
 		}
+		pr_err("bard: %s set blob->alh_cfg.device_count = %d\n", __func__, blob->alh_cfg.device_count);
 
 		ipc4_copier->copier_config = (uint32_t *)blob;
 #if 1
@@ -1731,6 +1732,9 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 
 				blob->alh_cfg.mapping[dai->cpu_dai_id].device =
 					alh_data->gtw_cfg.node_id;
+				pr_err("bard: %s %d blob->alh_cfg.mapping[%d].device= %#x\n",
+					__func__, i, dai->cpu_dai_id,
+					blob->alh_cfg.mapping[dai->cpu_dai_id].device);
 				/*
 				 * Set the same channel mask for playback as the audio data is
 				 * duplicated for all speakers. For capture, split the channels
@@ -1753,6 +1757,8 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 
 				i++;
 			}
+			pr_err("bard: %s alh_cfg.device_count %d\n",
+				__func__, blob->alh_cfg.device_count);
 			if (blob->alh_cfg.device_count > 1) {
 				int node_type = 0;
 				int group_id;
@@ -1832,7 +1838,12 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 		dma_config_tlv_size += ipc4_copier->dma_config_tlv[i].length;
 		dma_config_tlv_size +=
 			ipc4_copier->dma_config_tlv[i].dma_config.dma_priv_config_size;
+		pr_err("bard: ipc4_copier->dma_config_tlv[%d].length = %d dma_priv_config_size %d\n",
+			i, ipc4_copier->dma_config_tlv[i].length,
+			ipc4_copier->dma_config_tlv[i].dma_config.dma_priv_config_size);
 	}
+
+	pr_err("bard: dma_config_tlv_size %d sizeof(ipc4_copier->dma_config_tlv) %ld sizeof(ipc4_copier->dma_config_tlv.dma_config) %ld\n", dma_config_tlv_size, sizeof(ipc4_copier->dma_config_tlv[0]), sizeof(ipc4_copier->dma_config_tlv->dma_config));
 
 	if (dma_config_tlv_size) {
 		dma_config_tlv_size += sizeof(ipc4_copier->dma_config_tlv[0]);
@@ -2466,7 +2477,7 @@ static int sof_ipc4_widget_setup(struct snd_sof_dev *sdev, struct snd_sof_widget
 
 	ret = sof_ipc_tx_message_no_reply(sdev->ipc, msg, ipc_size);
 	if (ret < 0) {
-		dev_err(sdev->dev, "failed to create module %s\n", swidget->widget->name);
+		dev_err(sdev->dev, "failed to create module %s ret %d\n", swidget->widget->name, ret);
 
 		if (swidget->id != snd_soc_dapm_scheduler) {
 			struct sof_ipc4_fw_module *fw_module = swidget->module_info;
@@ -2832,6 +2843,7 @@ static int sof_ipc4_dai_config(struct snd_sof_dev *sdev, struct snd_sof_widget *
 		return -EINVAL;
 	}
 
+	pr_err("bard: %s dai %s\n", __func__, dai->name);
 	ipc4_copier = (struct sof_ipc4_copier *)dai->private;
 	copier_data = &ipc4_copier->data;
 
@@ -2855,6 +2867,8 @@ static int sof_ipc4_dai_config(struct snd_sof_dev *sdev, struct snd_sof_widget *
 		 * SOF_DAI_CONFIG_FLAGS_HW_FREE. It is needed to free the group_ida during
 		 * unprepare.
 		 */
+		pr_err("bard: %s flags %#x data->dai_data %#x\n",
+			__func__, flags, data->dai_data);
 		if (flags & SOF_DAI_CONFIG_FLAGS_HW_PARAMS) {
 			struct sof_ipc4_alh_configuration_blob *blob;
 			blob = (struct sof_ipc4_alh_configuration_blob *)ipc4_copier->copier_config;
