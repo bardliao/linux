@@ -63,6 +63,8 @@ static int sdw_params_stream(struct device *dev,
 
 	data.dai_index = (params_data->link_id << 8) | d->id;
 	data.dai_data = params_data->alh_stream_id;
+	pr_err("bard: %s data.dai_index %#x data.dai_data %#x\n",
+		__func__, data.dai_index, data.dai_data);
 
 	return hda_dai_config(w, SOF_DAI_CONFIG_FLAGS_HW_PARAMS, &data);
 }
@@ -74,6 +76,7 @@ struct sdw_intel_ops sdw_callback = {
 static int sdw_ace2x_params_stream(struct device *dev,
 				   struct sdw_intel_stream_params_data *params_data)
 {
+	pr_err("bard: %s link_id %#x alh_stream_id %#x\n", __func__, params_data->link_id, params_data->alh_stream_id);
 	return sdw_hda_dai_hw_params(params_data->substream,
 				     params_data->hw_params,
 				     params_data->dai,

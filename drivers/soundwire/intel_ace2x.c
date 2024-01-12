@@ -252,6 +252,7 @@ static int intel_params_stream(struct sdw_intel *sdw,
 	params_data.hw_params = hw_params;
 	params_data.link_id = link_id;
 	params_data.alh_stream_id = alh_stream_id;
+	pr_err("bard: %s link_id %#x alh_stream_id %#x\n", __func__, link_id, alh_stream_id);
 
 	if (res->ops && res->ops->params_stream && res->dev)
 		return res->ops->params_stream(res->dev,
@@ -295,6 +296,7 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 	int ch, dir;
 	int ret;
 
+	pr_err("bard: %s dai %s\n", __func__, dai->name);
 	dai_runtime = cdns->dai_runtime_array[dai->id];
 	if (!dai_runtime)
 		return -EIO;

@@ -629,6 +629,7 @@ intel_pdi_shim_configure(struct sdw_intel *sdw, struct sdw_cdns_pdi *pdi)
 	unsigned int link_id = sdw->instance;
 	int pdi_conf = 0;
 
+	pr_err("bard: %s\n", __func__);
 	/* the Bulk and PCM streams are not contiguous */
 	pdi->intel_alh_id = (link_id * 16) + pdi->num + 3;
 	if (pdi->num >= 2)
@@ -688,6 +689,7 @@ static int intel_params_stream(struct sdw_intel *sdw,
 	params_data.hw_params = hw_params;
 	params_data.link_id = link_id;
 	params_data.alh_stream_id = alh_stream_id;
+	pr_err("bard: %s link_id %#x alh_stream_id %#x\n", __func__, link_id, alh_stream_id);
 
 	if (res->ops && res->ops->params_stream && res->dev)
 		return res->ops->params_stream(res->dev,

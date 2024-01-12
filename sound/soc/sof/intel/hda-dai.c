@@ -45,6 +45,7 @@ int hda_dai_config(struct snd_soc_dapm_widget *w, unsigned int flags,
 	struct snd_sof_dev *sdev;
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	if (!swidget)
 		return 0;
 
@@ -361,6 +362,7 @@ static int non_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	int ret;
 	int i;
 
+	pr_err("bard: %s cpu_dai %s\n", __func__, cpu_dai->name);
 	for_each_rtd_cpu_dais(rtd, cpu_dai_id, dai) {
 		if (dai == cpu_dai) {
 			break;
@@ -419,6 +421,9 @@ static int non_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	dma_config->dma_stream_channel_map.device_count = 1;
 	/* channel_mask will be set in sof_ipc4_prepare_copier_module */
 	dma_config->dma_priv_config_size = 0;
+	pr_err("bard: %s stream_id %#x dma_channel_id %#x device %#x\n",
+		__func__, dma_config->stream_id, dma_config->dma_channel_id,
+		dma_config->dma_stream_channel_map.mapping[0].device);
 
 	/*
 	 * copy the dma_config_tlv to all ipc4_copier in the same link. Because only one copier
@@ -429,6 +434,8 @@ static int non_hda_dai_hw_params(struct snd_pcm_substream *substream,
 		ipc4_copier = widget_to_copier(w);
 		memcpy(&ipc4_copier->dma_config_tlv[cpu_dai_id], dma_config_tlv,
 		       sizeof(*dma_config_tlv));
+		pr_err("bard: cp ipc4_copier %p i %d dma_config_tlv[%d] device %#x\n",
+			ipc4_copier, i, cpu_dai_id, ipc4_copier->dma_config_tlv[cpu_dai_id].dma_config.dma_stream_channel_map.mapping[0].device);
 	}
 
 skip_tlv:
