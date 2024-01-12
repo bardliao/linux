@@ -319,7 +319,7 @@ static int sof_ipc4_trigger_pipelines(struct snd_soc_component *component,
 	int ret;
 	int i;
 
-	dev_dbg(sdev->dev, "trigger cmd: %d state: %d\n", cmd, state);
+	dev_err(sdev->dev, "bard: trigger cmd: %d state: %d\n", cmd, state);
 
 	spcm = snd_sof_find_spcm_dai(component, rtd);
 	if (!spcm)
