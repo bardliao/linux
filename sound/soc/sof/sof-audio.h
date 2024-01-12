@@ -515,6 +515,7 @@ struct snd_sof_dai {
 	struct snd_soc_component *scomp;
 	const char *name;
 	u32 type;
+	int cpu_dai_id;
 
 	int number_configs;
 	int current_config;
