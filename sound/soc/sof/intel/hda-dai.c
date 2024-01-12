@@ -341,6 +341,7 @@ static int non_hda_dai_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(cpu_dai, substream->stream);
 	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+	struct snd_sof_widget *swidget = w->dobj.private;
 	struct sof_ipc4_dma_config_tlv *dma_config_tlv;
 	struct sof_ipc4_alh_configuration_blob *blob;
 	const struct hda_dai_widget_dma_ops *ops;
@@ -349,6 +350,7 @@ static int non_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	struct hdac_ext_stream *hext_stream;
 	struct hdac_stream *hstream;
 	struct snd_sof_dev *sdev;
+	struct snd_sof_dai *sdai;
 	struct snd_soc_dai *dai;
 	int cpu_dai_id;
 	int stream_id;
@@ -396,6 +398,9 @@ static int non_hda_dai_hw_params(struct snd_pcm_substream *substream,
 
 	/* configure TLV */
 	ipc4_copier = widget_to_copier(w);
+	swidget = w->dobj.private;
+	sdai = swidget->private;
+	sdai->cpu_dai_id = cpu_dai_id;
 
 	dma_config_tlv = &ipc4_copier->dma_config_tlv[cpu_dai_id];
 	dma_config_tlv->type = SOF_IPC4_GTW_DMA_CONFIG_ID;
