@@ -2879,10 +2879,6 @@ static int sof_ipc4_dai_config(struct snd_sof_dev *sdev, struct snd_sof_widget *
 			} else {
 				copier_data->gtw_cfg.node_id = data->dai_data;
 			}
-			blob->alh_cfg.mapping[data->dai_index].device = data->dai_data;
-			pr_err("bard: %s node_id %#x mapping[%d] = #%x\n",
-			       __func__, copier_data->gtw_cfg.node_id,
-			       data->dai_index, blob->alh_cfg.mapping[data->dai_index].device);
 		}
 		break;
 	case SOF_DAI_INTEL_DMIC:
