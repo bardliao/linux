@@ -465,6 +465,7 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(cpu_dai, substream->stream);
 	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+	struct snd_sof_dai_config_data data = { 0 };
 	const struct hda_dai_widget_dma_ops *ops;
 	struct hdac_ext_stream *hext_stream;
 	struct snd_soc_dai *dai;
@@ -479,6 +480,13 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 		dev_err(cpu_dai->dev, "%s: non_hda_dai_hw_params failed %d\n", __func__, ret);
 		return ret;
 	}
+
+	/*
+	 * dai_data was set in hda_dai_hw_params, but SoundWire need different dai_data from
+	 * HDA.
+	 */
+	data.dai_data = link_id << 4 | cpu_dai->id;
+	hda_dai_config(w, SOF_DAI_CONFIG_FLAGS_HW_PARAMS, &data);
 
 	ops = hda_dai_get_ops(substream, cpu_dai);
 	sdev = widget_to_sdev(w);
