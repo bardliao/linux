@@ -61,8 +61,8 @@ static int sdw_params_stream(struct device *dev,
 	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(d, params_data->substream->stream);
 	struct snd_sof_dai_config_data data = { 0 };
 
-	data.dai_index = (params_data->link_id << 8) | d->id;
-	data.dai_data = params_data->alh_stream_id;
+	data.dai_data = params_data->alh_stream_id; /* Use for node_id */
+	data.dai_index = data.dai_data; /* Use for alh_id which is the same as node_id for ACE1.x */
 
 	return hda_dai_config(w, SOF_DAI_CONFIG_FLAGS_HW_PARAMS, &data);
 }

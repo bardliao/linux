@@ -465,7 +465,10 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(cpu_dai, substream->stream);
 	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+	struct sof_ipc4_dma_config_tlv *dma_config_tlv;
 	struct snd_sof_dai_config_data data = { 0 };
+	struct sof_ipc4_dma_config *dma_config;
+	struct sof_ipc4_copier *ipc4_copier;
 	const struct hda_dai_widget_dma_ops *ops;
 	struct hdac_ext_stream *hext_stream;
 	struct snd_soc_dai *dai;
@@ -474,6 +477,7 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	int cpu_dai_id;
 	int ch_mask;
 	int ret;
+	int i;
 
 	ret = non_hda_dai_hw_params(substream, params, cpu_dai);
 	if (ret < 0) {
@@ -485,7 +489,8 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	 * dai_data was set in hda_dai_hw_params, but SoundWire need different dai_data from
 	 * HDA.
 	 */
-	data.dai_data = link_id << 4 | cpu_dai->id;
+	data.dai_index = link_id << 8 | cpu_dai->id; /* use for alh_id */
+	data.dai_data = (link_id * 16) + cpu_dai->id + 3; /* use for node_id */
 	hda_dai_config(w, SOF_DAI_CONFIG_FLAGS_HW_PARAMS, &data);
 
 	ops = hda_dai_get_ops(substream, cpu_dai);
@@ -509,6 +514,23 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 
 	if (!cpu_dai_found)
 		return -ENODEV;
+
+	ipc4_copier = widget_to_copier(w);
+	dma_config_tlv = &ipc4_copier->dma_config_tlv[cpu_dai_id];
+	dma_config = &dma_config_tlv->dma_config;
+	dma_config->dma_stream_channel_map.mapping[0].device = link_id << 8 | cpu_dai->id; 
+
+	/*
+	 * copy the dma_config_tlv to all ipc4_copier in the same link. Because only one copier
+	 * will be handled in sof_ipc4_prepare_copier_module.
+	 */
+	for_each_rtd_cpu_dais(rtd, i, dai) {
+		w = snd_soc_dai_get_widget(dai, substream->stream);
+		ipc4_copier = widget_to_copier(w);
+		memcpy(&ipc4_copier->dma_config_tlv[cpu_dai_id], dma_config_tlv,
+		       sizeof(*dma_config_tlv));
+	}
+	pr_err("bard: %s cpu_dai_id %d\n", __func__, cpu_dai_id);
 
 	ch_mask = GENMASK(params_channels(params) - 1, 0);
 

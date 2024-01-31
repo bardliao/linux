@@ -1732,9 +1732,12 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				 * only for DMA tlv mapping purposes.
 				 */
 				dma_config = &ipc4_copier->dma_config_tlv[i].dma_config;
-				dma_config->dma_stream_channel_map.mapping[0].device =
-					blob->alh_cfg.mapping[i].device;
+				if (dma_config->dma_stream_channel_map.mapping[0].device)
+					blob->alh_cfg.mapping[i].device = 
+						dma_config->dma_stream_channel_map.mapping[0].device;
 
+				pr_err("bard: %s i %d alh_id %#x device %#x node_id %#x\n",
+					__func__, i, blob->alh_cfg.mapping[i].device, dma_config->dma_stream_channel_map.mapping[0].device, alh_data->gtw_cfg.node_id);
 				/*
 				 * Set the same channel mask for playback as the audio data is
 				 * duplicated for all speakers. For capture, split the channels
