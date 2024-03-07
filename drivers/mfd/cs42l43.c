@@ -707,6 +707,20 @@ static void cs42l43_mcu_load_firmware(const struct firmware *firmware, void *con
 	regmap_bulk_write(cs42l43->regmap, loadaddr + CS42L43_MCU_UPDATE_OFFSET,
 			  &firmware->data[0], firmware->size / sizeof(u32));
 
+	{
+		u8 *test = kmalloc(firmware->size, GFP_KERNEL);
+		int i;
+
+		regmap_bulk_read(cs42l43->regmap, loadaddr + CS42L43_MCU_UPDATE_OFFSET,
+				  test, firmware->size / sizeof(u32));
+
+		for (i = 0; i < firmware->size; i++)
+			if (firmware->data[i] != test[i])
+				pr_err("DEBUG -- Diff 0x%x!=0x%x %d\n", firmware->data[i], test[i], i);
+
+		kfree(test);
+	}
+
 	regmap_write(cs42l43->regmap, CS42L43_MCU_SW_INTERRUPT, CS42L43_PATCH_IND_MASK);
 	regmap_write(cs42l43->regmap, CS42L43_MCU_SW_INTERRUPT, 0);
 
