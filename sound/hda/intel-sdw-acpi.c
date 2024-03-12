@@ -55,19 +55,18 @@ static int
 sdw_intel_scan_controller(struct sdw_intel_acpi_info *info)
 {
 	struct acpi_device *adev = acpi_fetch_acpi_dev(info->handle);
+	unsigned long list_ul;
+	u32 list;
 	u32 count;
-	int i;
 	int ret;
+	int i;
 
 	if (!adev)
 		return -EINVAL;
 
-	/* Found controller, find links supported */
-	count = 0;
-	ret = fwnode_property_read_u32(acpi_fwnode_handle(adev),
-				       "mipi-sdw-master-count", &count);
-
 	/*
+	 * Found controller, find links supported
+	 *
 	 * In theory we could check the number of links supported in
 	 * hardware, but in that step we cannot assume SoundWire IP is
 	 * powered.
@@ -79,10 +78,21 @@ sdw_intel_scan_controller(struct sdw_intel_acpi_info *info)
 	 * We will check the hardware capabilities in the startup() step
 	 */
 
-	if (ret) {
-		dev_err(&adev->dev,
-			"Failed to read mipi-sdw-master-count: %d\n", ret);
-		return -EINVAL;
+	count = 0;
+	ret = fwnode_property_read_u32(acpi_fwnode_handle(adev),
+				       "mipi-sdw-manager-list", &list);
+	if (ret < 0) {
+		ret = fwnode_property_read_u32(acpi_fwnode_handle(adev),
+					       "mipi-sdw-master-count", &count);
+		if (ret) {
+			dev_err(&adev->dev,
+				"Failed to read mipi-sdw-manager-list or mipi-sdw-master-count: %d\n", ret);
+			return -EINVAL;
+		}
+
+		list = GENMASK(count - 1, 0);
+	} else {
+		count = hweight32(list);
 	}
 
 	/* Check count is within bounds */
@@ -100,8 +110,9 @@ sdw_intel_scan_controller(struct sdw_intel_acpi_info *info)
 
 	info->count = count;
 	info->link_mask = 0;
+	list_ul = list;
 
-	for (i = 0; i < count; i++) {
+	for_each_set_bit(i, &list_ul, SDW_MAX_LINKS) {
 		if (ctrl_link_mask && !(ctrl_link_mask & BIT(i))) {
 			dev_dbg(&adev->dev,
 				"Link %d masked, will not be enabled\n", i);
