@@ -240,6 +240,8 @@ enum sdw_clk_stop_mode {
   * @ch_prep_timeout: Port-specific timeout value, in milliseconds
   * @imp_def_interrupts: If set, each bit corresponds to support for
  * implementation-defined interrupts
+ * @num_lanes: array size of @lane_list
+ * @lane_list: indicates which Lanes can be used by DP0
  *
  * The wordlengths are specified by Spec as max, min AND number of
  * discrete values, implementation can define based on the wordlengths they
@@ -254,6 +256,8 @@ struct sdw_dp0_prop {
 	bool simple_ch_prep_sm;
 	u32 ch_prep_timeout;
 	bool imp_def_interrupts;
+	int num_lanes;
+	u32 *lane_list;
 };
 
 /**
@@ -285,6 +289,8 @@ struct sdw_dp0_prop {
  * @block_pack_mode: Type of block port mode supported
  * @read_only_wordlength: Read Only wordlength field in DPN_BlockCtrl1 register
  * @port_encoding: Payload Channel Sample encoding schemes supported
+ * @num_lanes: array size of @lane_list
+ * @lane_list: indicates which Lanes can be used by DPn
  */
 struct sdw_dpn_prop {
 	u32 num;
@@ -308,6 +314,8 @@ struct sdw_dpn_prop {
 	bool block_pack_mode;
 	bool read_only_wordlength;
 	u32 port_encoding;
+	int num_lanes;
+	u32 *lane_list;
 };
 
 /**
