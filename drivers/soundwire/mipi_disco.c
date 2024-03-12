@@ -31,6 +31,7 @@ int sdw_master_read_prop(struct sdw_bus *bus)
 {
 	struct sdw_master_prop *prop = &bus->prop;
 	struct fwnode_handle *link;
+	const char *scales_prop;
 	char name[32];
 	int nval, i;
 
@@ -86,7 +87,12 @@ int sdw_master_read_prop(struct sdw_bus *bus)
 		}
 	}
 
-	nval = fwnode_property_count_u32(link, "mipi-sdw-supported-clock-gears");
+	scales_prop = "mipi-sdw-supported-clock-scales";
+	nval = fwnode_property_count_u32(link, scales_prop);
+	if (nval == 0) {
+		scales_prop = "mipi-sdw-supported-clock-gears";
+		nval = fwnode_property_count_u32(link, scales_prop);
+	}
 	if (nval > 0) {
 		prop->num_clk_gears = nval;
 		prop->clk_gears = devm_kcalloc(bus->dev, prop->num_clk_gears,
@@ -96,7 +102,7 @@ int sdw_master_read_prop(struct sdw_bus *bus)
 			return -ENOMEM;
 
 		fwnode_property_read_u32_array(link,
-					       "mipi-sdw-supported-clock-gears",
+					       scales_prop,
 					       prop->clk_gears,
 					       prop->num_clk_gears);
 	}
