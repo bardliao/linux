@@ -55,7 +55,8 @@ static int
 sdw_intel_scan_controller(struct sdw_intel_acpi_info *info)
 {
 	struct acpi_device *adev = acpi_fetch_acpi_dev(info->handle);
-	u8 count, i;
+	u32 count;
+	int i;
 	int ret;
 
 	if (!adev)
@@ -63,8 +64,8 @@ sdw_intel_scan_controller(struct sdw_intel_acpi_info *info)
 
 	/* Found controller, find links supported */
 	count = 0;
-	ret = fwnode_property_read_u8_array(acpi_fwnode_handle(adev),
-					    "mipi-sdw-master-count", &count, 1);
+	ret = fwnode_property_read_u32(acpi_fwnode_handle(adev),
+				       "mipi-sdw-master-count", &count);
 
 	/*
 	 * In theory we could check the number of links supported in
