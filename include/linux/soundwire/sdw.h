@@ -255,38 +255,6 @@ struct sdw_dp0_prop {
 };
 
 /**
- * struct sdw_dpn_audio_mode - Audio mode properties for DPn
- * @bus_min_freq: Minimum bus frequency, in Hz
- * @bus_max_freq: Maximum bus frequency, in Hz
- * @bus_num_freq: Number of discrete frequencies supported
- * @bus_freq: Discrete bus frequencies, in Hz
- * @min_freq: Minimum sampling frequency, in Hz
- * @max_freq: Maximum sampling bus frequency, in Hz
- * @num_freq: Number of discrete sampling frequency supported
- * @freq: Discrete sampling frequencies, in Hz
- * @prep_ch_behave: Specifies the dependencies between Channel Prepare
- * sequence and bus clock configuration
- * If 0, Channel Prepare can happen at any Bus clock rate
- * If 1, Channel Prepare sequence shall happen only after Bus clock is
- * changed to a frequency supported by this mode or compatible modes
- * described by the next field
- * @glitchless: Bitmap describing possible glitchless transitions from this
- * Audio Mode to other Audio Modes
- */
-struct sdw_dpn_audio_mode {
-	u32 bus_min_freq;
-	u32 bus_max_freq;
-	u32 bus_num_freq;
-	u32 *bus_freq;
-	u32 max_freq;
-	u32 min_freq;
-	u32 num_freq;
-	u32 *freq;
-	u32 prep_ch_behave;
-	u32 glitchless;
-};
-
-/**
  * struct sdw_dpn_prop - Data Port DPn properties
  * @num: port number
  * @max_word: Maximum number of bits in a Payload Channel Sample, 1 to 64
@@ -315,7 +283,6 @@ struct sdw_dpn_audio_mode {
  * @block_pack_mode: Type of block port mode supported
  * @read_only_wordlength: Read Only wordlength field in DPN_BlockCtrl1 register
  * @port_encoding: Payload Channel Sample encoding schemes supported
- * @audio_modes: Audio modes supported
  */
 struct sdw_dpn_prop {
 	u32 num;
@@ -339,7 +306,6 @@ struct sdw_dpn_prop {
 	bool block_pack_mode;
 	bool read_only_wordlength;
 	u32 port_encoding;
-	struct sdw_dpn_audio_mode *audio_modes;
 };
 
 /**
