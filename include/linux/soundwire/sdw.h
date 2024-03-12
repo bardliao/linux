@@ -344,6 +344,9 @@ struct sdw_dpn_prop {
  * registers introduced with the SoundWire 1.2 specification. SDCA devices
  * do not need to set this boolean property as the registers are required.
  * @use_domain_irq: call actual IRQ handler on slave, as well as callback
+ * @sdca_interrupt_register_list: indicates which sets of SDCA interrupt status
+ * and masks are supported
+ * @commit_register_supported: is PCP_Commit register supported
  */
 struct sdw_slave_prop {
 	u32 mipi_revision;
@@ -370,6 +373,8 @@ struct sdw_slave_prop {
 	u32 quirks;
 	bool clock_reg_supported;
 	bool use_domain_irq;
+	u32 sdca_interrupt_register_list;
+	u32 commit_register_supported;
 };
 
 #define SDW_SLAVE_QUIRKS_INVALID_INITIAL_PARITY	BIT(0)
