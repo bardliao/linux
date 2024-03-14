@@ -5,7 +5,7 @@
  * Copyright (C) 2022-2023 Cirrus Logic, Inc. and
  *                         Cirrus Logic International Semiconductor Ltd.
  */
-
+#define DEBUG
 #include <linux/bitops.h>
 #include <linux/build_bug.h>
 #include <linux/delay.h>
