@@ -33,6 +33,7 @@ int cs42l43_sdw_add_peripheral(struct snd_pcm_substream *substream,
 
 	snd_sdw_params_to_config(substream, params, &sconfig, &pconfig);
 	pconfig.num = dai->id;
+	pconfig.lane_mask = 0x3;
 
 	ret = sdw_stream_add_slave(sdw, &sconfig, &pconfig, 1, sdw_stream);
 	if (ret) {
