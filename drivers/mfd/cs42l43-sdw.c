@@ -60,6 +60,7 @@ static int cs42l43_read_prop(struct sdw_slave *sdw)
 	struct device *dev = &sdw->dev;
 	int i;
 
+	sdw_slave_read_prop(sdw);
 	prop->use_domain_irq = true;
 	prop->paging_support = true;
 	prop->wake_capable = true;
@@ -83,6 +84,10 @@ static int cs42l43_read_prop(struct sdw_slave *sdw)
 	if (!prop->sink_dpn_prop)
 		return -ENOMEM;
 
+	for (i = 0; i < SDW_MAX_LANES; i++) {
+		dev_info(dev, "bard: %s prop->lane_maps[%d] = %d\n",
+			__func__, i, prop->lane_maps[i]);
+	}
 	return 0;
 }
 
