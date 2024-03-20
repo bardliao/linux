@@ -333,10 +333,18 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
  */
 static int sdw_compute_bus_params(struct sdw_bus *bus)
 {
-	unsigned int curr_dr_freq = 0;
 	struct sdw_master_prop *mstr_prop = &bus->prop;
+	struct sdw_slave_prop *slave_prop;
+	struct sdw_port_runtime *m_p_rt;
+	struct sdw_port_runtime *s_p_rt;
+	struct sdw_master_runtime *m_rt;
+	unsigned int required_bandwidth;
+	struct sdw_slave_runtime *s_rt;
+	unsigned int curr_dr_freq = 0;
+	bool use_multi_lane = false;
 	int i, clk_values, ret;
 	bool is_gear = false;
+	int m_lane, s_lane;
 	u32 *clk_buf;
 
 	if (mstr_prop->num_clk_gears) {
@@ -372,9 +380,52 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 	}
 
 	if (i == clk_values) {
-		dev_err(bus->dev, "%s: could not find clock value for bandwidth %d\n",
+		dev_dbg(bus->dev, "%s: could not find clock value for bandwidth %d, checking multi-lane\n",
 			__func__, bus->params.bandwidth);
-		return -EINVAL;
+
+		list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
+			list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
+				slave_prop = &s_rt->slave->prop;
+
+				/* Find a non-zero manager lane */
+				for (i = 1; i < SDW_MAX_LANES; i++) {
+					if (!slave_prop->lane_maps[i])
+						continue;
+
+					required_bandwidth = 0;
+					list_for_each_entry(m_p_rt, &m_rt->port_list, port_node) {
+						required_bandwidth += m_rt->stream->params.rate *
+							hweight32(m_p_rt->ch_mask) *
+							m_rt->stream->params.bps;
+					}
+					if (required_bandwidth <= curr_dr_freq - bus->lane_used_bandwidth[i]) {
+						s_lane = i;
+						m_lane = slave_prop->lane_maps[i];
+						dev_dbg(&s_rt->slave->dev,
+							"M lane %d P lane %d can be used\n",
+							m_lane, s_lane);
+						bus->lane_used_bandwidth[i] += required_bandwidth;
+						/*
+						 * Use non-zero manager lane, subtract the lane 0
+						 * bandwidth that is already calculated
+						 * */
+						use_multi_lane = true;
+						break;
+					}
+				}
+
+				list_for_each_entry(s_p_rt, &s_rt->port_list, port_node) {
+					s_p_rt->lane = s_lane;
+				}
+				list_for_each_entry(m_p_rt, &m_rt->port_list, port_node) {
+					m_p_rt->lane = m_lane;
+				}
+			}
+		}
+		if (!use_multi_lane) {
+			dev_err(bus->dev, "%s: could not find a useable lane\n", __func__);
+			return -EINVAL;
+		}
 	}
 
 	ret = sdw_select_row_col(bus, curr_dr_freq);
