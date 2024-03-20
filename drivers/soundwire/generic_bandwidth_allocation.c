@@ -39,6 +39,7 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 	unsigned int slave_total_ch;
 	struct sdw_bus_params *b_params = &m_rt->bus->params;
 
+	pr_info("bard: %s\n", __func__);
 	port_bo = t_data->block_offset;
 
 	list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
@@ -50,6 +51,7 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 		list_for_each_entry(p_rt, &s_rt->port_list, port_node) {
 			ch = hweight32(p_rt->ch_mask);
 
+			pr_info("bard: %s p_rt->lane %d\n", __func__, p_rt->lane);
 			sdw_fill_xport_params(&p_rt->transport_params,
 					      p_rt->num, false,
 					      SDW_BLK_GRP_CNT_1,
@@ -92,6 +94,7 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 	int sample_int, hstart = 0;
 	unsigned int rate, bps, ch;
 
+	pr_info("bard: %s\n", __func__);
 	rate = m_rt->stream->params.rate;
 	bps = m_rt->stream->params.bps;
 	ch = m_rt->ch_count;
@@ -106,6 +109,7 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 
 	list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
 
+		pr_info("bard: %s p_rt->lane %d\n", __func__, p_rt->lane);
 		sdw_fill_xport_params(&p_rt->transport_params, p_rt->num,
 				      false, SDW_BLK_GRP_CNT_1, sample_int,
 				      port_bo, port_bo >> 8, hstart, hstop,
@@ -347,6 +351,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 	int m_lane, s_lane;
 	u32 *clk_buf;
 
+	pr_info("bard: %s\n", __func__);
 	if (mstr_prop->num_clk_gears) {
 		clk_values = mstr_prop->num_clk_gears;
 		clk_buf = mstr_prop->clk_gears;
