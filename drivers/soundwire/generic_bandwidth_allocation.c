@@ -39,6 +39,7 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 	unsigned int slave_total_ch;
 	struct sdw_bus_params *b_params = &m_rt->bus->params;
 
+	pr_info("bard: %s\n", __func__);
 	port_bo = t_data->block_offset;
 
 	list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
@@ -50,6 +51,8 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 		list_for_each_entry(p_rt, &s_rt->port_list, port_node) {
 			ch = hweight32(p_rt->ch_mask);
 
+			pr_info("bard: %s p_rt->lane %d p_rt->num %d hstart %d hstop %d\n",
+				__func__, p_rt->lane, p_rt->num, t_data->hstart, t_data->hstop);
 			sdw_fill_xport_params(&p_rt->transport_params,
 					      p_rt->num, false,
 					      SDW_BLK_GRP_CNT_1,
@@ -92,6 +95,7 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 	int sample_int, hstart = 0;
 	unsigned int rate, bps, ch;
 
+	pr_info("bard: %s\n", __func__);
 	rate = m_rt->stream->params.rate;
 	bps = m_rt->stream->params.bps;
 	ch = m_rt->ch_count;
@@ -106,6 +110,8 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 
 	list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
 
+		pr_info("bard: %s p_rt->lane %d p_rt->num %d hstart %d hstop %d\n",
+			__func__, p_rt->lane, p_rt->num, hstart, hstop);
 		sdw_fill_xport_params(&p_rt->transport_params, p_rt->num,
 				      false, SDW_BLK_GRP_CNT_1, sample_int,
 				      port_bo, port_bo >> 8, hstart, hstop,
@@ -164,20 +170,27 @@ static int sdw_compute_group_params(struct sdw_bus *bus,
 	unsigned int rate, bps, ch;
 	int i, column_needed = 0;
 
+	pr_info("bard: %s\n", __func__);
 	/* Calculate bandwidth per group */
 	for (i = 0; i < count; i++) {
 		params[i].rate = rates[i];
 		params[i].full_bw = bus->params.curr_dr_freq / params[i].rate;
+		pr_info("bard: %s params[%d].rate %d params[%d].full_bw %d\n",
+			__func__, i, params[i].rate, i, params[i].full_bw);
 	}
 
 	list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
 		rate = m_rt->stream->params.rate;
 		bps = m_rt->stream->params.bps;
 		ch = m_rt->ch_count;
+		pr_info("bard: %s rate %d bps %d ch %d\n",
+			__func__, rate, bps, ch);
 
 		for (i = 0; i < count; i++) {
 			if (rate == params[i].rate)
 				params[i].payload_bw += bps * ch;
+			pr_info("bard: %s params[%d].payload_bw %d\n",
+				__func__, i, params[i].rate);
 		}
 	}
 
@@ -187,6 +200,8 @@ static int sdw_compute_group_params(struct sdw_bus *bus,
 			params[i].full_bw;
 
 		column_needed += params[i].hwidth;
+		pr_info("bard: %s params[%d].hwidth %d column_needed %d\n",
+			__func__, i, params[i].hwidth, column_needed);
 	}
 
 	if (column_needed > sel_col - 1)
@@ -270,6 +285,7 @@ static int sdw_compute_port_params(struct sdw_bus *bus)
 	int ret;
 
 	ret = sdw_get_group_count(bus, &group);
+	pr_err("bard: %s sdw_get_group_count return %d group.count %d\n", __func__, ret, group.count);
 	if (ret < 0)
 		return ret;
 
@@ -285,6 +301,7 @@ static int sdw_compute_port_params(struct sdw_bus *bus)
 	/* Compute transport parameters for grouped streams */
 	ret = sdw_compute_group_params(bus, params,
 				       &group.rates[0], group.count);
+	pr_err("bard: %s sdw_compute_group_params return %d\n", __func__, ret);
 	if (ret < 0)
 		goto free_params;
 
@@ -304,6 +321,8 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
 	int frame_int, frame_freq;
 	int r, c;
 
+	pr_info("bard: %s bus->params.bandwidth %d clk_freq %d\n",
+		__func__, bus->params.bandwidth, clk_freq);
 	for (c = 0; c < SDW_FRAME_COLS; c++) {
 		for (r = 0; r < SDW_FRAME_ROWS; r++) {
 			if (sdw_rows[r] != prop->default_row ||
@@ -319,6 +338,8 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
 
 			bus->params.row = sdw_rows[r];
 			bus->params.col = sdw_cols[c];
+			pr_info("bard: %s bus->params.row %d bus->params.col %d\n",
+				__func__, bus->params.row, bus->params.col);
 			return 0;
 		}
 	}
@@ -347,6 +368,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 	int m_lane, s_lane;
 	u32 *clk_buf;
 
+	pr_info("bard: %s bus->params.bandwidth %d\n", __func__, bus->params.bandwidth);
 	if (mstr_prop->num_clk_gears) {
 		clk_values = mstr_prop->num_clk_gears;
 		clk_buf = mstr_prop->clk_gears;
@@ -386,6 +408,7 @@ multilane:
 
 		m_rt = list_last_entry(&bus->m_rt_list, struct sdw_master_runtime, bus_node);
 		list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
+			pr_err("bard: %s s_rt\n", __func__);
 			slave_prop = &s_rt->slave->prop;
 
 			/* Find a non-zero manager lane */
@@ -393,6 +416,7 @@ multilane:
 				if (!slave_prop->lane_maps[i])
 					continue;
 
+				pr_err("bard: %s i %d\n", __func__, i);
 				required_bandwidth = 0;
 				list_for_each_entry(m_p_rt, &m_rt->port_list, port_node) {
 					required_bandwidth += m_rt->stream->params.rate *
@@ -443,6 +467,7 @@ multilane:
 	}
 
 	bus->params.curr_dr_freq = curr_dr_freq;
+	dev_info(bus->dev, "%s: bus->params.curr_dr_freq %d\n", __func__, bus->params.curr_dr_freq);
 	return 0;
 }
 

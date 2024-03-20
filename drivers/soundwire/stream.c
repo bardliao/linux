@@ -1891,6 +1891,7 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 	bool alloc_master_rt = false;
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	mutex_lock(&bus->bus_lock);
 
 	/*
@@ -2014,6 +2015,7 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	mutex_lock(&slave->bus->bus_lock);
 
 	/*
