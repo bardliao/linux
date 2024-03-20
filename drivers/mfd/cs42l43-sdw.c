@@ -64,6 +64,7 @@ static int cs42l43_read_prop(struct sdw_slave *sdw)
 	prop->use_domain_irq = true;
 	prop->paging_support = true;
 	prop->wake_capable = true;
+	prop->lane_control_support = true;
 	prop->quirks = SDW_SLAVE_QUIRKS_INVALID_INITIAL_PARITY;
 	prop->scp_int1_mask = SDW_SCP_INT1_BUS_CLASH | SDW_SCP_INT1_PARITY |
 			      SDW_SCP_INT1_IMPL_DEF;
