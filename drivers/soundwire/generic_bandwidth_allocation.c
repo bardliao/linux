@@ -337,9 +337,14 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
  */
 static int sdw_compute_bus_params(struct sdw_bus *bus)
 {
-	unsigned int curr_dr_freq = 0;
 	struct sdw_master_prop *mstr_prop = &bus->prop;
-	int i, clk_values, ret;
+	struct sdw_slave_prop *slave_prop;
+	struct sdw_port_runtime *m_p_rt;
+	struct sdw_port_runtime *s_p_rt;
+	struct sdw_master_runtime *m_rt;
+	struct sdw_slave_runtime *s_rt;
+	unsigned int curr_dr_freq = 0;
+	int i, clk_values, ret, lane;
 	bool is_gear = false;
 	u32 *clk_buf;
 
@@ -376,10 +381,42 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 		 */
 	}
 
+	i = clk_values; //hack for test
 	if (i == clk_values) {
-		dev_err(bus->dev, "%s: could not find clock value for bandwidth %d\n",
+		dev_dbg(bus->dev, "%s: could not find clock value for bandwidth %d, checking multi-lane\n",
 			__func__, bus->params.bandwidth);
-		return -EINVAL;
+
+		list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
+			m_p_rt = list_first_entry(&m_rt->port_list, typeof(*m_p_rt), port_node);
+			list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
+				slave_prop = &s_rt->slave->prop;
+
+				/* Find a non-zero lane */
+				for (i = 1; i < SDW_MAX_LANES; i++) {
+					if (!slave_prop->lane_maps[i])
+						continue;
+					lane = i;
+					dev_dbg(&s_rt->slave->dev, "find lane %d can be used\n", lane);
+					break;
+				}
+
+				list_for_each_entry(s_p_rt, &s_rt->port_list, port_node) {
+					s_p_rt->lane = lane;
+					m_p_rt->lane = slave_prop->lane_maps[s_p_rt->lane];
+					pr_info("bard: s_p_rt->lane: %d m_p_rt->: %d\n", s_p_rt->lane, m_p_rt->lane);
+
+					if (!list_entry_is_head(m_p_rt, &m_rt->port_list, port_node))
+						m_p_rt = list_next_entry(m_p_rt, port_node);
+					else {
+						dev_err(bus->dev, "Can't find corresponding manager runtime\n");
+						return -EINVAL;
+					}
+				}
+			}
+			if (!list_entry_is_head(m_p_rt, &m_rt->port_list, port_node)) {
+				dev_warn(bus->dev, "Not all manager runtime lane are set\n");
+			}
+		}
 	}
 
 	ret = sdw_select_row_col(bus, curr_dr_freq);
