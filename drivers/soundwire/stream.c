@@ -212,6 +212,7 @@ static int sdw_program_slave_port_params(struct sdw_bus *bus,
 		}
 	}
 
+	pr_info("bard: %s lane_control_support %d\n", __func__, slave_prop->lane_control_support);
 	/* program DPN_LaneCtrl register */
 	if (slave_prop->lane_control_support) {
 		ret = sdw_write_no_pm(s_rt->slave, addr6, t_params->lane_ctrl);
@@ -1875,6 +1876,7 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 	bool alloc_master_rt = false;
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	mutex_lock(&bus->bus_lock);
 
 	/*
@@ -1998,6 +2000,7 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	mutex_lock(&slave->bus->bus_lock);
 
 	/*
