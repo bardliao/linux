@@ -86,6 +86,7 @@ int sdw_master_read_prop(struct sdw_bus *bus)
 				prop->max_clk_freq = prop->clk_freq[i];
 		}
 	}
+	prop->max_clk_freq /= 2; //bard: HACK for testing
 
 	scales_prop = "mipi-sdw-supported-clock-scales";
 	nval = fwnode_property_count_u32(link, scales_prop);
