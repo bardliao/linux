@@ -907,6 +907,7 @@ struct sdw_master_ops {
  * synchronization will be used even if a stream only uses a single
  * SoundWire segment.
  * @stream_refcount: number of streams currently using this bus
+ * @lane_used_bandwidth: how much bandwidth is used by each lane
  */
 struct sdw_bus {
 	struct device *dev;
@@ -937,6 +938,7 @@ struct sdw_bus {
 	bool multi_link;
 	int hw_sync_min_links;
 	int stream_refcount;
+	unsigned int lane_used_bandwidth[SDW_MAX_LANES];
 };
 
 int sdw_bus_master_add(struct sdw_bus *bus, struct device *parent,
