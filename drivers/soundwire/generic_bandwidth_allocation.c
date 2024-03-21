@@ -351,7 +351,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 	int m_lane, s_lane;
 	u32 *clk_buf;
 
-	pr_info("bard: %s\n", __func__);
+	pr_info("bard: %s bus->params.bandwidth %d\n", __func__, bus->params.bandwidth);
 	if (mstr_prop->num_clk_gears) {
 		clk_values = mstr_prop->num_clk_gears;
 		clk_buf = mstr_prop->clk_gears;
@@ -372,6 +372,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 				(bus->params.max_dr_freq >>  clk_buf[i]) :
 				clk_buf[i] * SDW_DOUBLE_RATE_FACTOR;
 
+		pr_info("bard: %s curr_dr_freq %d\n", __func__, curr_dr_freq);
 		if (curr_dr_freq <= bus->params.bandwidth)
 			continue;
 
