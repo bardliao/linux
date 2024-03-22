@@ -1033,7 +1033,6 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 				.dailink = {SDW_AMP_OUT_DAI_ID, SDW_UNUSED_DAI_ID},
 				.init = sof_sdw_cs42l43_spk_init,
 				.rtd_init = cs42l43_spk_rtd_init,
-				.quirk = SOF_CODEC_SPKR,
 			},
 		},
 		.dai_num = 4,
