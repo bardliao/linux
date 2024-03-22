@@ -204,8 +204,8 @@ static int sdw_compute_group_params(struct sdw_bus *bus,
 			__func__, i, params[i].hwidth, column_needed);
 	}
 
-	if (column_needed > sel_col - 1)
-		return -EINVAL;
+//	if (column_needed > sel_col - 1)
+//		return -EINVAL;
 
 	return 0;
 }
