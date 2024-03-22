@@ -415,9 +415,9 @@ static const struct snd_soc_acpi_endpoint cs42l43_endpoints[] = {
 	},
 	{ /* Speaker Playback Endpoint */
 		.num = 3,
-		.aggregated = 0,
-		.group_position = 0,
-		.group_id = 0,
+		.aggregated = 1,
+		.group_position = 7,
+		.group_id = 1,
 	},
 };
 
@@ -769,11 +769,6 @@ static const struct snd_soc_acpi_link_adr mtl_cs42l43_cs35l56[] = {
 
 static const struct snd_soc_acpi_link_adr mtl_cs_aic2[] = {
 	{
-		.mask = BIT(0),
-		.num_adr = ARRAY_SIZE(cs42l43_0_adr),
-		.adr_d = cs42l43_0_adr,
-	},
-	{
 		.mask = BIT(2),
 		.num_adr = ARRAY_SIZE(cs35l56_2_aic2_adr),
 		.adr_d = cs35l56_2_aic2_adr,
@@ -782,6 +777,11 @@ static const struct snd_soc_acpi_link_adr mtl_cs_aic2[] = {
 		.mask = BIT(3),
 		.num_adr = ARRAY_SIZE(cs35l56_3_aic2_adr),
 		.adr_d = cs35l56_3_aic2_adr,
+	},
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(cs42l43_0_adr),
+		.adr_d = cs42l43_0_adr,
 	},
 	{}
 };
