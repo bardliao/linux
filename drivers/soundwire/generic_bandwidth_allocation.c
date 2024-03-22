@@ -27,6 +27,7 @@ struct sdw_group {
 	unsigned int count;
 	unsigned int max_size;
 	unsigned int *rates;
+	unsigned int *lanes;
 };
 
 void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
@@ -211,13 +212,14 @@ static int sdw_compute_group_params(struct sdw_bus *bus,
 }
 
 static int sdw_add_element_group_count(struct sdw_group *group,
-				       unsigned int rate)
+				       unsigned int rate, unsigned int lane)
 {
 	int num = group->count;
 	int i;
 
+	pr_info("bard: %s rate %d lane %d\n", __func__, rate, lane);
 	for (i = 0; i <= num; i++) {
-		if (rate == group->rates[i])
+		if (rate == group->rates[i] && lane == group->lanes[i])
 			break;
 
 		if (i != num)
@@ -225,6 +227,7 @@ static int sdw_add_element_group_count(struct sdw_group *group,
 
 		if (group->count >= group->max_size) {
 			unsigned int *rates;
+			unsigned int *lanes;
 
 			group->max_size += 1;
 			rates = krealloc(group->rates,
@@ -232,10 +235,19 @@ static int sdw_add_element_group_count(struct sdw_group *group,
 					 GFP_KERNEL);
 			if (!rates)
 				return -ENOMEM;
+
+			lanes = krealloc(group->lanes,
+					 (sizeof(int) * group->max_size),
+					 GFP_KERNEL);
+			if (!lanes)
+				return -ENOMEM;
+
 			group->rates = rates;
+			group->lanes = lanes;
 		}
 
-		group->rates[group->count++] = rate;
+		group->rates[group->count] = rate;
+		group->lanes[group->count++] = lane;
 	}
 
 	return 0;
@@ -245,13 +257,19 @@ static int sdw_get_group_count(struct sdw_bus *bus,
 			       struct sdw_group *group)
 {
 	struct sdw_master_runtime *m_rt;
+	struct sdw_port_runtime *p_rt;
 	unsigned int rate;
 	int ret = 0;
 
+	pr_info("bard: %s\n", __func__);
 	group->count = 0;
 	group->max_size = SDW_STRM_RATE_GROUPING;
 	group->rates = kcalloc(group->max_size, sizeof(int), GFP_KERNEL);
 	if (!group->rates)
+		return -ENOMEM;
+
+	group->lanes = kcalloc(group->max_size, sizeof(int), GFP_KERNEL);
+	if (!group->lanes)
 		return -ENOMEM;
 
 	list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
@@ -262,14 +280,18 @@ static int sdw_get_group_count(struct sdw_bus *bus,
 			group->rates[group->count++] = rate;
 
 		} else {
-			ret = sdw_add_element_group_count(group, rate);
-			if (ret < 0) {
-				kfree(group->rates);
-				return ret;
+			list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
+				ret = sdw_add_element_group_count(group, rate, p_rt->lane);
+				if (ret < 0) {
+					kfree(group->rates);
+					kfree(group->lanes);
+					return ret;
+				}
 			}
 		}
 	}
 
+	pr_info("bard: %s group->count %d\n", __func__, group->count);
 	return ret;
 }
 
