@@ -671,6 +671,7 @@ static const struct snd_soc_acpi_link_adr mtl_cs_aic2[] = {
 		.num_adr = ARRAY_SIZE(cs42l43_0_adr),
 		.adr_d = cs42l43_0_adr,
 	},
+#if 0
 	{
 		.mask = BIT(2),
 		.num_adr = ARRAY_SIZE(cs35l56_2_aic2_adr),
@@ -681,6 +682,7 @@ static const struct snd_soc_acpi_link_adr mtl_cs_aic2[] = {
 		.num_adr = ARRAY_SIZE(cs35l56_3_aic2_adr),
 		.adr_d = cs35l56_3_aic2_adr,
 	},
+#endif
 	{}
 };
 
