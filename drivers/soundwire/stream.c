@@ -1669,10 +1669,12 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 				m_rt->stream->params.bps;
 			multi_lane_bandwidth += bandwidth;
 			bus->lane_used_bandwidth[p_rt->lane] -= bandwidth;
+			pr_info("bard: %s bus->lane_used_bandwidth[%d] %d\n", __func__, p_rt->lane, bus->lane_used_bandwidth[p_rt->lane]);
 		}
 		/* TODO: Update this during Device-Device support */
 		bandwidth = m_rt->stream->params.rate * m_rt->ch_count * m_rt->stream->params.bps;
 		bus->params.bandwidth -= bandwidth - multi_lane_bandwidth;
+		pr_info("bard: %s bus->params.bandwidth %d\n", __func__, bus->params.bandwidth);
 
 		/* No need to compute params since bus->params.bandwidth is not changed */
 		if (multi_lane_bandwidth == bandwidth)
@@ -1894,6 +1896,7 @@ int sdw_stream_add_master(struct sdw_bus *bus,
 	bool alloc_master_rt = false;
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	mutex_lock(&bus->bus_lock);
 
 	/*
@@ -2017,6 +2020,7 @@ int sdw_stream_add_slave(struct sdw_slave *slave,
 
 	int ret;
 
+	pr_info("bard: %s\n", __func__);
 	mutex_lock(&slave->bus->bus_lock);
 
 	/*
