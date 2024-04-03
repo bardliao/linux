@@ -1644,6 +1644,8 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 	unsigned int multi_lane_bandwidth;
 	struct sdw_master_runtime *m_rt;
 	struct sdw_port_runtime *p_rt;
+	bool compute_params = true;
+	unsigned int bandwidth;
 	struct sdw_bus *bus;
 	int ret = 0;
 
@@ -1660,8 +1662,6 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 		multi_lane_bandwidth = 0;
 
 		list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
-			unsigned int bandwidth;
-
 			if (!p_rt->lane)
 				continue;
 
@@ -1669,16 +1669,19 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 				m_rt->stream->params.bps;
 			multi_lane_bandwidth += bandwidth;
 			bus->lane_used_bandwidth[p_rt->lane] -= bandwidth;
-			multi_lane_bandwidth += bandwidth;
 			pr_info("bard: %s bus->lane_used_bandwidth[%d] %d\n", __func__, p_rt->lane, bus->lane_used_bandwidth[p_rt->lane]);
 		}
 		/* TODO: Update this during Device-Device support */
-		bus->params.bandwidth -= m_rt->stream->params.rate *
-			m_rt->ch_count * m_rt->stream->params.bps - multi_lane_bandwidth;
+		bandwidth = m_rt->stream->params.rate * m_rt->ch_count * m_rt->stream->params.bps;
+		bus->params.bandwidth -= bandwidth - multi_lane_bandwidth;
 		pr_info("bard: %s bus->params.bandwidth %d\n", __func__, bus->params.bandwidth);
 
+		/* No need to compute params since bus->params.bandwidth is not changed */
+		if (multi_lane_bandwidth == bandwidth)
+			compute_params = false;
+
 		/* Compute params */
-		if (bus->compute_params) {
+		if (compute_params && bus->compute_params) {
 			ret = bus->compute_params(bus);
 			if (ret < 0) {
 				dev_err(bus->dev, "Compute params failed: %d\n",
