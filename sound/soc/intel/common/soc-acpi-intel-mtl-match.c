@@ -631,6 +631,14 @@ static const struct snd_soc_acpi_link_adr cs42l42_link0_max98363_link2[] = {
 	{}
 };
 
+static const struct snd_soc_acpi_link_adr mtl_cs42l43_bridge[] = {
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(cs42l43_0_adr),
+		.adr_d = cs42l43_0_adr,
+	},
+};
+
 static const struct snd_soc_acpi_link_adr mtl_cs42l43_cs35l56[] = {
 	{
 		.mask = BIT(0),
@@ -738,6 +746,12 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_mtl_sdw_machines[] = {
 		.links = mtl_rt711_l0_rt1316_l3,
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-mtl-rt711-l0-rt1316-l3.tplg",
+	},
+	{
+		.link_mask = BIT(0),
+		.links = mtl_cs42l43_bridge,
+		.drv_name = "sof_sdw",
+		.sof_tplg_filename = "sof-mtl-cs42l43-l0.tplg",
 	},
 	{
 		.link_mask = BIT(0),
