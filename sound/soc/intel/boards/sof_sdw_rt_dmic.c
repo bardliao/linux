@@ -24,6 +24,7 @@ int rt_dmic_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_card *card = rtd->card;
 	struct snd_soc_component *component;
 	struct snd_soc_dai *codec_dai;
+	const char *c_temp;
 	char *mic_name;
 
 	codec_dai = get_codec_dai_by_name(rtd, dmics, ARRAY_SIZE(dmics));
@@ -41,11 +42,14 @@ int rt_dmic_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	else
 		mic_name = devm_kasprintf(card->dev, GFP_KERNEL, "%s", component->name_prefix);
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
-					  "%s mic:%s", card->components,
-					  mic_name);
-	if (!card->components)
-		return -ENOMEM;
+	c_temp = devm_kasprintf(card->dev, GFP_KERNEL, "codec:%s", mic_name);
+	if (!strstr(card->components, c_temp)) {
+		card->components = devm_kasprintf(card->dev, GFP_KERNEL,
+						  "%s mic:%s", card->components,
+						  mic_name);
+		if (!card->components)
+			return -ENOMEM;
+	}
 
 	dev_dbg(card->dev, "card->components: %s\n", card->components);
 

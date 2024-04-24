@@ -32,12 +32,6 @@ int rt722_spk_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_card *card = rtd->card;
 	int ret;
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
-					  "%s spk:rt722",
-					  card->components);
-	if (!card->components)
-		return -ENOMEM;
-
 	ret = snd_soc_add_card_controls(card, rt722_spk_controls,
 					ARRAY_SIZE(rt722_spk_controls));
 	if (ret) {
