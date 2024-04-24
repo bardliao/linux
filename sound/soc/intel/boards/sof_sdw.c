@@ -1394,6 +1394,20 @@ static int parse_sdw_endpoints(struct snd_soc_card *card,
 			dev_dbg(dev, "Adding prefix %s for %s\n",
 				adr_dev->name_prefix, codec_name);
 
+			if (codec_info->dai_num > 1) {
+				if (!card->components)
+					card->components = devm_kasprintf(card->dev, GFP_KERNEL,
+									" codec:%s",
+									adr_dev->name_prefix);
+				else if (!strstr(card->components, adr_dev->name_prefix))
+					card->components = devm_kasprintf(card->dev, GFP_KERNEL,
+									  "%s codec:%s",
+									  card->components,
+									  adr_dev->name_prefix);
+				if (!card->components)
+					return -ENOMEM;
+			}
+
 			for (j = 0; j < adr_dev->num_endpoints; j++) {
 				const struct snd_soc_acpi_endpoint *adr_end;
 				const struct sof_sdw_dai_info *dai_info;
@@ -1993,7 +2007,7 @@ static int mc_probe(struct platform_device *pdev)
 		amp_num += codec_info_list[i].amp_num;
 
 	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
-					  " cfg-amp:%d", amp_num);
+					  "%s cfg-amp:%d", card->components, amp_num);
 	if (!card->components)
 		return -ENOMEM;
 
