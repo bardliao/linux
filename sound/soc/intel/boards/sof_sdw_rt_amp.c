@@ -191,16 +191,20 @@ int rt_amp_spk_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	const struct snd_soc_dapm_route *rt_amp_map;
 	char codec_name[CODEC_NAME_SIZE];
 	struct snd_soc_dai *dai;
+	const char *c_temp;
 	int ret;
 	int i;
 
 	rt_amp_map = get_codec_name_and_route(rtd, codec_name);
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
-					  "%s spk:%s",
-					  card->components, codec_name);
-	if (!card->components)
-		return -ENOMEM;
+	c_temp = devm_kasprintf(card->dev, GFP_KERNEL, "codec:%s", codec_name);
+	if (!strstr(card->components, c_temp)) {
+		card->components = devm_kasprintf(card->dev, GFP_KERNEL,
+						  "%s spk:%s",
+						  card->components, codec_name);
+		if (!card->components)
+			return -ENOMEM;
+	}
 
 	ret = snd_soc_add_card_controls(card, rt_amp_controls,
 					ARRAY_SIZE(rt_amp_controls));

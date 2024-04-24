@@ -69,11 +69,6 @@ int cs42l43_hs_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_card *card = rtd->card;
 	int ret;
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL, "%s hs:cs42l43",
-					  card->components);
-	if (!card->components)
-		return -ENOMEM;
-
 	ret = snd_soc_dapm_new_controls(&card->dapm, cs42l43_hs_widgets,
 					ARRAY_SIZE(cs42l43_hs_widgets));
 	if (ret) {
@@ -124,11 +119,6 @@ int cs42l43_spk_rtd_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_card *card = rtd->card;
 	int ret;
 
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL, "%s spk:cs42l43-spk",
-					  card->components);
-	if (!card->components)
-		return -ENOMEM;
-
 	ret = snd_soc_dapm_new_controls(&card->dapm, cs42l43_spk_widgets,
 					ARRAY_SIZE(cs42l43_spk_widgets));
 	if (ret) {
@@ -162,11 +152,6 @@ int cs42l43_dmic_rtd_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_card *card = rtd->card;
 	int ret;
-
-	card->components = devm_kasprintf(card->dev, GFP_KERNEL, "%s mic:cs42l43-dmic",
-					  card->components);
-	if (!card->components)
-		return -ENOMEM;
 
 	ret = snd_soc_dapm_new_controls(&card->dapm, cs42l43_dmic_widgets,
 					ARRAY_SIZE(cs42l43_dmic_widgets));
