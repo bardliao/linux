@@ -1026,6 +1026,25 @@ static struct sof_sdw_codec_info codec_info_list[] = {
 		.dai_num = 1,
 	},
 	{
+		.part_id = 0x1320,
+		.dais = {
+			{
+				.direction = {true, false},
+				.dai_name = "rt1320-aif1",
+				.dai_type = SOF_SDW_DAI_TYPE_AMP,
+				.dailink = {SDW_AMP_OUT_DAI_ID, SDW_AMP_IN_DAI_ID},
+				.init = sof_sdw_rt_amp_init,
+				.exit = sof_sdw_rt_amp_exit,
+				.rtd_init = rt_amp_spk_rtd_init,
+				.controls = generic_spk_controls,
+				.num_controls = ARRAY_SIZE(generic_spk_controls),
+				.widgets = generic_spk_widgets,
+				.num_widgets = ARRAY_SIZE(generic_spk_widgets),
+			},
+		},
+		.dai_num = 1,
+	},
+	{
 		.part_id = 0x714,
 		.version_id = 3,
 		.ignore_pch_dmic = true,
