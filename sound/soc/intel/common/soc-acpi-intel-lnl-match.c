@@ -8,6 +8,8 @@
 
 #include <sound/soc-acpi.h>
 #include <sound/soc-acpi-intel-match.h>
+#include <sound/sdca.h>
+#include <linux/soundwire/sdw_intel.h>
 #include "soc-acpi-intel-sdw-mockup-match.h"
 
 struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_machines[] = {
@@ -45,6 +47,27 @@ static const struct snd_soc_acpi_endpoint rt712_endpoints[] = {
 	},
 	{
 		.num = 1,
+		.aggregated = 0,
+		.group_position = 2,
+		.group_id = 1,
+	},
+};
+
+static const struct snd_soc_acpi_endpoint rt712_vb_endpoints[] = {
+	{
+		.num = 0,
+		.aggregated = 0,
+		.group_position = 0,
+		.group_id = 0,
+	},
+	{
+		.num = 1,
+		.aggregated = 0,
+		.group_position = 2,
+		.group_id = 1,
+	},
+	{
+		.num = 2,
 		.aggregated = 0,
 		.group_position = 0,
 		.group_id = 0,
@@ -130,6 +153,15 @@ static const struct snd_soc_acpi_adr_device rt712_2_single_adr[] = {
 	}
 };
 
+static const struct snd_soc_acpi_adr_device rt712_vb_0_single_adr[] = {
+	{
+		.adr = 0x000030025D071201ull,
+		.num_endpoints = ARRAY_SIZE(rt712_vb_endpoints),
+		.endpoints = rt712_vb_endpoints,
+		.name_prefix = "rt712"
+	}
+};
+
 static const struct snd_soc_acpi_adr_device rt1712_3_single_adr[] = {
 	{
 		.adr = 0x000330025D171201ull,
@@ -184,6 +216,15 @@ static const struct snd_soc_acpi_adr_device rt1318_2_group1_adr[] = {
 	}
 };
 
+static const struct snd_soc_acpi_adr_device rt1320_1_single_adr[] = {
+	{
+		.adr = 0x000130025D132000ull,
+		.num_endpoints = 1,
+		.endpoints = &spk_l_endpoint,
+		.name_prefix = "rt1320"
+	}
+};
+
 static const struct snd_soc_acpi_adr_device rt714_0_adr[] = {
 	{
 		.adr = 0x000030025D071401ull,
@@ -229,6 +270,20 @@ static const struct snd_soc_acpi_link_adr lnl_712_only[] = {
 		.mask = BIT(3),
 		.num_adr = ARRAY_SIZE(rt1712_3_single_adr),
 		.adr_d = rt1712_3_single_adr,
+	},
+	{}
+};
+
+static const struct snd_soc_acpi_link_adr lnl_712_vb_l0_1320_l1[] = {
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt712_vb_0_single_adr),
+		.adr_d = rt712_vb_0_single_adr,
+	},
+	{
+		.mask = BIT(1),
+		.num_adr = ARRAY_SIZE(rt1320_1_single_adr),
+		.adr_d = rt1320_1_single_adr,
 	},
 	{}
 };
@@ -285,6 +340,23 @@ static const struct snd_soc_acpi_link_adr lnl_sdw_rt1318_l12_rt714_l0[] = {
 	{}
 };
 
+static bool is_device_rt712_vb(void *arg)
+{
+	struct sdw_intel_ctx *ctx = arg;
+	int i;
+
+	if (!ctx)
+		return false;
+
+	for (i = 0; i < ctx->peripherals->num_peripherals; i++) {
+		if (sdca_device_quirk_match(ctx->peripherals->array[i],
+					    SDCA_QUIRKS_RT712_VB))
+			return true;
+	}
+
+	return false;
+}
+
 /* this table is used when there is no I2S codec present */
 struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 	/* mockup tests need to be first */
@@ -319,16 +391,17 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.sof_tplg_filename = "sof-lnl-cs42l43-l0.tplg",
 	},
 	{
-		.link_mask = BIT(0),
-		.links = lnl_rvp,
-		.drv_name = "sof_sdw",
-		.sof_tplg_filename = "sof-lnl-rt711.tplg",
-	},
-	{
 		.link_mask = BIT(2) | BIT(3),
 		.links = lnl_712_only,
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-lnl-rt712-l2-rt1712-l3.tplg",
+	},
+	{
+		.link_mask = BIT(0) | BIT(1),
+		.links = lnl_712_vb_l0_1320_l1,
+		.drv_name = "sof_sdw",
+		.machine_check = is_device_rt712_vb,
+		.sof_tplg_filename = "sof-lnl-rt712-l0-rt1320-l1.tplg",
 	},
 	{
 		.link_mask = BIT(0),
@@ -341,6 +414,12 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.links = lnl_sdw_rt1318_l12_rt714_l0,
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-lnl-rt1318-l12-rt714-l0.tplg"
+	},
+	{
+		.link_mask = BIT(0),
+		.links = lnl_rvp,
+		.drv_name = "sof_sdw",
+		.sof_tplg_filename = "sof-lnl-rt711.tplg",
 	},
 	{},
 };
