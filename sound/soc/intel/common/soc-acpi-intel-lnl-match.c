@@ -288,6 +288,15 @@ static const struct snd_soc_acpi_link_adr lnl_712_vb_l0_1320_l1[] = {
 	{}
 };
 
+static const struct snd_soc_acpi_link_adr lnl_712_vb_l0[] = {
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt712_vb_0_single_adr),
+		.adr_d = rt712_vb_0_single_adr,
+	},
+	{}
+};
+
 static const struct snd_soc_acpi_link_adr lnl_rt722_only[] = {
 	{
 		.mask = BIT(0),
@@ -402,6 +411,13 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.drv_name = "sof_sdw",
 		.machine_check = is_device_rt712_vb,
 		.sof_tplg_filename = "sof-lnl-rt712-l0-rt1320-l1.tplg",
+	},
+	{
+		.link_mask = BIT(0),
+		.links = lnl_712_vb_l0,
+		.drv_name = "sof_sdw",
+		.machine_check = is_device_rt712_vb,
+		.sof_tplg_filename = "sof-lnl-rt712-l0.tplg",
 	},
 	{
 		.link_mask = BIT(0),
