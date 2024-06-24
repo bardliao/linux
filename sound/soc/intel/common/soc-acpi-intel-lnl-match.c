@@ -74,6 +74,23 @@ static const struct snd_soc_acpi_endpoint rt712_vb_endpoints[] = {
 	},
 };
 
+static const struct snd_soc_acpi_endpoint rt713_vb_endpoints[] = {
+	/* Jack */
+	{
+		.num = 0,
+		.aggregated = 0,
+		.group_position = 0,
+		.group_id = 0,
+	},
+	/* DMIC */
+	{
+		.num = 1,
+		.aggregated = 0,
+		.group_position = 0,
+		.group_id = 0,
+	},
+};
+
 /*
  * RT722 is a multi-function codec, three endpoints are created for
  * its headset, amp and dmic functions.
@@ -171,6 +188,15 @@ static const struct snd_soc_acpi_adr_device rt1712_3_single_adr[] = {
 	}
 };
 
+static const struct snd_soc_acpi_adr_device rt713_vb_2_single_adr[] = {
+	{
+		.adr = 0x000230025D071301ull,
+		.num_endpoints = ARRAY_SIZE(rt713_vb_endpoints),
+		.endpoints = rt713_vb_endpoints,
+		.name_prefix = "rt713"
+	}
+};
+
 static const struct snd_soc_acpi_adr_device rt722_0_single_adr[] = {
 	{
 		.adr = 0x000030025d072201ull,
@@ -222,6 +248,24 @@ static const struct snd_soc_acpi_adr_device rt1320_1_single_adr[] = {
 		.num_endpoints = 1,
 		.endpoints = &single_endpoint,
 		.name_prefix = "rt1320-1"
+	}
+};
+
+static const struct snd_soc_acpi_adr_device rt1320_1_group1_adr[] = {
+	{
+		.adr = 0x000130025D132000ull,
+		.num_endpoints = 1,
+		.endpoints = &spk_l_endpoint,
+		.name_prefix = "rt1320-1"
+	}
+};
+
+static const struct snd_soc_acpi_adr_device rt1320_3_group1_adr[] = {
+	{
+		.adr = 0x000330025D132000ull,
+		.num_endpoints = 1,
+		.endpoints = &spk_r_endpoint,
+		.name_prefix = "rt1320-2"
 	}
 };
 
@@ -284,6 +328,25 @@ static const struct snd_soc_acpi_link_adr lnl_712_vb_l0_1320_l1[] = {
 		.mask = BIT(1),
 		.num_adr = ARRAY_SIZE(rt1320_1_single_adr),
 		.adr_d = rt1320_1_single_adr,
+	},
+	{}
+};
+
+static const struct snd_soc_acpi_link_adr lnl_713_vb_l2_1320_l13[] = {
+	{
+		.mask = BIT(2),
+		.num_adr = ARRAY_SIZE(rt713_vb_2_single_adr),
+		.adr_d = rt713_vb_2_single_adr,
+	},
+	{
+		.mask = BIT(1),
+		.num_adr = ARRAY_SIZE(rt1320_1_group1_adr),
+		.adr_d = rt1320_1_group1_adr,
+	},
+	{
+		.mask = BIT(3),
+		.num_adr = ARRAY_SIZE(rt1320_3_group1_adr),
+		.adr_d = rt1320_3_group1_adr,
 	},
 	{}
 };
@@ -395,6 +458,13 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.links = lnl_712_only,
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-lnl-rt712-l2-rt1712-l3.tplg",
+	},
+	{
+		.link_mask = BIT(1) | BIT(2) | BIT(3),
+		.links = lnl_713_vb_l2_1320_l13,
+		.drv_name = "sof_sdw",
+		.machine_check = is_device_rt712_vb,
+		.sof_tplg_filename = "sof-lnl-rt713-l2-rt1320-l13.tplg",
 	},
 	{
 		.link_mask = BIT(0) | BIT(1),
