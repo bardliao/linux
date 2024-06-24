@@ -463,7 +463,7 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.link_mask = BIT(1) | BIT(2) | BIT(3),
 		.links = lnl_713_vb_l2_1320_l13,
 		.drv_name = "sof_sdw",
-		.machine_check = is_device_rt712_vb,
+//		.machine_check = is_device_rt712_vb,
 		.sof_tplg_filename = "sof-lnl-rt713-l2-rt1320-l13.tplg",
 	},
 	{
