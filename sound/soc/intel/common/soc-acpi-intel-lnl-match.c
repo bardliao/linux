@@ -342,6 +342,7 @@ static const struct snd_soc_acpi_link_adr lnl_sdw_rt1318_l12_rt714_l0[] = {
 
 static bool is_device_rt712_vb(void *arg)
 {
+#if 0
 	struct sdw_intel_ctx *ctx = arg;
 	int i;
 
@@ -355,6 +356,9 @@ static bool is_device_rt712_vb(void *arg)
 	}
 
 	return false;
+#else //HACK
+	return true;
+#endif
 }
 
 /* this table is used when there is no I2S codec present */
