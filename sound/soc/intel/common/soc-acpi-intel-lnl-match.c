@@ -162,6 +162,15 @@ static const struct snd_soc_acpi_adr_device rt712_vb_2_single_adr[] = {
 	}
 };
 
+static const struct snd_soc_acpi_adr_device rt712_vb_0_single_adr[] = {
+	{
+		.adr = 0x000030025D071201ull,
+		.num_endpoints = ARRAY_SIZE(rt712_vb_endpoints),
+		.endpoints = rt712_vb_endpoints,
+		.name_prefix = "rt712"
+	}
+};
+
 static const struct snd_soc_acpi_adr_device rt1712_3_single_adr[] = {
 	{
 		.adr = 0x000330025D171201ull,
@@ -288,6 +297,15 @@ static const struct snd_soc_acpi_link_adr lnl_712_vb_l2_1320_l1[] = {
 	{}
 };
 
+static const struct snd_soc_acpi_link_adr lnl_712_vb_l0[] = {
+	{
+		.mask = BIT(0),
+		.num_adr = ARRAY_SIZE(rt712_vb_0_single_adr),
+		.adr_d = rt712_vb_0_single_adr,
+	},
+	{}
+};
+
 static const struct snd_soc_acpi_link_adr lnl_rt722_only[] = {
 	{
 		.mask = BIT(0),
@@ -405,6 +423,13 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.links = lnl_712_only,
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-lnl-rt712-l2-rt1712-l3.tplg",
+	},
+	{
+		.link_mask = BIT(0),
+		.links = lnl_712_vb_l0,
+		.drv_name = "sof_sdw",
+		.machine_check = is_device_rt712_vb,
+		.sof_tplg_filename = "sof-lnl-rt712.tplg",
 	},
 	{
 		.link_mask = BIT(1) | BIT(2),
