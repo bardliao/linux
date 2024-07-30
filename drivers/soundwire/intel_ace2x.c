@@ -318,6 +318,7 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 	struct sdw_cdns_dai_runtime *dai_runtime;
 	struct sdw_cdns_pdi *pdi;
 	struct sdw_stream_config sconfig;
+	struct sdw_port_config pconfig[2];
 	int ch, dir;
 	int ret;
 
@@ -362,7 +363,7 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 	sconfig.type = dai_runtime->stream_type;
 
 	sconfig.bps = snd_pcm_format_width(params_format(params));
-
+#if 0
 	/* Port configuration */
 	struct sdw_port_config *pconfig __free(kfree) = kzalloc(sizeof(*pconfig),
 								GFP_KERNEL);
@@ -371,9 +372,19 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 
 	pconfig->num = pdi->num;
 	pconfig->ch_mask = (1 << ch) - 1;
+#else
+//	pconfig[0].num = 4;
+	pconfig[0].ch_mask = 0x3;
+	pconfig[1].ch_mask = 0x3;
+	pconfig[0].num = pdi->num;
+	if (pdi->num == 2)
+		pconfig[1].num = 4;
+	else
+		pconfig[1].num = 2;
+#endif
 
 	ret = sdw_stream_add_master(&cdns->bus, &sconfig,
-				    pconfig, 1, dai_runtime->stream);
+				    pconfig, 2, dai_runtime->stream);
 	if (ret)
 		dev_err(cdns->dev, "add master to stream failed:%d\n", ret);
 

@@ -1417,7 +1417,7 @@ static int rt712_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_component *component = dai->component;
 	struct rt712_sdca_priv *rt712 = snd_soc_component_get_drvdata(component);
 	struct sdw_stream_config stream_config;
-	struct sdw_port_config port_config;
+	struct sdw_port_config port_config[2];
 	enum sdw_data_direction direction;
 	struct sdw_stream_runtime *sdw_stream;
 	int retval, port, num_channels;
@@ -1461,11 +1461,26 @@ static int rt712_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 	stream_config.direction = direction;
 
 	num_channels = params_channels(params);
-	port_config.ch_mask = GENMASK(num_channels - 1, 0);
-	port_config.num = port;
+	port_config[0].ch_mask = 0x3;
+	port_config[1].ch_mask = 0x3;
+#if 0
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		port_config[0].num = 3;
+		port_config[1].num = 1;
+	} else {
+		port_config[0].num = 4;
+		port_config[1].num = 8;
+	}
+#else
+		port_config[0].num = port;
+		if (port == 1)
+			port_config[1].num = 3;
+		else
+			port_config[1].num = 1;
+#endif
 
 	retval = sdw_stream_add_slave(rt712->slave, &stream_config,
-					&port_config, 1, sdw_stream);
+					port_config, 2, sdw_stream);
 	if (retval) {
 		dev_err(dai->dev, "%s: Unable to configure port\n", __func__);
 		return retval;
