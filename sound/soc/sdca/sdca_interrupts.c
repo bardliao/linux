@@ -320,6 +320,7 @@ static int sdca_interrupt_register_handler(struct sdw_slave *slave,
 		goto io_error;
 	}
 	status = ret;
+	status &= interrupt_info->registered_source_mask >> (reg_index << 3);
 
 	if (!status)
 		return 0;
@@ -362,6 +363,8 @@ static int sdca_interrupt_register_handler(struct sdw_slave *slave,
 
 		/* filter to limit loop to interrupts identified in the first status read */
 		status &= status2;
+		status &= interrupt_info->registered_source_mask >> (reg_index << 3);
+		count++;
 	} while (status && (count < retry));
 
 	if (count == retry)
