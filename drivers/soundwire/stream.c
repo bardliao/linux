@@ -909,7 +909,6 @@ static int sdw_port_config(struct sdw_port_runtime *p_rt,
 			   const struct sdw_port_config *port_config,
 			   int port_index)
 {
-	pr_info("bard: %s port_index: %d ch_mask %d num %d\n", __func__, port_index, port_config[port_index].ch_mask, port_config[port_index].num);
 	p_rt->ch_mask = port_config[port_index].ch_mask;
 	p_rt->num = port_config[port_index].num;
 
@@ -999,11 +998,7 @@ static int sdw_slave_port_config(struct sdw_slave *slave,
 		ret = sdw_port_config(p_rt, port_config, i);
 		if (ret < 0)
 			return ret;
-		if (i == 0)
-			p_rt->lane = p_lane;
-		else
-			p_rt->lane = 0;
-		pr_info("bard: %s lane %d\n", __func__, p_rt->lane);
+		p_rt->lane = p_lane;
 		i++;
 	}
 
@@ -1052,11 +1047,7 @@ static int sdw_master_port_config(struct sdw_master_runtime *m_rt,
 		ret = sdw_port_config(p_rt, port_config, i);
 		if (ret < 0)
 			return ret;
-		if (i == 0)
-			p_rt->lane = m_lane;
-		else
-			p_rt->lane = 0;
-		pr_info("bard: %s lane %d\n", __func__, p_rt->lane);
+		p_rt->lane = m_lane;
 		i++;
 	}
 

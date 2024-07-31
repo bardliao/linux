@@ -678,7 +678,6 @@ static int sof_ipc4_widget_setup_comp_dai(struct snd_sof_widget *swidget)
 			blob->alh_cfg.device_count++;
 		}
 
-		blob->alh_cfg.device_count++; //HACK to test 2 DPs
 		ipc4_copier->copier_config = (uint32_t *)blob;
 		/* set data.gtw_cfg.config_length based on device_count */
 		ipc4_copier->data.gtw_cfg.config_length = (sizeof(blob->gw_attr) +
@@ -1979,9 +1978,6 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				blob->alh_cfg.mapping[i].device = SOF_IPC4_NODE_TYPE(node_type);
 				blob->alh_cfg.mapping[i].device |=
 					SOF_IPC4_NODE_INDEX(alh_copier->dai_index);
-				blob->alh_cfg.mapping[i + 1].device = 0x4; //HACK to test 2 DPs
-				pr_info("bard: 1: blob->alh_cfg.mapping[%d].device %#x blob->alh_cfg.mapping[%d].device %#x\n",
-					i, blob->alh_cfg.mapping[i].device, i + 1, blob->alh_cfg.mapping[i + 1].device);
 
 				/*
 				 * The mapping[i] device in ALH blob should be the same as the
@@ -1992,9 +1988,6 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 					dma_config = &ipc4_copier->dma_config_tlv[i].dma_config;
 					blob->alh_cfg.mapping[i].device =
 						dma_config->dma_stream_channel_map.mapping[0].device;
-					blob->alh_cfg.mapping[i + 1].device = 0x4; //HACK to test 2 DPs
-					pr_info("bard: 2: blob->alh_cfg.mapping[%d].device %#x blob->alh_cfg.mapping[%d].device %#x\n",
-						i, blob->alh_cfg.mapping[i].device, i + 1, blob->alh_cfg.mapping[i + 1].device);
 				}
 
 				/*
@@ -2015,7 +2008,6 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 
 				i++;
 			}
-			pr_info("bard: %s blob->alh_cfg.device_count %d\n", __func__, blob->alh_cfg.device_count);
 			if (blob->alh_cfg.device_count > 1) {
 				int group_id;
 
