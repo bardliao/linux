@@ -1018,6 +1018,7 @@ static bool asoc_sdw_is_unique_device(const struct snd_soc_acpi_link_adr *adr_li
 
 static const char *_asoc_sdw_get_codec_name(struct device *dev,
 					    const struct asoc_sdw_codec_info *codec_info,
+					    const struct asoc_sdw_dai_info *dai_info,
 					    const struct snd_soc_acpi_link_adr *adr_link,
 					    int adr_index)
 {
@@ -1040,13 +1041,16 @@ static const char *_asoc_sdw_get_codec_name(struct device *dev,
 
 const char *asoc_sdw_get_codec_name(struct device *dev,
 				    const struct asoc_sdw_codec_info *codec_info,
+				    const struct asoc_sdw_dai_info *dai_info,
 				    const struct snd_soc_acpi_link_adr *adr_link,
 				    int adr_index)
 {
-	if (codec_info->codec_name)
+	if (dai_info->codec_name)
+		return devm_kstrdup(dev, dai_info->codec_name, GFP_KERNEL);
+	else if (codec_info->codec_name)
 		return devm_kstrdup(dev, codec_info->codec_name, GFP_KERNEL);
 
-	return _asoc_sdw_get_codec_name(dev, codec_info, adr_link, adr_index);
+	return _asoc_sdw_get_codec_name(dev, codec_info, dai_info, adr_link, adr_index);
 }
 EXPORT_SYMBOL_NS(asoc_sdw_get_codec_name, "SND_SOC_SDW_UTILS");
 
@@ -1276,7 +1280,7 @@ static int is_sdca_endpoint_present(struct device *dev,
 	}
 	kfree(dlc);
 
-	sdw_codec_name = _asoc_sdw_get_codec_name(dev, codec_info,
+	sdw_codec_name = _asoc_sdw_get_codec_name(dev, codec_info, dai_info,
 						  adr_link, adr_index);
 	if (!sdw_codec_name)
 		return -ENOMEM;
@@ -1443,7 +1447,7 @@ int asoc_sdw_parse_sdw_endpoints(struct snd_soc_card *card,
 				num_link_dailinks += !!list_empty(&soc_dai->endpoints);
 				list_add_tail(&soc_end->list, &soc_dai->endpoints);
 
-				codec_name = asoc_sdw_get_codec_name(dev, codec_info, adr_link, i);
+				codec_name = asoc_sdw_get_codec_name(dev, codec_info, dai_info, adr_link, i);
 				if (!codec_name)
 					return -ENOMEM;
 
