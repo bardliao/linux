@@ -1161,6 +1161,8 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 		return ret;
 	}
 
+	num_devs = num_ends;
+
 	/*
 	 * One per DAI link, worst case is a DAI link for every endpoint, also
 	 * add one additional to act as a terminator such that code can iterate
