@@ -44,6 +44,7 @@
 struct asoc_sdw_codec_info;
 
 struct asoc_sdw_dai_info {
+	const char *codec_name;
 	const bool direction[2]; /* playback & capture support */
 	const char *dai_name;
 	const char *component_name;
@@ -131,6 +132,7 @@ void asoc_sdw_shutdown(struct snd_pcm_substream *substream);
 
 const char *asoc_sdw_get_codec_name(struct device *dev,
 				    const struct asoc_sdw_codec_info *codec_info,
+				    const struct asoc_sdw_dai_info *dai_info,
 				    const struct snd_soc_acpi_link_adr *adr_link,
 				    int adr_index);
 
