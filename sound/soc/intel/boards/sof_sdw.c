@@ -1236,6 +1236,7 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 
 	/* allocate BE dailinks */
 	num_links = sdw_be_num + ssp_num + dmic_num + hdmi_num + bt_num;
+	num_links++; //HACK to test SDCA link
 	dai_links = devm_kcalloc(dev, num_links, sizeof(*dai_links), GFP_KERNEL);
 	if (!dai_links) {
 		ret = -ENOMEM;
@@ -1281,6 +1282,16 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 		if (ret)
 			goto err_end;
 	}
+
+	/* HACK: to add a link to test SDCA components */
+	ret = asoc_sdw_init_simple_dai_link(dev, dai_links, &be_id, "sdca_uaj",
+					    1, 1,
+					    "SDW0 Pin4", platform_component->name,
+					    ARRAY_SIZE(platform_component),
+					    "snd_soc_sdca.UAJ.2", "sdca_uaj-aif1",
+					    /* don't call asoc_sdw_dmic_init() twice */
+					    NULL, NULL);
+	dai_links++;
 
 	WARN_ON(codec_conf != card->codec_conf + card->num_configs);
 	WARN_ON(dai_links != card->dai_link + card->num_links);
