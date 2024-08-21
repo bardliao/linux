@@ -535,5 +535,19 @@ int sdca_parse_function(struct device *dev,
 }
 EXPORT_SYMBOL_NS(sdca_parse_function, SND_SOC_SDCA);
 
+
+int sdca_find_entity_by_id(struct sdca_function_data *function, int id)
+{
+	int i;
+
+	for (i = 0; i < function->num_entities; i++) {
+		if (function->entities[i].id == id)
+			return i;
+	}
+
+	return -EINVAL;
+}
+EXPORT_SYMBOL_NS(sdca_find_entity_by_id, SND_SOC_SDCA);
+
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("SDCA library");

@@ -137,4 +137,5 @@ struct sdca_function_data {
 int sdca_parse_function(struct device *dev,
 			struct fwnode_handle *function_node,
 			struct sdca_function_data *function);
+int sdca_find_entity_by_id(struct sdca_function_data *function, int id);
 #endif
