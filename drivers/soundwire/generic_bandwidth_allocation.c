@@ -423,6 +423,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 	bool use_multi_lane = false;
 	int i, l, clk_values, ret;
 	bool is_gear = false;
+	int default_col;
 	u32 *clk_buf;
 	int m_lane;
 
@@ -439,6 +440,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 	}
 
 	for (i = 0; i < clk_values; i++) {
+select_clk:
 		if (!clk_buf)
 			curr_dr_freq = bus->params.max_dr_freq;
 		else
@@ -458,12 +460,12 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 		 */
 	}
 
+	m_rt = list_last_entry(&bus->m_rt_list, struct sdw_master_runtime, bus_node);
 	if (i == clk_values) {
 multilane:
 		dev_dbg(bus->dev, "%s: could not find clock value for bandwidth %d, checking multi-lane\n",
 			__func__, bus->params.bandwidth);
 
-		m_rt = list_last_entry(&bus->m_rt_list, struct sdw_master_runtime, bus_node);
 		/*
 		 * Find available manager lanes that connected to the first Peripheral. No need
 		 * to check all Peripherals available lanes because we can't use multi-lane
@@ -506,6 +508,12 @@ multilane:
 		}
 
 		if (!use_multi_lane) {
+			if (i < clk_values) {
+				dev_dbg(bus->dev, "%s: could not find frame configuration for bus dr_freq %d try higher clock rate\n",
+					__func__, curr_dr_freq);
+				i++;
+				goto select_clk;
+			}
 			dev_err(bus->dev,
 				"%s: multilane is not available and could not find clock value for bandwidth %d\n",
 				__func__, bus->params.bandwidth);
@@ -534,9 +542,21 @@ multilane:
 		}
 	}
 
+	default_col = curr_dr_freq / m_rt->stream->params.rate / mstr_prop->default_row;
+	if (default_col != mstr_prop->default_col) {
+		/* Check if default_col can be changed */
+		list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
+			if (!s_rt->slave->id.class_id) {
+				dev_err(&s_rt->slave->dev, "The Peripheral doesn't comply with SDCA\n");
+				return -EINVAL;
+			}
+		}
+		mstr_prop->default_col = default_col;
+	}
+
 	ret = sdw_select_row_col(bus, curr_dr_freq);
 	if (ret < 0) {
-		if (use_multi_lane) {
+		if (use_multi_lane && i == clk_values) {
 			dev_err(bus->dev,
 				"%s: could not find frame configuration for bus dr_freq %d\n",
 				__func__, curr_dr_freq);
