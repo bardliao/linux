@@ -179,6 +179,7 @@ static int sdw_compute_group_params(struct sdw_bus *bus,
 	unsigned int rate, bps, ch;
 	int i, l, column_needed;
 
+	dev_info(bus->dev, "bard: %s sel_col %d\n", __func__, sel_col);
 	/* Calculate bandwidth per group */
 	for (i = 0; i < count; i++) {
 		params[i].rate = rates[i];
@@ -451,6 +452,8 @@ select_clk:
 		if (curr_dr_freq <= bus->params.bandwidth)
 			continue;
 
+		dev_info(bus->dev, "bard: %s i %d curr_dr_freq %d\n", __func__, i, curr_dr_freq);
+
 		break;
 
 		/*
@@ -554,6 +557,7 @@ multilane:
 		mstr_prop->default_col = default_col;
 	}
 
+	dev_info(bus->dev, "bard: %s mstr_prop->default_col %d curr_dr_freq %d\n", __func__, mstr_prop->default_col, curr_dr_freq);
 	ret = sdw_select_row_col(bus, curr_dr_freq);
 	if (ret < 0) {
 		if (use_multi_lane && i == clk_values) {
@@ -587,6 +591,7 @@ int sdw_compute_params(struct sdw_bus *bus)
 	ret = sdw_compute_port_params(bus);
 	if (ret < 0) {
 		dev_err(bus->dev, "Compute transport params failed: %d\n", ret);
+		dump_stack();
 		return ret;
 	}
 
