@@ -329,6 +329,27 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
 	return -EINVAL;
 }
 
+static bool is_clock_scaling_supported(struct sdw_bus *bus)
+{
+	struct sdw_master_runtime *m_rt;
+	struct sdw_slave_runtime *s_rt;
+
+	/*
+	 * Dynamic scaling is a defined by SDCA. However, some devices expose the class ID but
+	 * can't support dynamic scaling. We might need a quirk to handle such devices.
+	 */
+	list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
+		list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
+			if (!s_rt->slave->id.class_id) {
+				dev_dbg(&s_rt->slave->dev, "%s: The Peripheral doesn't comply with SDCA\n",
+					__func__);
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 /**
  * sdw_compute_bus_params: Compute bus parameters
  *
@@ -353,6 +374,10 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 		clk_values = 1;
 		clk_buf = NULL;
 	}
+
+	/* If dynamic scaling is supported, don't try higher freq */
+	if (!is_clock_scaling_supported(bus))
+		clk_values = 1;
 
 	for (i = 0; i < clk_values; i++) {
 		if (!clk_buf)
@@ -379,6 +404,8 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 			__func__, bus->params.bandwidth);
 		return -EINVAL;
 	}
+
+	mstr_prop->default_col = curr_dr_freq / mstr_prop->default_frame_rate / mstr_prop->default_row;
 
 	ret = sdw_select_row_col(bus, curr_dr_freq);
 	if (ret < 0) {
