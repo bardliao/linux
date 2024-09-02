@@ -1681,7 +1681,6 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 		}
 		/* TODO: Update this during Device-Device support */
 		bandwidth = m_rt->stream->params.rate * m_rt->ch_count * m_rt->stream->params.bps;
-		bus->params.bandwidth -= bandwidth - multi_lane_bandwidth;
 
 		/* Compute params */
 		/* No need to compute params if bus->params.bandwidth is unchanged */
@@ -1693,6 +1692,7 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 				return ret;
 			}
 		}
+		bus->params.bandwidth -= bandwidth - multi_lane_bandwidth;
 
 		/* Program params */
 		ret = sdw_program_params(bus, false);
