@@ -335,6 +335,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 {
 	unsigned int curr_dr_freq = 0;
 	struct sdw_master_prop *mstr_prop = &bus->prop;
+	int frame_int, frame_freq;
 	int i, clk_values, ret;
 	bool is_gear = false;
 	u32 *clk_buf;
@@ -359,7 +360,11 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 				(bus->params.max_dr_freq >>  clk_buf[i]) :
 				clk_buf[i] * SDW_DOUBLE_RATE_FACTOR;
 
-		if (curr_dr_freq <= bus->params.bandwidth)
+		frame_int = mstr_prop->default_row * mstr_prop->default_col;
+		frame_freq = curr_dr_freq / frame_int;
+
+		if ((curr_dr_freq - (frame_freq * SDW_FRAME_CTRL_BITS)) <
+		    bus->params.bandwidth)
 			continue;
 
 		break;
