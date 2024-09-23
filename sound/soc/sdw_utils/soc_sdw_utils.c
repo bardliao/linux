@@ -10,6 +10,7 @@
 #include <linux/module.h>
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_type.h>
+#include <sound/sdca_function.h>
 #include <sound/soc_sdw_utils.h>
 
 static const struct snd_soc_dapm_widget generic_dmic_widgets[] = {
@@ -1112,6 +1113,24 @@ struct asoc_sdw_dailink *asoc_sdw_find_dailink(struct asoc_sdw_dailink *dailinks
 }
 EXPORT_SYMBOL_NS(asoc_sdw_find_dailink, SND_SOC_SDW_UTILS);
 
+static int asoc_sdw_get_dai_type(u32 type) {
+	switch (type) {
+	case SDCA_FUNCTION_TYPE_SMART_AMP:
+	case SDCA_FUNCTION_TYPE_SIMPLE_AMP:
+		return SOC_SDW_DAI_TYPE_AMP;
+	case SDCA_FUNCTION_TYPE_SMART_MIC:
+	case SDCA_FUNCTION_TYPE_SIMPLE_MIC:
+	case SDCA_FUNCTION_TYPE_SPEAKER_MIC:
+		return SOC_SDW_DAI_TYPE_MIC;
+	case SDCA_FUNCTION_TYPE_UAJ:
+	case SDCA_FUNCTION_TYPE_RJ:
+	case SDCA_FUNCTION_TYPE_SIMPLE_JACK:
+		return SOC_SDW_DAI_TYPE_JACK;
+	default:
+		return -EINVAL;
+	}
+}
+
 int asoc_sdw_parse_sdw_endpoints(struct snd_soc_card *card,
 				 struct asoc_sdw_dailink *soc_dais,
 				 struct asoc_sdw_endpoint *soc_ends,
@@ -1123,8 +1142,11 @@ int asoc_sdw_parse_sdw_endpoints(struct snd_soc_card *card,
 	struct snd_soc_acpi_mach_params *mach_params = &mach->mach_params;
 	const struct snd_soc_acpi_link_adr *adr_link;
 	struct asoc_sdw_endpoint *soc_end = soc_ends;
+	struct snd_soc_dai_link_component dlc;
+	struct snd_soc_dai *codec_dai;
+	struct device *sdw_dev;
 	int num_dais = 0;
-	int i, j;
+	int i, j, k;
 	int ret;
 
 	for (adr_link = mach_params->links; adr_link->num_adr; adr_link++) {
@@ -1139,7 +1161,9 @@ int asoc_sdw_parse_sdw_endpoints(struct snd_soc_card *card,
 		for (i = 0; i < adr_link->num_adr; i++) {
 			const struct snd_soc_acpi_adr_device *adr_dev = &adr_link->adr_d[i];
 			struct asoc_sdw_codec_info *codec_info;
+			const char *sdw_dev_name;
 			const char *codec_name;
+			const char *temp;
 
 			if (!adr_dev->name_prefix) {
 				dev_err(dev, "codec 0x%llx does not have a name prefix\n",
@@ -1157,6 +1181,7 @@ int asoc_sdw_parse_sdw_endpoints(struct snd_soc_card *card,
 			if (!codec_name)
 				return -ENOMEM;
 
+			dlc.name = codec_name;
 			dev_dbg(dev, "Adding prefix %s for %s\n",
 				adr_dev->name_prefix, codec_name);
 
@@ -1169,11 +1194,24 @@ int asoc_sdw_parse_sdw_endpoints(struct snd_soc_card *card,
 
 				soc_end->include_sidecar = true;
 			}
+			if (!codec_info->codec_name) {
+				sdw_dev_name = codec_name;
+			} else {
+				/*
+				 * Temporary remove codec_info->codec_name to get the SoundWire
+				 * device name, the name will be used to get the SoundWire device
+				 */
+				temp = codec_info->codec_name;
+				codec_info->codec_name = NULL;
+				sdw_dev_name = asoc_sdw_get_codec_name(dev, codec_info, adr_link, i);
+				codec_info->codec_name = temp;
+			}
 
 			for (j = 0; j < adr_dev->num_endpoints; j++) {
 				const struct snd_soc_acpi_endpoint *adr_end;
 				const struct asoc_sdw_dai_info *dai_info;
 				struct asoc_sdw_dailink *soc_dai;
+				struct sdw_slave *slave;
 				int stream;
 
 				adr_end = &adr_dev->endpoints[j];
@@ -1183,6 +1221,40 @@ int asoc_sdw_parse_sdw_endpoints(struct snd_soc_card *card,
 				if (dai_info->quirk &&
 				    !(dai_info->quirk_exclude ^ !!(dai_info->quirk & ctx->mc_quirk)))
 					continue;
+
+				dlc.dai_name = dai_info->dai_name;
+				codec_dai = snd_soc_find_dai_with_mutex(&dlc);
+				if (!codec_dai) {
+					dev_err(dev, "codec dai %s not registered yet\n",
+						dlc.dai_name);
+					return -EPROBE_DEFER;
+				}
+
+				sdw_dev = bus_find_device_by_name(&sdw_bus_type, NULL, sdw_dev_name);
+				if (!sdw_dev) {
+					dev_err(dev, "sdw_dev of %s not found\n", sdw_dev_name);
+					return -ENODEV;
+				}
+				slave = dev_to_sdw_dev(sdw_dev);
+				if (!slave)
+					return -EINVAL;
+
+				for (k = 0; k < slave->sdca_data.num_functions; k++) {
+					int dai_type = asoc_sdw_get_dai_type(
+							slave->sdca_data.sdca_func[k].type);
+					dev_dbg(&slave->dev, "function: %s dai_type %d\n",
+						slave->sdca_data.sdca_func[k].name, dai_type);
+					if (dai_type == dai_info->dai_type) {
+						dev_dbg(&slave->dev, "DAI type %d found\n",
+							dai_type);
+						break;
+					}
+				}
+				if (k == slave->sdca_data.num_functions) {
+					dev_dbg(&slave->dev, "DAI type %d not found, skip endpoint\n",
+						dai_info->dai_type);
+					continue;
+				}
 
 				dev_dbg(dev,
 					"Add dev: %d, 0x%llx end: %d, dai: %d, %c/%c to %s: %d\n",
