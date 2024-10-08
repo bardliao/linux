@@ -1393,10 +1393,30 @@ static int sof_widget_ready(struct snd_soc_component *scomp, int index,
 	const struct sof_ipc_tplg_widget_ops *widget_ops;
 	struct snd_soc_tplg_private *priv = &tw->priv;
 	enum sof_tokens *token_list = NULL;
+	struct snd_soc_dai_link *dai_link;
 	struct snd_sof_widget *swidget;
 	struct snd_sof_dai *dai;
 	int token_list_size = 0;
+	bool skipped = false;
 	int ret = 0;
+	int i;
+
+	pr_err("bard: %s sname %s type %d\n", __func__, w->sname, w->id);
+	if (w->id == snd_soc_dapm_dai_in || w->id == snd_soc_dapm_dai_out) {
+		/* Check if the link is present */
+		for_each_card_prelinks(scomp->card, i, dai_link) {
+			pr_err("bard: dai_link name %s sname %s\n", dai_link->name, dai_link->stream_name);
+			if (dai_link->stream_name && strstr(dai_link->stream_name, w->sname)) {
+				pr_err("bard: dai_link name %s sname %s found\n", dai_link->name, dai_link->stream_name);
+				break;
+			}
+		}
+		pr_err("bard: %s i %d\n", __func__, i);
+		if (i == scomp->card->num_links) {
+			dev_err(scomp->dev, "Skip widget %s\n", w->name);
+			skipped = true;
+		}
+	}
 
 	swidget = kzalloc(sizeof(*swidget), GFP_KERNEL);
 	if (!swidget)
@@ -1408,6 +1428,7 @@ static int sof_widget_ready(struct snd_soc_component *scomp, int index,
 	swidget->id = w->id;
 	swidget->pipeline_id = index;
 	swidget->private = NULL;
+	swidget->skipped = skipped;
 	mutex_init(&swidget->setup_mutex);
 
 	ida_init(&swidget->output_queue_ida);
@@ -1481,7 +1502,7 @@ static int sof_widget_ready(struct snd_soc_component *scomp, int index,
 		}
 
 		ret = sof_widget_parse_tokens(scomp, swidget, tw, token_list, token_list_size);
-		if (!ret)
+		if (!ret && !swidget->skipped)
 			ret = sof_connect_dai_widget(scomp, w, tw, dai);
 		if (ret < 0) {
 			kfree(dai);
@@ -1900,7 +1921,7 @@ static int sof_link_load(struct snd_soc_component *scomp, int index, struct snd_
 	slink->default_hw_cfg_id = le32_to_cpu(cfg->default_hw_config_id);
 	slink->link = link;
 
-	dev_dbg(scomp->dev, "tplg: %d hw_configs found, default id: %d for dai link %s!\n",
+	dev_err(scomp->dev, "bard: tplg: %d hw_configs found, default id: %d for dai link %s!\n",
 		slink->num_hw_configs, slink->default_hw_cfg_id, link->name);
 
 	ret = sof_parse_tokens(scomp, slink, common_dai_link_tokens,
@@ -2089,6 +2110,8 @@ static int sof_route_load(struct snd_soc_component *scomp, int index,
 		ret = -EINVAL;
 		goto err;
 	}
+	if (source_swidget->skipped)
+		goto err;
 
 	/*
 	 * Virtual widgets of type output/out_drv may be added in topology
@@ -2108,6 +2131,8 @@ static int sof_route_load(struct snd_soc_component *scomp, int index,
 		ret = -EINVAL;
 		goto err;
 	}
+	if (sink_swidget->skipped)
+		goto err;
 
 	/*
 	 * Don't send routes whose sink widget is of type

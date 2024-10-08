@@ -484,6 +484,8 @@ struct snd_sof_widget {
 	char **input_pin_binding;
 	char **output_pin_binding;
 
+	bool skipped;
+
 	struct ida output_queue_ida;
 	struct ida input_queue_ida;
 

@@ -1094,6 +1094,7 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 		if (ret)
 			goto err_end;
 	}
+	be_id = 5; //bard: HACK
 
 	/* SSP */
 	if (ssp_num) {

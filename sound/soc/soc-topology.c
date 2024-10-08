@@ -1595,6 +1595,7 @@ static int soc_tplg_pcm_elems_load(struct soc_tplg *tplg,
 	int ret;
 
 	count = le32_to_cpu(hdr->count);
+	pr_err("bard: %s count %d\n", __func__, count);
 
 	/* check the element size and count */
 	pcm = (struct snd_soc_tplg_pcm *)tplg->pos;
@@ -1621,6 +1622,12 @@ static int soc_tplg_pcm_elems_load(struct soc_tplg *tplg,
 		if (size != sizeof(*pcm))
 			return -EINVAL;
 
+		pr_err("bard: %s pcm name %s dai name %s\n", __func__, pcm->pcm_name, pcm->dai_name);
+		if (strstr(pcm->pcm_name, "Microphone")) {
+			tplg->pos += size + le32_to_cpu(pcm->priv.size);
+			pr_err("bard: HACK %s is skipped\n", pcm->pcm_name);
+			continue;
+		}
 		/* create the FE DAIs and DAI links */
 		ret = soc_tplg_pcm_create(tplg, pcm);
 		if (ret < 0)
@@ -1816,6 +1823,7 @@ static int soc_tplg_link_elems_load(struct soc_tplg *tplg,
 	int i, ret;
 
 	count = le32_to_cpu(hdr->count);
+	pr_err("bard: %s count %d\n", __func__, count);
 
 	/* check the element size and count */
 	link = (struct snd_soc_tplg_link_config *)tplg->pos;
@@ -1838,6 +1846,12 @@ static int soc_tplg_link_elems_load(struct soc_tplg *tplg,
 		if (size != sizeof(*link))
 			return -EINVAL;
 
+		pr_err("bard: %s link name %s stream name %s\n", __func__, link->name, link->stream_name);
+		if (strstr(link->name, "Capture-SmartMic")) {
+			pr_err("bard: HACK: skip %s\n", link->name);
+			tplg->pos += size + le32_to_cpu(link->priv.size);
+			continue;
+		}
 		ret = soc_tplg_link_config(tplg, link);
 		if (ret < 0)
 			return ret;
