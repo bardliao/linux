@@ -1775,7 +1775,8 @@ static int soc_tplg_link_config(struct soc_tplg *tplg,
 	if (!link) {
 		dev_err(tplg->dev, "ASoC: physical link %s (id %d) not exist\n",
 			name, cfg->id);
-		return -EINVAL;
+		//return -EINVAL;
+		return 0; //bard: HACK
 	}
 
 	/* hw format */

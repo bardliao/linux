@@ -1169,9 +1169,12 @@ int asoc_sdw_parse_sdw_endpoints(struct snd_soc_card *card,
 				dai_info = &codec_info->dais[adr_end->num];
 				soc_dai = asoc_sdw_find_dailink(soc_dais, adr_end);
 
+				pr_err("bard: exclude %d quirk %#lx mc_quirk %#lx\n", dai_info->quirk_exclude, dai_info->quirk, ctx->mc_quirk);
 				if (dai_info->quirk &&
-				    !((dai_info->quirk_exclude * dai_info->quirk) ^ (dai_info->quirk & ctx->mc_quirk)))
+				    !((dai_info->quirk_exclude) ^ !!(dai_info->quirk & ctx->mc_quirk))) {
+					pr_err("bard: %s %d is skipped\n", __func__, j);
 					continue;
+				}
 
 				dev_dbg(dev,
 					"Add dev: %d, 0x%llx end: %d, dai: %d, %c/%c to %s: %d\n",
