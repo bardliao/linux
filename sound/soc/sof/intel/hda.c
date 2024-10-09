@@ -1075,6 +1075,7 @@ static struct snd_soc_acpi_mach *hda_sdw_machine_select(struct snd_sof_dev *sdev
 	struct sof_intel_hda_dev *hdev;
 	u32 link_mask;
 	int i;
+	int j;
 
 	hdev = pdata->hw_pdata;
 	link_mask = hdev->info.link_mask;
@@ -1094,6 +1095,15 @@ static struct snd_soc_acpi_mach *hda_sdw_machine_select(struct snd_sof_dev *sdev
 		return NULL;
 	}
 
+	for (i = 0; i < hdev->sdw->peripherals->num_peripherals; i++) {
+		struct sdw_slave *slave = hdev->sdw->peripherals->array[i];
+
+		pr_err("bard: %s part %d id %#x num_functions %d\n", __func__, i, slave->id.part_id, slave->sdca_data.num_functions);
+		for (j = 0; j < slave->sdca_data.num_functions; j++) {
+			dev_err(&slave->dev, "bard: function %d: %s\n", j,
+				slave->sdca_data.sdca_func[j].name);
+		}
+	}
 	/*
 	 * Select SoundWire machine driver if needed using the
 	 * alternate tables. This case deals with SoundWire-only
