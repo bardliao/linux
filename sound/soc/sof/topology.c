@@ -13,6 +13,7 @@
 #include <linux/errno.h>
 #include <linux/firmware.h>
 #include <linux/workqueue.h>
+#include <sound/soc_sdw_utils.h>
 #include <sound/tlv.h>
 #include <uapi/sound/sof/tokens.h>
 #include "sof-priv.h"
@@ -2288,7 +2289,7 @@ static const struct snd_soc_tplg_bytes_ext_ops sof_bytes_ext_ops[] = {
 	{SOF_TPLG_KCTL_BYTES_VOLATILE_RO, snd_sof_bytes_ext_volatile_get},
 };
 
-static const struct snd_soc_tplg_ops sof_tplg_ops = {
+static struct snd_soc_tplg_ops sof_tplg_ops = {
 	/* external kcontrol init - used for any driver specific init */
 	.control_load	= sof_control_load,
 	.control_unload	= sof_control_unload,
@@ -2311,7 +2312,7 @@ static const struct snd_soc_tplg_ops sof_tplg_ops = {
 	.link_unload	= sof_link_unload,
 
 	/* completion - called at completion of firmware loading */
-	.complete	= sof_complete,
+	/* complete will be added in the last tplg ops */
 
 	/* manifest - optional to inform component of manifest */
 	.manifest	= sof_manifest,
@@ -2464,14 +2465,169 @@ static const struct snd_soc_tplg_ops sof_dspless_tplg_ops = {
 	.bytes_ext_ops_count = ARRAY_SIZE(sof_dspless_bytes_ext_ops),
 };
 
+enum tplg_device_id {
+	TPLG_DEVICE_SDW_JACK,
+	TPLG_DEVICE_SDW_AMP,
+	TPLG_DEVICE_SDW_MIC,
+	TPLG_DEVICE_PCH_DMIC,
+	TPLG_DEVICE_HDMI,
+	TPLG_DEVICE_MAX
+};
+
+#define SDCA_DEVICE_MASK (BIT(TPLG_DEVICE_SDW_JACK) | BIT(TPLG_DEVICE_SDW_AMP) | \
+			  BIT(TPLG_DEVICE_SDW_MIC))
+
+struct topology_file {
+	char *device;
+	int be_id;
+	int dev;
+};
+
 int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
 {
 	struct snd_sof_dev *sdev = snd_soc_component_get_drvdata(scomp);
+	struct topology_file tplg_files[TPLG_DEVICE_MAX];
+	struct snd_sof_pdata *sof_pdata = sdev->pdata;
+	struct snd_soc_dai_link *dai_link;
 	const struct firmware *fw;
+	unsigned long tplg_mask = 0;
+	char platform[4];
+	int tplg_num = 0;
+	int tplg_dev;
 	int ret;
+	int i;
 
 	dev_dbg(scomp->dev, "loading topology:%s\n", file);
 
+	if (sdev->pdata->ipc_type == SOF_IPC_TYPE_3)
+		goto legacy_tplg;
+
+	ret = sscanf(sof_pdata->tplg_filename, "sof-%3s-*.tplg", platform);
+	if (ret != 1)
+		goto legacy_tplg;
+
+	for_each_card_prelinks(scomp->card, i, dai_link) {
+		char *tplg_device;
+
+		if (tplg_num >= TPLG_DEVICE_MAX) {
+			dev_err(scomp->dev,
+				"Invalid tplg_num %d, check what happened\n", tplg_num);
+			return -EINVAL;
+		}
+
+		dev_dbg(scomp->dev, "dai_link %s id %d\n", dai_link->name, dai_link->id);
+		if (strstr(dai_link->name, "SimpleJack")) {
+			tplg_dev = TPLG_DEVICE_SDW_JACK;
+			tplg_device = "sdca-jack";
+		} else if (strstr(dai_link->name, "SmartAmp")) {
+			tplg_dev = TPLG_DEVICE_SDW_AMP;
+			tplg_device = devm_kasprintf(sdev->dev, GFP_KERNEL,
+						     "sdca-%damp", dai_link->num_cpus);
+			if (!tplg_device)
+				return -ENOMEM;
+		} else if (strstr(dai_link->name, "SmartMic")) {
+			tplg_dev = TPLG_DEVICE_SDW_MIC;
+			tplg_device = "sdca-mic";
+		} else if (strstr(dai_link->name, "dmic")) {
+			if (strstr(file, "-2ch")) {
+				tplg_device = "dmic-2ch";
+			} else if (strstr(file, "-4ch")) {
+				tplg_device = "dmic-4ch";
+			} else {
+				dev_warn(scomp->dev,
+					 "only -2ch and -4ch are supported for dmic\n");
+				continue;
+			}
+			tplg_dev = TPLG_DEVICE_PCH_DMIC;
+		} else if (strstr(dai_link->name, "iDisp")) {
+			tplg_dev = TPLG_DEVICE_HDMI;
+			/*
+			 * The HDMI PCM id start with 3 for the sof-hda-dsp card
+			 * and 5 for other cards.
+			 */
+			if (!strcmp(scomp->card->name, "sof-hda-dsp"))
+				tplg_device = "hdmi-pcm3";
+			else
+				tplg_device = "hdmi-pcm5";
+
+		} else {
+			/* The dai link is not supported by sperated tplg yet */
+			dev_dbg(scomp->dev,
+				"dai_link %s is not supported by sperated tplg yet, Fail back to %s\n",
+				dai_link->name, file);
+			goto legacy_tplg;
+		}
+		if (tplg_mask & BIT(tplg_dev))
+			continue;
+
+		tplg_mask |= BIT(tplg_dev);
+		tplg_files[tplg_num].be_id = dai_link->id;
+		tplg_files[tplg_num].device = tplg_device;
+		tplg_files[tplg_num].dev = tplg_dev;
+		tplg_num++;
+	}
+	dev_dbg(scomp->dev, "tplg_mask %#lx tplg_num %d\n", tplg_mask, tplg_num);
+
+	/* Currently, only SDCA topology supported */
+	if (!(tplg_mask & SDCA_DEVICE_MASK))
+		goto legacy_tplg;
+
+	for (i = 0; i < tplg_num; i++) {
+		char *tplg_name;
+
+		switch (tplg_files[i].dev) {
+		case TPLG_DEVICE_PCH_DMIC:
+			tplg_name = kasprintf(GFP_KERNEL, "%s/sof-%s-%s-id%d.tplg",
+					      sof_pdata->tplg_filename_prefix,
+					      platform, tplg_files[i].device,
+					      tplg_files[i].be_id);
+			break;
+		default:
+			tplg_name = kasprintf(GFP_KERNEL, "%s/sof-%s-id%d.tplg",
+					      sof_pdata->tplg_filename_prefix,
+					      tplg_files[i].device, tplg_files[i].be_id);
+			break;
+		}
+		if (!tplg_name)
+			return -ENOMEM;
+
+		dev_dbg(scomp->dev, "Requesting %d %s\n", i, tplg_name);
+		ret = firmware_request_nowarn(&fw, tplg_name, scomp->dev);
+		if (ret < 0) {
+			if (i == 0) {
+				dev_dbg(scomp->dev, "Fail back to %s\n", file);
+				kfree(tplg_name);
+				goto legacy_tplg;
+			}
+
+			dev_err(scomp->dev, "tplg request firmware %s failed err: %d\n",
+				tplg_name, ret);
+			kfree(tplg_name);
+			goto out;
+		}
+		kfree(tplg_name);
+
+		/* set complete = sof_complete if it is the last topology */
+		if (i == tplg_num - 1)
+			sof_tplg_ops.complete = sof_complete;
+
+		if (sdev->dspless_mode_selected)
+			ret = snd_soc_tplg_component_load(scomp, &sof_dspless_tplg_ops, fw);
+		else
+			ret = snd_soc_tplg_component_load(scomp, &sof_tplg_ops, fw);
+
+		release_firmware(fw);
+
+		if (ret < 0) {
+			dev_err(scomp->dev, "tplg component load failed %d\n",
+				ret);
+			return ret;
+		}
+	}
+	/* Load topology successfully, goto out */
+	goto out;
+
+legacy_tplg:
 	ret = request_firmware(&fw, file, scomp->dev);
 	if (ret < 0) {
 		dev_err(scomp->dev, "error: tplg request firmware %s failed err: %d\n",
@@ -2481,6 +2637,7 @@ int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
 		return ret;
 	}
 
+	sof_tplg_ops.complete = sof_complete;
 	if (sdev->dspless_mode_selected)
 		ret = snd_soc_tplg_component_load(scomp, &sof_dspless_tplg_ops, fw);
 	else
@@ -2492,6 +2649,7 @@ int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
 
 	release_firmware(fw);
 
+out:
 	if (ret >= 0 && sdev->led_present)
 		ret = snd_ctl_led_request();
 
