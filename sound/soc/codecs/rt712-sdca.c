@@ -1654,7 +1654,7 @@ int rt712_sdca_init(struct device *dev, struct regmap *regmap,
 		return ret;
 
 	/* only add the dmic component if a SMART_MIC function is exposed in ACPI */
-	if (sdca_device_quirk_match(slave, SDCA_QUIRKS_RT712_VB)) {
+//	if (sdca_device_quirk_match(slave, SDCA_QUIRKS_RT712_VB)) {
 		ret =  devm_snd_soc_register_component(dev,
 						       &soc_sdca_dev_rt712_dmic,
 						       rt712_sdca_dmic_dai,
@@ -1662,7 +1662,7 @@ int rt712_sdca_init(struct device *dev, struct regmap *regmap,
 		if (ret < 0)
 			return ret;
 		rt712->dmic_function_found = true;
-	}
+//	}
 
 	/* set autosuspend parameters */
 	pm_runtime_set_autosuspend_delay(dev, 3000);
@@ -1849,11 +1849,13 @@ int rt712_sdca_io_init(struct device *dev, struct sdw_slave *slave)
 
 		rt712_sdca_va_io_init(rt712);
 	} else {
+#if 0
 		if (!rt712->dmic_function_found) {
 			dev_err(&slave->dev, "%s RT712 VB detected but no SMART_MIC function exposed in ACPI\n",
 				__func__);
 			goto suspend;
 		}
+#endif
 
 		/* multilanes and DMIC are supported by rt712vb */
 		prop->lane_control_support = true;
