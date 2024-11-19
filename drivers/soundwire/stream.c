@@ -1403,7 +1403,14 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 	struct sdw_bus *bus;
 	struct sdw_master_prop *prop;
 	struct sdw_bus_params params;
+	int state = stream->state;
 	int ret;
+
+	/* first mark the state as PREPARED so that bus->compute_params() can distinguish
+	 * the stream that is CONFIGURED and PREPARED and skip the stream that is CONFIGURED
+	 * but not in the preparing stage.
+	 */
+	stream->state = SDW_STREAM_PREPARED;
 
 	/* Prepare  Master(s) and Slave(s) port(s) associated with stream */
 	list_for_each_entry(m_rt, &stream->master_list, stream_node) {
@@ -1414,6 +1421,7 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 		/* TODO: Support Asynchronous mode */
 		if ((prop->max_clk_freq % stream->params.rate) != 0) {
 			dev_err(bus->dev, "Async mode not supported\n");
+			stream->state = state;
 			return -EINVAL;
 		}
 
@@ -1456,15 +1464,15 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 		if (ret < 0) {
 			dev_err(bus->dev, "Prepare port(s) failed ret = %d\n",
 				ret);
+			stream->state = state;
 			return ret;
 		}
 	}
 
-	stream->state = SDW_STREAM_PREPARED;
-
 	return ret;
 
 restore_params:
+	stream->state = state;
 	memcpy(&bus->params, &params, sizeof(params));
 	return ret;
 }
