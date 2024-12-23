@@ -28,6 +28,7 @@ EXPORT_SYMBOL_NS(sdca_lookup_interface_revision, "SND_SOC_SDCA");
 
 static bool sdca_device_quirk_rt712_vb(struct sdw_slave *slave)
 {
+#if 0
 	struct sdw_slave_id *id = &slave->id;
 	int i;
 
@@ -54,6 +55,9 @@ static bool sdca_device_quirk_rt712_vb(struct sdw_slave *slave)
 	}
 
 	return false;
+#else
+	return true;
+#endif
 }
 
 bool sdca_device_quirk_match(struct sdw_slave *slave, enum sdca_quirk quirk)
