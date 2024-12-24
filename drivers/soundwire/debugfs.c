@@ -251,6 +251,7 @@ static int cmd_go(void *data, u64 value)
 	ktime_t start_t;
 	ktime_t finish_t;
 	int ret;
+	int i;
 
 	if (value != 1)
 		return -EINVAL;
@@ -292,6 +293,17 @@ static int cmd_go(void *data, u64 value)
 		} else {
 			ret = sdw_nwrite_no_pm(slave, start_addr, num_bytes, fw->data);
 		}
+		/* Read it back */
+		for ( i = 0; i < num_bytes; i++) {
+			u8 val;
+			ret = sdw_nread_no_pm(slave, start_addr + i, 1, &val);
+			if (!ret)
+				pr_err("address %#x val %#02x\n", start_addr + i, val);
+			else
+				pr_err("read %#x error ret %d\n", start_addr + i, ret);
+		}
+		memset(read_buffer, 0, sizeof(read_buffer));
+		ret = do_bpt_sequence(slave, false, read_buffer);
 	} else {
 		memset(read_buffer, 0, sizeof(read_buffer));
 
