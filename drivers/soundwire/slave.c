@@ -3,6 +3,7 @@
 
 #include <linux/acpi.h>
 #include <linux/of.h>
+#include <linux/firmware.h>
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_type.h>
 #include <sound/sdca.h>
@@ -22,6 +23,47 @@ const struct device_type sdw_slave_type = {
 	.release =	sdw_slave_release,
 	.uevent =	sdw_slave_uevent,
 };
+
+int sdw_slave_fw_download(struct sdw_slave *slave, u32 start_addr,
+			  const char *firmware_file)
+{
+	const struct firmware *fw = NULL;
+	struct sdw_bpt_msg msg = {0};
+	int ret;
+
+	ret = request_firmware(&fw, firmware_file, &slave->dev);
+	if (ret) {
+		dev_err(&slave->dev, "Failed to request firmware %s\n",
+			firmware_file);
+		return ret;
+	}
+
+	msg.addr = start_addr;
+	msg.len = (u32)fw->size;
+	msg.buf = (u8 *)fw->data;
+	msg.dev_num = slave->dev_num;
+	msg.flags = SDW_MSG_FLAG_WRITE;
+
+	ret = sdw_bpt_send_async(slave->bus, slave, &msg);
+	if (ret < 0) {
+		dev_err(&slave->dev, "bpt_send_async failed: %d\n", ret);
+		goto release_firmware;
+	} else {
+		dev_dbg(&slave->dev, "send_async done\n");
+	}
+
+	ret = sdw_bpt_wait(slave->bus, slave, &msg);
+	if (ret < 0)
+		dev_err(&slave->dev, "bpt_send_wait failed: %d\n", ret);
+	else
+		dev_dbg(&slave->dev, "send_wait done\n");
+
+release_firmware:
+	release_firmware(fw);
+
+	return ret;
+}
+EXPORT_SYMBOL(sdw_slave_fw_download);
 
 int sdw_slave_add(struct sdw_bus *bus,
 		  struct sdw_slave_id *id, struct fwnode_handle *fwnode)

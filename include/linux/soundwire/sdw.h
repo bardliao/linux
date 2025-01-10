@@ -1095,6 +1095,8 @@ int sdw_nwrite(struct sdw_slave *slave, u32 addr, size_t count, const u8 *val);
 int sdw_nwrite_no_pm(struct sdw_slave *slave, u32 addr, size_t count, const u8 *val);
 int sdw_update(struct sdw_slave *slave, u32 addr, u8 mask, u8 val);
 int sdw_update_no_pm(struct sdw_slave *slave, u32 addr, u8 mask, u8 val);
+int sdw_slave_fw_download(struct sdw_slave *slave, u32 start_addr,
+			  const char *firmware_file);
 
 #else
 
@@ -1171,6 +1173,13 @@ static inline int sdw_update(struct sdw_slave *slave, u32 addr, u8 mask, u8 val)
 }
 
 static inline int sdw_update_no_pm(struct sdw_slave *slave, u32 addr, u8 mask, u8 val)
+{
+	WARN_ONCE(1, "SoundWire API is disabled");
+	return -EINVAL;
+}
+
+static int sdw_slave_fw_download(struct sdw_slave *slave, u32 start_addr,
+				 const char *firmware_file)
 {
 	WARN_ONCE(1, "SoundWire API is disabled");
 	return -EINVAL;
