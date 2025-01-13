@@ -94,6 +94,7 @@ struct rt1320_sdw_priv {
 	struct sdw_slave *sdw_slave;
 	struct sdw_bus_params params;
 	bool hw_init;
+	bool fw_downloaded;
 	bool first_hw_init;
 	int version_id;
 	bool fu_dapm_mute;

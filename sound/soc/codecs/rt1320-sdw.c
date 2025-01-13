@@ -1306,6 +1306,14 @@ static int rt1320_sdw_component_probe(struct snd_soc_component *component)
 	if (!rt1320->first_hw_init)
 		return 0;
 
+	if (!rt1320->fw_downloaded) {
+		pr_err("bard: %s sdw_slave_fw_download start\n", __func__);
+		ret = sdw_slave_fw_download(rt1320->sdw_slave, 0x1000C000, "rt1320.bin");
+		pr_err("bard: %s sdw_slave_fw_download done ret %d\n", __func__, ret);
+	}
+	if (!ret)
+		rt1320->fw_downloaded = true;
+
 	ret = pm_runtime_resume(component->dev);
 	dev_dbg(&rt1320->sdw_slave->dev, "%s pm_runtime_resume, ret=%d", __func__, ret);
 	if (ret < 0 && ret != -EACCES)
