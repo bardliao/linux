@@ -2477,19 +2477,16 @@ enum tplg_device_id {
 #define SDCA_DEVICE_MASK (BIT(TPLG_DEVICE_SDW_JACK) | BIT(TPLG_DEVICE_SDW_AMP) | \
 			  BIT(TPLG_DEVICE_SDW_MIC))
 
-struct topology_file {
-	char *device;
-	int be_id;
-	int dev;
+struct card_tplg_ops {
+	const char *card_name;
+	int (*get_tplg_file)(struct snd_soc_component *scomp, const char *file, char ***tplg_files);
 };
 
-int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
+static int get_sof_sdw_tplg_file(struct snd_soc_component *scomp, const char *file, char ***tplg_files)
 {
 	struct snd_sof_dev *sdev = snd_soc_component_get_drvdata(scomp);
-	struct topology_file tplg_files[TPLG_DEVICE_MAX];
 	struct snd_sof_pdata *sof_pdata = sdev->pdata;
 	struct snd_soc_dai_link *dai_link;
-	const struct firmware *fw;
 	unsigned long tplg_mask = 0;
 	char platform[4];
 	int tplg_num = 0;
@@ -2497,23 +2494,20 @@ int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
 	int ret;
 	int i;
 
-	dev_dbg(scomp->dev, "loading topology:%s\n", file);
-
 	if (sdev->pdata->ipc_type == SOF_IPC_TYPE_3)
-		goto legacy_tplg;
+		return 0;
 
 	ret = sscanf(sof_pdata->tplg_filename, "sof-%3s-*.tplg", platform);
 	if (ret != 1)
-		goto legacy_tplg;
+		return 0;
+
+	/* tplg_num is always less or equal to dai_link numbers */
+	*tplg_files = kcalloc(scomp->card->num_links, sizeof(char *), GFP_KERNEL);
+	if (!(*tplg_files))
+		return -ENOMEM;
 
 	for_each_card_prelinks(scomp->card, i, dai_link) {
 		char *tplg_device;
-
-		if (tplg_num >= TPLG_DEVICE_MAX) {
-			dev_err(scomp->dev,
-				"Invalid tplg_num %d, check what happened\n", tplg_num);
-			return -EINVAL;
-		}
 
 		dev_dbg(scomp->dev, "dai_link %s id %d\n", dai_link->name, dai_link->id);
 		if (strstr(dai_link->name, "SimpleJack")) {
@@ -2541,71 +2535,89 @@ int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
 			tplg_dev = TPLG_DEVICE_PCH_DMIC;
 		} else if (strstr(dai_link->name, "iDisp")) {
 			tplg_dev = TPLG_DEVICE_HDMI;
-			/*
-			 * The HDMI PCM id start with 3 for the sof-hda-dsp card
-			 * and 5 for other cards.
-			 */
-			if (!strcmp(scomp->card->name, "sof-hda-dsp"))
-				tplg_device = "hdmi-pcm3";
-			else
-				tplg_device = "hdmi-pcm5";
+			tplg_device = "hdmi-pcm5";
 
 		} else {
 			/* The dai link is not supported by sperated tplg yet */
 			dev_dbg(scomp->dev,
 				"dai_link %s is not supported by sperated tplg yet, Fail back to %s\n",
 				dai_link->name, file);
-			goto legacy_tplg;
+			return 0;
 		}
 		if (tplg_mask & BIT(tplg_dev))
 			continue;
 
 		tplg_mask |= BIT(tplg_dev);
-		tplg_files[tplg_num].be_id = dai_link->id;
-		tplg_files[tplg_num].device = tplg_device;
-		tplg_files[tplg_num].dev = tplg_dev;
-		tplg_num++;
-	}
-	dev_dbg(scomp->dev, "tplg_mask %#lx tplg_num %d\n", tplg_mask, tplg_num);
-
-	/* Currently, only SDCA topology supported */
-	if (!(tplg_mask & SDCA_DEVICE_MASK))
-		goto legacy_tplg;
-
-	for (i = 0; i < tplg_num; i++) {
-		char *tplg_name;
-
-		switch (tplg_files[i].dev) {
+		switch (tplg_dev) {
 		case TPLG_DEVICE_PCH_DMIC:
-			tplg_name = kasprintf(GFP_KERNEL, "%s/sof-%s-%s-id%d.tplg",
+			(*tplg_files)[tplg_num] = kasprintf(GFP_KERNEL, "%s/sof-%s-%s-id%d.tplg",
 					      sof_pdata->tplg_filename_prefix,
-					      platform, tplg_files[i].device,
-					      tplg_files[i].be_id);
+					      platform, tplg_device,
+					      dai_link->id);
 			break;
 		default:
-			tplg_name = kasprintf(GFP_KERNEL, "%s/sof-%s-id%d.tplg",
+			(*tplg_files)[tplg_num] = kasprintf(GFP_KERNEL, "%s/sof-%s-id%d.tplg",
 					      sof_pdata->tplg_filename_prefix,
-					      tplg_files[i].device, tplg_files[i].be_id);
+					      tplg_device, dai_link->id);
 			break;
 		}
-		if (!tplg_name)
+		if (!(*tplg_files)[tplg_num])
 			return -ENOMEM;
+		tplg_num++;
 
-		dev_dbg(scomp->dev, "Requesting %d %s\n", i, tplg_name);
-		ret = firmware_request_nowarn(&fw, tplg_name, scomp->dev);
+		}
+	dev_dbg(scomp->dev, "tplg_mask %#lx tplg_num %d\n", tplg_mask, tplg_num);
+	return tplg_num;
+}
+
+const struct card_tplg_ops card_ops[] = {
+	{
+		.card_name = "sof-soundwire",
+		.get_tplg_file = get_sof_sdw_tplg_file,
+	},
+	{}
+};
+
+int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
+{
+	struct snd_sof_dev *sdev = snd_soc_component_get_drvdata(scomp);
+	char **tplg_files;
+	const struct firmware *fw;
+	int tplg_num = 0;
+	int ret;
+	int i;
+
+	dev_dbg(scomp->dev, "loading topology:%s\n", file);
+
+	for (i = 0; card_ops[i].card_name; i++) {
+		if (!strcmp(scomp->card->name, card_ops[i].card_name)) {
+			ret = card_ops[i].get_tplg_file(scomp, file, &tplg_files);
+			if (ret < 0)
+				return ret;
+			tplg_num = ret;
+			break;
+		}
+	}
+	if (!tplg_num)
+		goto legacy_tplg;
+
+
+	for (i = 0; i < tplg_num; i++) {
+		dev_dbg(scomp->dev, "Requesting %d %s\n", i, tplg_files[i]);
+		ret = firmware_request_nowarn(&fw, tplg_files[i], scomp->dev);
 		if (ret < 0) {
 			if (i == 0) {
 				dev_dbg(scomp->dev, "Fail back to %s\n", file);
-				kfree(tplg_name);
+				kfree(tplg_files[i]);
 				goto legacy_tplg;
 			}
 
 			dev_err(scomp->dev, "tplg request firmware %s failed err: %d\n",
-				tplg_name, ret);
-			kfree(tplg_name);
+				tplg_files[i], ret);
+			kfree(tplg_files[i]);
 			goto out;
 		}
-		kfree(tplg_name);
+		kfree(tplg_files[i]);
 
 		/* set complete = sof_complete if it is the last topology */
 		if (i == tplg_num - 1)
