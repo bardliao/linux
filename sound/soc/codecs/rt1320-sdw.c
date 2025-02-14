@@ -361,6 +361,7 @@ static bool rt1320_readable_register(struct device *dev, unsigned int reg)
 	case SDW_SDCA_CTL(FUNC_NUM_AMP, RT1320_SDCA_ENT_SAPU, RT1320_SDCA_CTL_SAPU_PROTECTION_STATUS, 0):
 	/* 0x41081980 */
 	case SDW_SDCA_CTL(FUNC_NUM_AMP, RT1320_SDCA_ENT_PDE23, RT1320_SDCA_CTL_ACTUAL_POWER_STATE, 0):
+	case 0x41280000:
 		return true;
 	default:
 		return false;
@@ -426,6 +427,7 @@ static bool rt1320_volatile_register(struct device *dev, unsigned int reg)
 	case SDW_SDCA_CTL(FUNC_NUM_AMP, RT1320_SDCA_ENT_SAPU, RT1320_SDCA_CTL_SAPU_PROTECTION_MODE, 0):
 	case SDW_SDCA_CTL(FUNC_NUM_AMP, RT1320_SDCA_ENT_SAPU, RT1320_SDCA_CTL_SAPU_PROTECTION_STATUS, 0):
 	case SDW_SDCA_CTL(FUNC_NUM_AMP, RT1320_SDCA_ENT_PDE23, RT1320_SDCA_CTL_ACTUAL_POWER_STATE, 0):
+	case 0x41280000:
 		return true;
 	default:
 		return false;
@@ -452,7 +454,8 @@ static const struct regmap_config rt1320_sdw_regmap = {
 	.val_bits = 8,
 	.readable_reg = rt1320_readable_register,
 	.volatile_reg = rt1320_volatile_register,
-	.max_register = 0x41081980,
+	//.max_register = 0x41081980,
+	.max_register = 0x41280000,
 	.reg_defaults = rt1320_reg_defaults,
 	.num_reg_defaults = ARRAY_SIZE(rt1320_reg_defaults),
 	.cache_type = REGCACHE_MAPLE,
@@ -844,6 +847,9 @@ static int rt1320_set_gain_put(struct snd_kcontrol *kcontrol,
 	struct rt_sdca_dmic_kctrl_priv *p;
 	unsigned int regvalue[4], gain_val[4], i;
 	int err;
+
+	pr_err("bard: %s\n", __func__);
+	regmap_write(rt1320->regmap, 0x41280000, 0x05);
 
 	if (strstr(ucontrol->id.name, "FU Capture Volume"))
 		goto _dmic_vol_;
