@@ -72,6 +72,7 @@ int sdw_slave_add(struct sdw_bus *bus,
 	list_add_tail(&slave->node, &bus->slaves);
 	mutex_unlock(&bus->bus_lock);
 
+	pr_err("bard: %s dev name %s\n", __func__, slave->dev.kobj.name);
 	/*
 	 * The Soundwire driver probe may optionally register SDCA
 	 * sub-devices, one per Function. This means the information
