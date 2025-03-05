@@ -106,6 +106,7 @@ static int find_sdca_function(struct acpi_device *adev, void *data)
 	if (ret < 0)
 		return ret;
 
+	dev_err(dev, "bard: %s: addr: 0x%llx\n", __func__, addr);
 	if (!addr || addr > 0x7) {
 		dev_err(dev, "invalid addr: 0x%llx\n", addr);
 		return -ENODEV;
