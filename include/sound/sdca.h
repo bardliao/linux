@@ -11,6 +11,8 @@
 
 #include <linux/types.h>
 #include <linux/kconfig.h>
+#include <linux/regmap.h>
+#include <linux/interrupt.h>
 
 struct sdw_slave;
 

@@ -11,6 +11,9 @@
 
 #include <linux/bits.h>
 #include <linux/types.h>
+#include <linux/interrupt.h>
+#include <sound/sdca.h>
+#include <sound/sdca_interrupts.h>
 
 struct device;
 struct sdca_entity;
@@ -1180,6 +1183,9 @@ struct sdca_function_data {
 	int num_init_table;
 	int num_entities;
 	int num_clusters;
+
+	struct sdca_interrupt interrupt[SDCA_MAX_INTERRUPTS];
+	int interrupt_num;
 
 	unsigned int busy_max_delay;
 };
