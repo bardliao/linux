@@ -1045,6 +1045,8 @@ static int rt722_sdca_parse_dt(struct rt722_sdca_priv *rt722, struct device *dev
 static int rt722_sdca_probe(struct snd_soc_component *component)
 {
 	struct rt722_sdca_priv *rt722 = snd_soc_component_get_drvdata(component);
+	struct sdca_interrupt_info *rt722_interrupt_info;
+	struct sdca_interrupt *rt722_irq;
 	int ret;
 
 	rt722_sdca_parse_dt(rt722, &rt722->slave->dev);
@@ -1054,6 +1056,20 @@ static int rt722_sdca_probe(struct snd_soc_component *component)
 	if (ret < 0 && ret != -EACCES)
 		return ret;
 
+	/* config SDCA irq */
+	rt722_interrupt_info = devm_kzalloc(component->dev,
+			sizeof(*rt722_interrupt_info), GFP_KERNEL);
+	if (!rt722_interrupt_info)
+		return -ENOMEM;
+
+	rt722_irq = devm_kzalloc(component->dev, sizeof(*rt722_irq), GFP_KERNEL);
+	if (!rt722_irq)
+		return -ENOMEM;
+
+	rt722_interrupt_info->dev = component->dev;
+	rt722_interrupt_info->regmap = rt722->regmap;
+
+	sdca_request_irq(rt722_interrupt_info, rt722_irq);
 	return 0;
 }
 

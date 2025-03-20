@@ -134,6 +134,7 @@ static int sdca_process_controls_with_interrupts(struct sdca_interrupt_info *int
 									      control->sel, 0);
 
 					total_controls++;
+					pr_err("bard: interrupt->name %s\n", interrupt->name);
 				}
 			}
 		}
@@ -193,7 +194,7 @@ int sdca_irq_config(struct sdca_interrupt_info *interrupt_info, unsigned int irq
 		dev_err(interrupt_info->dev, "Failed to add IRQ chip: %d\n", ret);
 		return ret;
 	}
-	dev_dbg(interrupt_info->dev, "Configured IRQ %d with flags 0x%lx\n", irq, irq_flags);
+	dev_err(interrupt_info->dev, "bard: Configured IRQ %d with flags 0x%lx\n", irq, irq_flags);
 
 	interrupt_info->irq_dom = regmap_irq_get_domain(interrupt_info->irq_data);
 	if (!dom)

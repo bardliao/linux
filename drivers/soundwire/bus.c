@@ -1761,8 +1761,10 @@ static int sdw_handle_slave_alerts(struct sdw_slave *slave)
 				struct device *dev = &slave->dev;
 				struct sdw_driver *drv = drv_to_sdw_driver(dev->driver);
 
-				if (slave->prop.use_domain_irq && slave->irq)
+				if (slave->prop.use_domain_irq && slave->irq) {
+					dev_err(&slave->dev, "bard: %s calling handle_nested_irq\n", __func__);
 					handle_nested_irq(slave->irq);
+				}
 
 				if (drv->ops && drv->ops->interrupt_callback) {
 					slave_intr.sdca_cascade = sdca_cascade;

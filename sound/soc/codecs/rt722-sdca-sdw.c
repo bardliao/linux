@@ -288,6 +288,7 @@ static int rt722_sdca_read_prop(struct sdw_slave *slave)
 	/* Three data lanes are supported by rt722-sdca codec */
 	prop->lane_control_support = true;
 
+	prop->use_domain_irq = true;
 	return 0;
 }
 
