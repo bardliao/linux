@@ -39,6 +39,7 @@ struct  rt722_sdca_priv {
 	/* For DMIC */
 	bool fu1e_dapm_mute;
 	bool fu1e_mixer_mute[4];
+	struct sdca_interrupt_info *irq_info;
 };
 
 struct rt722_sdca_dmic_kctrl_priv {

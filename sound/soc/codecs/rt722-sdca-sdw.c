@@ -73,6 +73,7 @@ static int rt722_sdca_mbq_size(struct device *dev, unsigned int reg)
 	case SDW_SDCA_CTL(FUNC_NUM_AMP, RT722_SDCA_ENT_CS31,
 			  RT722_SDCA_CTL_SAMPLE_FREQ_INDEX, 0):
 	case RT722_BUF_ADDR_HID1 ... RT722_BUF_ADDR_HID2:
+	case SDW_SCP_SDCA_INT1 ... SDW_SCP_SDCA_INTMASK4:
 		return 1;
 	case 0x2000000 ... 0x2000024:
 	case 0x2000029 ... 0x200004a:
@@ -288,9 +289,10 @@ static int rt722_sdca_read_prop(struct sdw_slave *slave)
 	/* Three data lanes are supported by rt722-sdca codec */
 	prop->lane_control_support = true;
 
+	prop->use_domain_irq = true;
 	return 0;
 }
-
+#if 0
 static int rt722_sdca_interrupt_callback(struct sdw_slave *slave,
 					struct sdw_slave_intr_status *status)
 {
@@ -386,10 +388,10 @@ io_error:
 	pr_err_ratelimited("IO error in %s, ret %d\n", __func__, ret);
 	return ret;
 }
-
+#endif
 static const struct sdw_slave_ops rt722_sdca_slave_ops = {
 	.read_prop = rt722_sdca_read_prop,
-	.interrupt_callback = rt722_sdca_interrupt_callback,
+//	.interrupt_callback = rt722_sdca_interrupt_callback,
 	.update_status = rt722_sdca_update_status,
 };
 

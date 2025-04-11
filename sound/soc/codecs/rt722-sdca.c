@@ -18,6 +18,7 @@
 #include <sound/pcm.h>
 #include <linux/pm_runtime.h>
 #include <sound/pcm_params.h>
+#include <sound/sdca_interrupts.h>
 #include <linux/soundwire/sdw_registers.h>
 #include <linux/slab.h>
 #include <sound/soc-dapm.h>
@@ -1042,6 +1043,13 @@ static int rt722_sdca_parse_dt(struct rt722_sdca_priv *rt722, struct device *dev
 	return 0;
 }
 
+static irqreturn_t rt722_sdca_handler(int irq, void *data)
+{
+	struct rt722_sdca_priv *rt722 = data;
+	dev_warn(&rt722->slave->dev, "bard: %s irq\n", __func__);
+	return IRQ_HANDLED;
+}
+
 static int rt722_sdca_probe(struct snd_soc_component *component)
 {
 	struct rt722_sdca_priv *rt722 = snd_soc_component_get_drvdata(component);
@@ -1052,6 +1060,19 @@ static int rt722_sdca_probe(struct snd_soc_component *component)
 
 	ret = pm_runtime_resume(component->dev);
 	if (ret < 0 && ret != -EACCES)
+		return ret;
+
+	/* config SDCA irq */
+	rt722->irq_info  = sdca_irq_allocate(&rt722->slave->dev, rt722->regmap, rt722->slave->irq);
+	if (IS_ERR(rt722->irq_info))
+		return PTR_ERR(rt722->irq_info);
+
+	ret = sdca_irq_request(&rt722->slave->dev, rt722->irq_info, 0, "SDCA IRQ 0", rt722_sdca_handler, rt722);
+	if (ret)
+		return ret;
+
+	ret = sdca_irq_request(&rt722->slave->dev, rt722->irq_info, 8, "SDCA IRQ 8", rt722_sdca_handler, rt722);
+	if (ret)
 		return ret;
 
 	return 0;
@@ -1490,6 +1511,7 @@ int rt722_sdca_io_init(struct device *dev, struct sdw_slave *slave)
 	return 0;
 }
 
+MODULE_IMPORT_NS("SND_SOC_SDCA_IRQ");
 MODULE_DESCRIPTION("ASoC RT722 SDCA SDW driver");
 MODULE_AUTHOR("Jack Yu <jack.yu@realtek.com>");
 MODULE_LICENSE("GPL");
