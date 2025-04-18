@@ -2067,5 +2067,9 @@ void device_pm_check_callbacks(struct device *dev)
 
 bool dev_pm_skip_suspend(struct device *dev)
 {
+	if (strstr(dev_name(dev), "soundwire_intel")){
+		dev_info(dev, "bard: %s dev_pm_smart_suspend %d dev_pm_test_driver_flags(dev, DPM_FLAG_SMART_SUSPEND) %d\n",
+			__func__, dev_pm_smart_suspend(dev), dev_pm_test_driver_flags(dev, DPM_FLAG_SMART_SUSPEND));
+	}
 	return dev_pm_smart_suspend(dev) && pm_runtime_status_suspended(dev);
 }

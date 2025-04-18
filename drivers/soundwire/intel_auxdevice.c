@@ -574,6 +574,7 @@ static int __maybe_unused intel_pm_prepare(struct device *dev)
 	u32 clock_stop_quirks;
 	int ret;
 
+	dev_info(dev, "bard: %s\n", __func__);
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
@@ -634,6 +635,7 @@ static int __maybe_unused intel_suspend(struct device *dev)
 	u32 clock_stop_quirks;
 	int ret;
 
+	dev_info(dev, "bard: %s pm_runtime_suspended(dev) %d\n", __func__, pm_runtime_suspended(dev));
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
@@ -679,6 +681,7 @@ static int __maybe_unused intel_suspend_runtime(struct device *dev)
 	u32 clock_stop_quirks;
 	int ret;
 
+	dev_info(dev, "bard: %s\n", __func__);
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
@@ -718,6 +721,7 @@ static int __maybe_unused intel_resume(struct device *dev)
 	int link_flags;
 	int ret;
 
+	dev_info(dev, "bard: %s pm_runtime_suspended(dev) %d\n", __func__, pm_runtime_suspended(dev));
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
@@ -784,6 +788,7 @@ static int __maybe_unused intel_resume_runtime(struct device *dev)
 	u32 clock_stop_quirks;
 	int ret;
 
+	dev_info(dev, "bard: %s\n", __func__);
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
