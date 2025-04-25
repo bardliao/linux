@@ -859,6 +859,7 @@ static int do_bank_switch(struct sdw_stream_runtime *stream)
 	int m_rt_count;
 	int ret = 0;
 
+	pr_info("bard: %s: %s\n", stream->name, __func__);
 	m_rt_count = stream->m_rt_count;
 
 	list_for_each_entry(m_rt, &stream->master_list, stream_node) {
@@ -1469,6 +1470,7 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 	struct sdw_bus_params params;
 	int ret;
 
+	pr_info("bard: %s: %s update_params %d\n", stream->name, __func__, update_params);
 	/* Prepare  Master(s) and Slave(s) port(s) associated with stream */
 	list_for_each_entry(m_rt, &stream->master_list, stream_node) {
 		bus = m_rt->bus;
@@ -1755,6 +1757,7 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 	int state = stream->state;
 	int ret = 0;
 
+	pr_info("bard: %s: %s\n", stream->name, __func__);
 	/*
 	 * first mark the state as DEPREPARED so that it is not taken into account
 	 * for bit allocation

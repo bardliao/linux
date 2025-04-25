@@ -55,7 +55,8 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 
 			ch = hweight32(p_rt->ch_mask);
 
-			dev_dbg(&s_rt->slave->dev, "%s p_rt->lane %d\n", __func__, p_rt->lane);
+			dev_dbg(&s_rt->slave->dev, "bard: %s p_rt->num %d hstart %d hstop %d, offset1 %d offset2 %d p_rt->lane %d\n",
+				__func__, p_rt->num, t_data->hstart, t_data->hstop, port_bo, port_bo >> 8, p_rt->lane);
 			sdw_fill_xport_params(&p_rt->transport_params,
 					      p_rt->num, false,
 					      SDW_BLK_GRP_CNT_1,
@@ -157,7 +158,8 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 		if (p_rt->lane != params->lane)
 			continue;
 
-		dev_dbg(bus->dev, "%s p_rt->lane %d\n", __func__, p_rt->lane);
+		dev_dbg(bus->dev, "bard: %s p_rt->num %d hstart %d hstop %d, offset1 %d offset2 %d p_rt->lane %d\n",
+			__func__, p_rt->num, hstart, hstop, *port_bo, (*port_bo) >> 8, p_rt->lane);
 		sdw_fill_xport_params(&p_rt->transport_params, p_rt->num,
 				      false, SDW_BLK_GRP_CNT_1, sample_int,
 				      *port_bo, (*port_bo) >> 8, hstart, hstop,
@@ -234,6 +236,7 @@ static int sdw_compute_group_params(struct sdw_bus *bus,
 	unsigned int rate, bps, ch;
 	int i, l, column_needed;
 
+	dev_info(bus->dev, "bard: %s stream %s\n", __func__, stream->name);
 	/* Calculate bandwidth per group */
 	for (i = 0; i < group->count; i++) {
 		params[i].rate = group->rates[i];
@@ -281,6 +284,8 @@ static int sdw_compute_group_params(struct sdw_bus *bus,
 					    params[i].full_bw - 1) / params[i].full_bw;
 
 			column_needed += params[i].hwidth;
+			dev_info(bus->dev, "bard: %s params[%d].payload_bw %d column_needed %d\n",
+				__func__, i, params[i].payload_bw, column_needed);
 			/* There is no control column for lane 1 and above */
 			if (column_needed > sel_col)
 				return -EINVAL;
