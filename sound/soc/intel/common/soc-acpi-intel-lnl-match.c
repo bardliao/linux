@@ -557,6 +557,7 @@ static const struct snd_soc_acpi_link_adr lnl_712_only[] = {
 	{}
 };
 
+#if 0
 static const struct snd_soc_acpi_link_adr lnl_rt722_only[] = {
 	{
 		.mask = BIT(0),
@@ -565,6 +566,7 @@ static const struct snd_soc_acpi_link_adr lnl_rt722_only[] = {
 	},
 	{}
 };
+#endif
 
 static const struct snd_soc_acpi_link_adr lnl_3_in_1_sdca[] = {
 	{
@@ -727,6 +729,7 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.drv_name = "sof_sdw",
 		.sof_tplg_filename = "sof-lnl-rt712-l2-rt1712-l3.tplg",
 	},
+#if 0
 	{
 		.link_mask = BIT(0),
 		.links = lnl_rt722_only,
@@ -734,6 +737,7 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.sof_tplg_filename = "sof-lnl-rt722-l0.tplg",
 		.get_function_tplg_files = sof_sdw_get_tplg_files,
 	},
+#endif
 	{
 		.link_mask = GENMASK(2, 0),
 		.links = lnl_sdw_rt1318_l12_rt714_l0,
