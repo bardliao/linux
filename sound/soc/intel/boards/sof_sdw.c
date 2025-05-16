@@ -1134,6 +1134,12 @@ static int create_bt_dailinks(struct snd_soc_card *card,
 	return 0;
 }
 
+static struct snd_soc_aux_dev sof_aux_dev = {
+	.dlc = {
+		.name = "snd_soc_sdca.HID.2",
+	},
+};
+
 static int sof_card_dai_links_create(struct snd_soc_card *card)
 {
 	struct device *dev = card->dev;
@@ -1245,6 +1251,8 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 	card->num_configs = num_devs;
 	card->dai_link = dai_links;
 	card->num_links = num_links;
+	card->aux_dev = &sof_aux_dev;
+	card->num_aux_devs = 1;
 
 	/* SDW */
 	if (sdw_be_num) {
