@@ -204,6 +204,8 @@ static inline void sdw_fill_xport_params(struct sdw_transport_params *params,
 	params->hstop = hstop;
 	params->blk_pkg_mode = pack_mode;
 	params->lane_ctrl = lane_ctrl;
+	pr_err("bard: port_num %d hstart %d hstop %d offset1 %d offset2 %d lane_ctrl %d\n",
+		port_num, hstart, hstop, off1, off2, lane_ctrl);
 }
 
 /* Fill port parameter data structure */

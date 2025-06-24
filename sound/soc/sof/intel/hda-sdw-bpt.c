@@ -367,6 +367,9 @@ int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 	hda_tx_stream = container_of(bpt_tx_stream, struct sof_intel_hda_stream, hext_stream);
 	hda_rx_stream = container_of(bpt_rx_stream, struct sof_intel_hda_stream, hext_stream);
 
+
+	hstream = &bpt_tx_stream->hstream;
+	pr_err("bard: waiting for tx ioc %p complete hstream->stream_tag %d hstream->index %d\n", &hda_tx_stream->ioc, hstream->stream_tag, hstream->index);
 	time_tx_left = wait_for_completion_timeout(&hda_tx_stream->ioc,
 						   msecs_to_jiffies(HDA_BPT_IOC_TIMEOUT_MS));
 	if (!time_tx_left) {
@@ -393,6 +396,12 @@ int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 		goto dma_disable;
 	}
 
+	hstream = &bpt_rx_stream->hstream;
+	rx_position = hda_dsp_stream_get_position(hdac_stream(bpt_rx_stream),
+						  SNDRV_PCM_STREAM_CAPTURE, false);
+
+	//msleep(2000);
+	pr_err("bard: waiting for rx ioc %p complete, hstream->stream_tag %d hstream->index %d rx_position %lu\n", &hda_rx_stream->ioc, hstream->stream_tag, hstream->index, rx_position);
 	/* the wait should be minimal here */
 	time_rx_left = wait_for_completion_timeout(&hda_rx_stream->ioc,
 						   msecs_to_jiffies(HDA_BPT_IOC_TIMEOUT_MS));

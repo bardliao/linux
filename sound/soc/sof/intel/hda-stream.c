@@ -543,6 +543,7 @@ int hda_dsp_stream_hw_params(struct snd_sof_dev *sdev,
 	sd_offset = SOF_STREAM_SD_OFFSET(hstream);
 	mask = BIT(hstream->index);
 
+	pr_err("bard: %s hstream->stream_tag %d hstream->index %d hstream->bufsize %d\n", __func__, hstream->stream_tag, hstream->index, hstream->bufsize);
 	/* decouple host and link DMA if the DSP is used */
 	if (!sdev->dspless_mode_selected)
 		snd_sof_dsp_update_bits(sdev, HDA_DSP_PP_BAR, SOF_HDA_REG_PP_PPCTL,
