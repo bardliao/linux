@@ -2111,10 +2111,12 @@ int sdw_cdns_bpt_find_buffer_sizes(int command, /* 0: write, 1: read */
 	unsigned int pdi1_rx_size;
 	unsigned int remainder;
 
+	pr_err("bard: bpt_bits %d bpt_bytes %d\n", bpt_bits, bpt_bytes);
 	if (!data_bytes)
 		return -EINVAL;
 
 	actual_bpt_bytes = sdw_cdns_bra_actual_data_size(bpt_bytes);
+	pr_err("bard: actual_bpt_bytes %d\n", actual_bpt_bytes);
 	if (!actual_bpt_bytes)
 		return -EINVAL;
 
