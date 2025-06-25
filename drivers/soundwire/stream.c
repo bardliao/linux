@@ -1236,7 +1236,7 @@ static struct sdw_master_runtime
 {
 	struct sdw_master_runtime *m_rt, *walk_m_rt;
 	struct list_head *insert_after;
-
+#if 0
 	if (stream->type == SDW_STREAM_BPT) {
 		if (bus->stream_refcount > 0 || bus->bpt_stream_refcount > 0) {
 			dev_err(bus->dev, "%s: %d/%d audio/BPT stream already allocated\n",
@@ -1250,7 +1250,7 @@ static struct sdw_master_runtime
 			return ERR_PTR(-EAGAIN);
 		}
 	}
-
+#endif
 	m_rt = kzalloc(sizeof(*m_rt), GFP_KERNEL);
 	if (!m_rt)
 		return NULL;
