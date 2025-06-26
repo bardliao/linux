@@ -131,7 +131,7 @@ MODULE_PARM_DESC(cdns_mcp_int_mask, "Cadence MCP IntMask");
 #define CDNS_MCP_FIFOSTAT			0x7C
 #define CDNS_MCP_RX_FIFO_AVAIL			GENMASK(5, 0)
 
-#define CDNS_IP_MCP_CMD_BASE			0x80 /* IP offset added at run-time */
+#define CDNS_IP_MCP_CMD				0x80 /* IP offset added at run-time */
 #define CDNS_IP_MCP_RESP_BASE			0x80 /* IP offset added at run-time */
 /* FIFO can hold 8 commands */
 #define CDNS_MCP_CMD_LEN			8
@@ -602,7 +602,7 @@ cdns_fill_msg_resp(struct sdw_cdns *cdns,
 
 static void cdns_read_response(struct sdw_cdns *cdns)
 {
-	u32 num_resp, cmd_base;
+	u32 num_resp;
 	int i;
 
 	/* RX_FIFO_AVAIL can be 2 entries more than the FIFO size */
@@ -615,11 +615,9 @@ static void cdns_read_response(struct sdw_cdns *cdns)
 		num_resp = ARRAY_SIZE(cdns->response_buf);
 	}
 
-	cmd_base = CDNS_IP_MCP_CMD_BASE;
 
 	for (i = 0; i < num_resp; i++) {
-		cdns->response_buf[i] = cdns_ip_readl(cdns, cmd_base);
-		cmd_base += CDNS_MCP_CMD_WORD_LEN;
+		cdns->response_buf[i] = cdns_ip_readl(cdns, CDNS_IP_MCP_CMD);
 	}
 }
 
@@ -628,7 +626,7 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 	       int offset, int count, bool defer)
 {
 	unsigned long time;
-	u32 base, i, data;
+	u32 i, data;
 	u16 addr;
 
 	/* Program the watermark level for RX FIFO */
@@ -637,7 +635,6 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 		cdns->msg_count = count;
 	}
 
-	base = CDNS_IP_MCP_CMD_BASE;
 	addr = msg->addr + offset;
 
 	for (i = 0; i < count; i++) {
@@ -650,8 +647,7 @@ _cdns_xfer_msg(struct sdw_cdns *cdns, struct sdw_msg *msg, int cmd,
 			data |= msg->buf[i + offset];
 
 		data |= FIELD_PREP(CDNS_MCP_CMD_SSP_TAG, msg->ssp_sync);
-		cdns_ip_writel(cdns, base, data);
-		base += CDNS_MCP_CMD_WORD_LEN;
+		cdns_ip_writel(cdns, CDNS_IP_MCP_CMD, data);
 	}
 
 	if (defer)
@@ -679,7 +675,7 @@ cdns_program_scp_addr(struct sdw_cdns *cdns, struct sdw_msg *msg)
 {
 	int nack = 0, no_ack = 0;
 	unsigned long time;
-	u32 data[2], base;
+	u32 data[2];
 	int i;
 
 	/* Program the watermark level for RX FIFO */
@@ -698,10 +694,8 @@ cdns_program_scp_addr(struct sdw_cdns *cdns, struct sdw_msg *msg)
 	data[0] |= msg->addr_page1;
 	data[1] |= msg->addr_page2;
 
-	base = CDNS_IP_MCP_CMD_BASE;
-	cdns_ip_writel(cdns, base, data[0]);
-	base += CDNS_MCP_CMD_WORD_LEN;
-	cdns_ip_writel(cdns, base, data[1]);
+	cdns_ip_writel(cdns, CDNS_IP_MCP_CMD, data[0]);
+	cdns_ip_writel(cdns, CDNS_IP_MCP_CMD, data[1]);
 
 	time = wait_for_completion_timeout(&cdns->tx_complete,
 					   msecs_to_jiffies(CDNS_TX_TIMEOUT));
