@@ -2153,13 +2153,14 @@ int sdw_cdns_bpt_find_buffer_sizes(int command, /* 0: write, 1: read */
 		pdi0_tx_size = SDW_CDNS_READ_PDI0_BUFFER_SIZE;
 		pdi1_rx_size = sdw_cdns_read_pdi1_buffer_size(actual_bpt_bytes);
 
-		*pdi0_buffer_size = pdi0_tx_size * *num_frames;
+		*pdi0_buffer_size = pdi0_tx_size * *num_frames ;
 		*pdi1_buffer_size = pdi1_rx_size * *num_frames;
 
 		remainder = data_bytes % actual_bpt_bytes;
+
 		if (remainder) {
 			pdi0_tx_size = SDW_CDNS_READ_PDI0_BUFFER_SIZE;
-			pdi1_rx_size = sdw_cdns_read_pdi1_buffer_size(remainder);
+			pdi1_rx_size = sdw_cdns_read_pdi1_buffer_size(actual_bpt_bytes);
 
 			*num_frames = *num_frames + 1;
 			*pdi0_buffer_size += pdi0_tx_size;
@@ -2407,7 +2408,7 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 	}
 
 	if (data_size) {
-		header[1] = data_size;
+		header[1] = data_per_frame;
 		header[2] = start_register >> 24 & 0xFF;
 		header[3] = start_register >> 16 & 0xFF;
 		header[4] = start_register >> 8 & 0xFF;
@@ -2574,17 +2575,20 @@ int sdw_cdns_check_read_response(struct device *dev, u8 *dma_buffer, int dma_buf
 	for (i = 0; i < num_frames; i++) {
 		header = *p_data++;
 
+		pr_err("bard: %s frame %d/%d\n",
+		       __func__, i, num_frames);
 		ret = check_frame_start(header, counter);
 		if (ret < 0) {
 			dev_err(dev, "%s: bad frame %d/%d start header %x\n",
 				__func__, i, num_frames, header);
-			return ret;
+//			return ret;
 		}
 
 		len = data_per_frame;
-		if (total_num_bytes + data_per_frame > buffer_size)
-			len = buffer_size - total_num_bytes;
+//		if (total_num_bytes + data_per_frame > buffer_size)
+//			len = buffer_size - total_num_bytes;
 
+		pr_err("bard: len %d\n", len);
 		crc = extract_read_data(p_data, len, p_buf);
 
 		p_data += (len + 1) / 2;
@@ -2593,7 +2597,7 @@ int sdw_cdns_check_read_response(struct device *dev, u8 *dma_buffer, int dma_buf
 		if (crc != expected_crc) {
 			dev_err(dev, "%s: bad frame %d/%d crc %#x expected %#x\n",
 				__func__, i, num_frames, crc, expected_crc);
-			return -EIO;
+//			return -EIO;
 		}
 
 		p_buf += len;
@@ -2604,7 +2608,7 @@ int sdw_cdns_check_read_response(struct device *dev, u8 *dma_buffer, int dma_buf
 		if (ret < 0) {
 			dev_err(dev, "%s: bad frame %d/%d end footer %x\n",
 				__func__, i, num_frames, footer);
-			return ret;
+//			return ret;
 		}
 
 		counter++;
