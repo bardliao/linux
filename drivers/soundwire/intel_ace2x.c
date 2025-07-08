@@ -153,7 +153,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	command = (msg->flags & SDW_MSG_FLAG_WRITE) ? 0 : 1;
 
 	ret = sdw_cdns_bpt_find_bandwidth(command, cdns->bus.params.row,
-					  cdns->bus.params.col,
+					  cdns->bus.audio_stream_hstart,
 					  prop->default_frame_rate,
 					  &tx_dma_bandwidth, &rx_dma_bandwidth);
 	if (ret < 0)
@@ -166,7 +166,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	/* Add up pdi buffer size and frame numbers of each BPT sections */
 	for (i = 0; i < msg->sections; i++) {
 		ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row,
-						     cdns->bus.params.col,
+						     cdns->bus.audio_stream_hstart,
 						     msg->sec[i].len, SDW_BPT_MSG_MAX_BYTES,
 						     &data_per_frame, &pdi0_buffer_size_,
 						     &pdi1_buffer_size_, &num_frames_);
@@ -190,7 +190,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	if (command) { /* read */
 		/* Get buffer size of a full frame */
 		ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row,
-						     cdns->bus.params.col,
+						     cdns->bus.audio_stream_hstart,
 						     data_per_frame, SDW_BPT_MSG_MAX_BYTES,
 						     &data_per_frame, &pdi0_buf_size_pre_frame,
 						     &pdi1_buf_size_pre_frame, &fake_num_frames);
