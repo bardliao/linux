@@ -463,6 +463,8 @@ int hda_dsp_iccmax_stream_hw_params(struct snd_sof_dev *sdev, struct hdac_ext_st
 	if (hstream->posbuf)
 		*hstream->posbuf = 0;
 
+	pr_err("bard: %s hstream->bufsize %d\n", __func__, hstream->bufsize);
+
 	/* reset BDL address */
 	snd_sof_dsp_write(sdev, HDA_DSP_HDA_BAR,
 			  sd_offset + SOF_HDA_ADSP_REG_SD_BDLPL,
@@ -788,6 +790,7 @@ static bool hda_dsp_stream_check(struct hdac_bus *bus, u32 status)
 	bool active = false;
 	u32 sd_status;
 
+//	pr_err("bard: %s status %#x\n", __func__, status);
 	list_for_each_entry(s, &bus->stream_list, list) {
 		if (status & BIT(s->index) && s->opened) {
 			sd_status = readb(s->sd_addr + SOF_HDA_ADSP_REG_SD_STS);
@@ -797,6 +800,8 @@ static bool hda_dsp_stream_check(struct hdac_bus *bus, u32 status)
 			writeb(sd_status, s->sd_addr + SOF_HDA_ADSP_REG_SD_STS);
 
 			active = true;
+			pr_err("bard s->bufsize %u s->stream_tag %d s->index %d s->running %d sd_status %#x\n",
+				s->bufsize, s->stream_tag, s->index, s->running, sd_status);
 			if (!s->running)
 				continue;
 			if ((sd_status & SOF_HDA_CL_DMA_SD_INT_COMPLETE) == 0)
@@ -813,6 +818,8 @@ static bool hda_dsp_stream_check(struct hdac_bus *bus, u32 status)
 				hda_stream = container_of(hext_stream, struct sof_intel_hda_stream,
 							  hext_stream);
 
+				pr_err("bard: s->bufsize %u s->stream_tag %d s->index %d s->running %d sd_status %#x complete IOC %p\n",
+					s->bufsize, s->stream_tag, s->index, s->running, sd_status, &hda_stream->ioc);
 				complete(&hda_stream->ioc);
 				continue;
 			}
@@ -821,6 +828,8 @@ static bool hda_dsp_stream_check(struct hdac_bus *bus, u32 status)
 			if (s->substream && sof_hda->no_ipc_position) {
 				snd_sof_pcm_period_elapsed(s->substream);
 			} else if (s->cstream) {
+				pr_err("bard: s->bufsize %u s->stream_tag %d s->index %d s->running %d sd_status %#x call hda_dsp_compr_bytes_transferred",
+					s->bufsize, s->stream_tag, s->index, s->running, sd_status);
 				hda_dsp_compr_bytes_transferred(s, s->cstream->direction);
 				snd_compr_fragment_elapsed(s->cstream);
 			}
@@ -842,6 +851,7 @@ irqreturn_t hda_dsp_stream_threaded_handler(int irq, void *context)
 	 * Loop 10 times to handle missed interrupts caused by
 	 * unsolicited responses from the codec
 	 */
+//	pr_err("bard: %s\n", __func__);
 	for (i = 0, active = true; i < 10 && active; i++) {
 		spin_lock_irq(&bus->reg_lock);
 
@@ -1093,6 +1103,7 @@ snd_pcm_uframes_t hda_dsp_stream_get_position(struct hdac_stream *hstream,
 				       AZX_REG_VS_SDXDPIB_XBASE +
 				       (AZX_REG_VS_SDXDPIB_XINTERVAL *
 					hstream->index));
+		pr_err("bard: hstream->index %d pos %lu\n", hstream->index, pos);
 		break;
 	case SOF_HDA_POSITION_QUIRK_USE_DPIB_DDR_UPDATE:
 		/*
