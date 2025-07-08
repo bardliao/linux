@@ -138,7 +138,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 
 	command = (msg->flags & SDW_MSG_FLAG_WRITE) ? 0 : 1;
 
-	ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row, cdns->bus.params.col,
+	ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row, cdns->bus.audio_stream_hstart,
 					     msg->len, SDW_BPT_MSG_MAX_BYTES, &data_per_frame,
 					     &pdi0_buffer_size, &pdi1_buffer_size, &num_frames);
 	if (ret < 0)
