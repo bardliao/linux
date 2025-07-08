@@ -1023,6 +1023,7 @@ struct sdw_stream_runtime {
  * @stream_refcount: number of streams currently using this bus
  * @bpt_stream_refcount: number of BTP streams currently using this bus (should
  * be zero or one, multiple streams per link is not supported).
+ * @bpt_hstop: The hstop of the BPT stream.
  * @bpt_stream: pointer stored to handle BTP streams.
  * @ops: Master callback ops
  * @port_ops: Master port callback ops
@@ -1063,6 +1064,7 @@ struct sdw_bus {
 	struct sdw_bus_params params;
 	int stream_refcount;
 	int bpt_stream_refcount;
+	int bpt_hstop;
 	struct sdw_stream_runtime *bpt_stream;
 	struct mutex bpt_lock;
 	const struct sdw_master_ops *ops;
