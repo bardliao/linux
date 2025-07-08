@@ -2111,7 +2111,7 @@ int sdw_cdns_bpt_find_buffer_sizes(int command, /* 0: write, 1: read */
 	unsigned int pdi1_rx_size;
 	unsigned int remainder;
 
-	pr_err("bard: bpt_bits %d bpt_bytes %d\n", bpt_bits, bpt_bytes);
+	pr_err("bard: row %d col %d bpt_bits %d bpt_bytes %d\n", row, col, bpt_bits, bpt_bytes);
 	if (!data_bytes)
 		return -EINVAL;
 
@@ -2384,6 +2384,11 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 	header[0] |= GENMASK(7, 6);	/* header is active */
 	header[0] |= (dev_num << 2);
 
+	/*
+	 * Set message length = data_per_frame even if the required data is less then
+	 * data_per_frame in the last frame.
+	 */
+	pr_err("bard: initial data_size %d\n", data_size);
 	while (data_size >= data_per_frame) {
 		header[1] = data_per_frame;
 		header[2] = start_register >> 24 & 0xFF;
@@ -2397,6 +2402,8 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 		if (ret < 0)
 			return ret;
 
+		pr_err("bard: %s data_per_frame %d start_register %#x dma_buffer_size %d dma_data_written %d\n",
+			__func__, data_per_frame, start_register, dma_buffer_size, dma_data_written);
 		counter++;
 
 		data_size -= data_per_frame;
@@ -2406,6 +2413,7 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 		total_dma_data_written += dma_data_written;
 
 		start_register += data_per_frame;
+		pr_err("bard: data_size %d\n", data_size);
 	}
 
 	if (data_size) {
@@ -2425,6 +2433,7 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 	}
 
 	*dma_buffer_total_bytes = total_dma_data_written;
+	pr_err("bard: total_dma_data_written %d\n", total_dma_data_written);
 
 	return 0;
 }
@@ -2573,6 +2582,8 @@ int sdw_cdns_check_read_response(struct device *dev, u8 *dma_buffer, int dma_buf
 	p_data = (u32 *)dma_buffer;
 	p_buf = buffer;
 
+	pr_err("bard: %s dma_buffer_size %d num_frames %d\n",
+		__func__,data_per_frame, num_frames);
 	for (i = 0; i < num_frames; i++) {
 		header = *p_data++;
 

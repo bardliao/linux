@@ -55,8 +55,8 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 
 			ch = hweight32(p_rt->ch_mask);
 
-			dev_err(&s_rt->slave->dev, "bard: %s p_rt->lane %d sample_int %d bus->params.col %d, hstart %d hstop %d off1 %d off2 %d\n",
-				__func__, p_rt->lane, sample_int, bus->params.col, t_data->hstart, t_data->hstop, port_bo, port_bo >> 8);
+			dev_err(&s_rt->slave->dev, "bard: %s p_rt->lane %d sample_int %d, hstart %d hstop %d off1 %d off2 %d\n",
+				__func__, p_rt->lane, sample_int, t_data->hstart, t_data->hstop, port_bo, port_bo >> 8);
 			sdw_fill_xport_params(&p_rt->transport_params,
 					      p_rt->num, false,
 					      SDW_BLK_GRP_CNT_1,
@@ -94,12 +94,13 @@ static void sdw_compute_dp0_slave_ports(struct sdw_master_runtime *m_rt)
 	struct sdw_slave_runtime *s_rt;
 	struct sdw_port_runtime *p_rt;
 
+	pr_err("bard: %s bus->audio_stream_hstart %d\n", __func__, bus->audio_stream_hstart);
 	list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
 		list_for_each_entry(p_rt, &s_rt->port_list, port_node) {
 			dev_err(&s_rt->slave->dev, "bard: %s p_rt->num %d\n", __func__, p_rt->num);
 			sdw_fill_xport_params(&p_rt->transport_params, p_rt->num, false,
 					      SDW_BLK_GRP_CNT_1, bus->params.col, 0, 0, 1,
-					      bus->audio_stream_hstart - 1, SDW_BLK_PKG_PER_PORT, 0x0);
+					      bus->audio_stream_hstart - 1, SDW_BLK_PKG_PER_PORT, p_rt->lane);
 
 			sdw_fill_port_params(&p_rt->port_params, p_rt->num, bus->audio_stream_hstart - 1,
 					     SDW_PORT_FLOW_MODE_ISOCH, SDW_PORT_DATA_MODE_NORMAL);
@@ -112,11 +113,12 @@ static void sdw_compute_dp0_master_ports(struct sdw_master_runtime *m_rt)
 	struct sdw_port_runtime *p_rt;
 	struct sdw_bus *bus = m_rt->bus;
 
+	pr_err("bard: %s bus->audio_stream_hstart %d\n", __func__, bus->audio_stream_hstart);
 	list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
 		dev_err(bus->dev, "bard: %s p_rt->num %d\n", __func__, p_rt->num);
 		sdw_fill_xport_params(&p_rt->transport_params, p_rt->num, false,
 				      SDW_BLK_GRP_CNT_1, bus->params.col, 0, 0, 1,
-				      bus->audio_stream_hstart - 1, SDW_BLK_PKG_PER_PORT, 0x0);
+				      bus->audio_stream_hstart - 1, SDW_BLK_PKG_PER_PORT, p_rt->lane);
 
 		sdw_fill_port_params(&p_rt->port_params, p_rt->num, bus->audio_stream_hstart - 1,
 				     SDW_PORT_FLOW_MODE_ISOCH, SDW_PORT_DATA_MODE_NORMAL);
@@ -192,7 +194,7 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 			bus->audio_stream_hstart = hstart;
 	}
 
-	dev_err(bus->dev, "bard: audio_stream_hstart %d\n", bus->audio_stream_hstart);
+	dev_err(bus->dev, "bard: %s audio_stream_hstart %d\n", __func__, bus->audio_stream_hstart);
 	t_data.lane = params->lane;
 	sdw_compute_slave_ports(m_rt, &t_data);
 }
@@ -589,6 +591,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 				(bus->params.max_dr_freq >>  clk_buf[i]) :
 				clk_buf[i] * SDW_DOUBLE_RATE_FACTOR;
 
+		curr_dr_freq = bus->params.max_dr_freq;
 		dev_err(bus->dev, "bard: curr_dr_freq %d\n", curr_dr_freq);
 		if (curr_dr_freq * (mstr_prop->default_col - 1) >=
 		    bus->params.bandwidth * mstr_prop->default_col)
@@ -656,6 +659,7 @@ out:
 	mstr_prop->default_col = curr_dr_freq / mstr_prop->default_frame_rate /
 				 mstr_prop->default_row;
 
+	pr_err("bard: %s mstr_prop->default_col %d\n", __func__, mstr_prop->default_col);
 	ret = sdw_select_row_col(bus, curr_dr_freq);
 	if (ret < 0) {
 		dev_err(bus->dev, "%s: could not find frame configuration for bus dr_freq %d\n",
@@ -688,6 +692,7 @@ int sdw_compute_params(struct sdw_bus *bus, struct sdw_stream_runtime *stream)
 	}
 
 	bus->audio_stream_hstart = bus->params.col;
+	dev_err(bus->dev, "bard: %s set bus->audio_stream_hstart = %d\n", __func__, bus->audio_stream_hstart);
 	/* Compute transport and port params */
 	ret = sdw_compute_port_params(bus, stream);
 	if (ret < 0) {

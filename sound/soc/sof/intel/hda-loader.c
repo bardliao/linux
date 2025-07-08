@@ -251,6 +251,7 @@ int hda_cl_trigger(struct device *dev, struct hdac_ext_stream *hext_stream, int 
 	case SNDRV_PCM_TRIGGER_START:
 		hda_stream = container_of(hext_stream, struct sof_intel_hda_stream,
 					  hext_stream);
+		pr_err("bard: reinit_completion ioc %p\n", &hda_stream->ioc);
 		reinit_completion(&hda_stream->ioc);
 
 		snd_sof_dsp_update_bits(sdev, HDA_DSP_HDA_BAR, SOF_HDA_INTCTL,

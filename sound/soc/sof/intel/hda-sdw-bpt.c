@@ -259,16 +259,6 @@ int hda_sdw_bpt_open(struct device *dev, int link_id, struct hdac_ext_stream **b
 	int ret1;
 	int ret;
 
-	num_channels_tx = DIV_ROUND_UP(tx_dma_bandwidth, BPT_FREQUENCY * 32);
-
-	ret = hda_sdw_bpt_dma_prepare(dev, bpt_tx_stream, dmab_tx_bdl, bpt_tx_num_bytes,
-				      num_channels_tx, SNDRV_PCM_STREAM_PLAYBACK);
-	if (ret < 0) {
-		dev_err(dev, "%s: hda_sdw_bpt_dma_prepare failed for TX: %d\n",
-			__func__, ret);
-		return ret;
-	}
-
 	num_channels_rx = DIV_ROUND_UP(rx_dma_bandwidth, BPT_FREQUENCY * 32);
 
 	ret = hda_sdw_bpt_dma_prepare(dev, bpt_rx_stream, dmab_rx_bdl, bpt_rx_num_bytes,
@@ -284,6 +274,18 @@ int hda_sdw_bpt_open(struct device *dev, int link_id, struct hdac_ext_stream **b
 		return ret;
 	}
 
+	num_channels_tx = DIV_ROUND_UP(tx_dma_bandwidth, BPT_FREQUENCY * 32);
+
+	ret = hda_sdw_bpt_dma_prepare(dev, bpt_tx_stream, dmab_tx_bdl, bpt_tx_num_bytes,
+				      num_channels_tx, SNDRV_PCM_STREAM_PLAYBACK);
+	if (ret < 0) {
+		dev_err(dev, "%s: hda_sdw_bpt_dma_prepare failed for TX: %d\n",
+			__func__, ret);
+		return ret;
+	}
+
+	pr_err("bard: %s bpt_rx_num_bytes %d rx_dma_bandwidth %d num_channels_tx %d num_channels_rx %d\n",
+		__func__, bpt_rx_num_bytes, rx_dma_bandwidth, num_channels_tx, num_channels_rx);
 	/* we need to map the channels in PCMSyCM registers */
 	ret = hdac_bus_eml_sdw_map_stream_ch(sof_to_bus(sdev), link_id,
 					     0, /* cpu_dai->id -> PDI0 */
@@ -349,7 +351,7 @@ EXPORT_SYMBOL_NS(hda_sdw_bpt_send_async, "SND_SOC_SOF_INTEL_HDA_SDW_BPT");
  * 3s is several orders of magnitude larger than what is needed for a
  * typical firmware download.
  */
-#define HDA_BPT_IOC_TIMEOUT_MS 3000
+#define HDA_BPT_IOC_TIMEOUT_MS 1000
 
 int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 		     struct hdac_ext_stream *bpt_rx_stream)
@@ -357,12 +359,13 @@ int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 	struct sof_intel_hda_stream *hda_tx_stream;
 	struct sof_intel_hda_stream *hda_rx_stream;
 	snd_pcm_uframes_t tx_position;
-	snd_pcm_uframes_t rx_position;
+	snd_pcm_uframes_t rx_position, rx_position_ = 0;
 	unsigned long time_tx_left;
 	unsigned long time_rx_left;
 	int ret = 0;
 	int ret1;
 	int i;
+	struct hdac_stream *hstream;
 
 	hda_tx_stream = container_of(bpt_tx_stream, struct sof_intel_hda_stream, hext_stream);
 	hda_rx_stream = container_of(bpt_rx_stream, struct sof_intel_hda_stream, hext_stream);
@@ -419,7 +422,10 @@ int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 	do {
 		rx_position = hda_dsp_stream_get_position(hdac_stream(bpt_rx_stream),
 							  SNDRV_PCM_STREAM_CAPTURE, false);
-		usleep_range(1000, 1010);
+		if (rx_position == rx_position_)
+			break;
+		rx_position_ = rx_position;
+		usleep_range(5000, 5010);
 		i++;
 	} while (rx_position && i < HDA_BPT_IOC_TIMEOUT_MS);
 	if (rx_position) {

@@ -138,8 +138,10 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 
 	command = (msg->flags & SDW_MSG_FLAG_WRITE) ? 0 : 1;
 
+//	cdns->bus.audio_stream_hstart = 4; //bard: HACK
+	pr_err("bard %s bus.audio_stream_hstart %d\n", __func__, cdns->bus.audio_stream_hstart);
 	ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row, cdns->bus.audio_stream_hstart,
-					     msg->len, SDW_BPT_MSG_MAX_BYTES, &data_per_frame,
+					     msg->len, 1 /*SDW_BPT_MSG_MAX_BYTES*/, &data_per_frame,
 					     &pdi0_buffer_size, &pdi1_buffer_size, &num_frames);
 	if (ret < 0)
 		goto deprepare_stream;
@@ -153,9 +155,9 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	rx_dma_bandwidth = div_u64((u64)pdi1_buffer_size * 8 * (u64)prop->default_frame_rate,
 				   num_frames);
 
-	dev_dbg(cdns->dev, "Message len %d transferred in %d frames (%d per frame)\n",
+	dev_dbg(cdns->dev, "bard: Message len %d transferred in %d frames (%d per frame)\n",
 		msg->len, num_frames, data_per_frame);
-	dev_dbg(cdns->dev, "sizes pdi0 %d pdi1 %d tx_bandwidth %d rx_bandwidth %d\n",
+	dev_dbg(cdns->dev, "bard: sizes pdi0 %d pdi1 %d tx_bandwidth %d rx_bandwidth %d\n",
 		pdi0_buffer_size, pdi1_buffer_size, tx_dma_bandwidth, rx_dma_bandwidth);
 
 	ret = hda_sdw_bpt_open(cdns->dev->parent, /* PCI device */
