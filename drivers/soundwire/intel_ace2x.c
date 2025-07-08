@@ -189,7 +189,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	if (command) { /* read */
 		/* Get buffer size of a full frame */
 		ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row,
-						     cdns->bus.params.col,
+						     cdns->bus.audio_stream_hstart,
 						     data_per_frame, SDW_BPT_MSG_MAX_BYTES,
 						     &data_per_frame, &pdi0_buf_size_pre_frame,
 						     &pdi1_buf_size_pre_frame, &fake_num_frames);
