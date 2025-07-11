@@ -22,6 +22,7 @@
 #include "intel.h"
 
 extern int bra_bytes_pre_frame;
+extern int bra_buf_size;
 
 static int sdw_slave_bpt_stream_add(struct sdw_slave *slave, struct sdw_stream_runtime *stream)
 {
@@ -68,6 +69,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	int ret1;
 	int ret;
 	int dir;
+	int pad;
 	int i;
 
 	stream = sdw_alloc_stream("BPT", SDW_STREAM_BPT);
@@ -143,12 +145,18 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 //	cdns->bus.audio_stream_hstart = 4; //bard: HACK
 	if (!bra_bytes_pre_frame)
 		bra_bytes_pre_frame = SDW_BPT_MSG_MAX_BYTES;
-	pr_err("bard %s bus.audio_stream_hstart %d bra_bytes_pre_frame %d\n", __func__, cdns->bus.audio_stream_hstart, bra_bytes_pre_frame);
-	ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row, cdns->bus.audio_stream_hstart,
-					     msg->len, bra_bytes_pre_frame /*SDW_BPT_MSG_MAX_BYTES*/, &data_per_frame,
-					     &pdi0_buffer_size, &pdi1_buffer_size, &num_frames);
-	if (ret < 0)
-		goto deprepare_stream;
+	do {
+		pr_err("bard %s msg->len %u bus.audio_stream_hstart %d bra_bytes_pre_frame %d\n", __func__, msg->len, cdns->bus.audio_stream_hstart, bra_bytes_pre_frame);
+		ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row, cdns->bus.audio_stream_hstart,
+						     msg->len, bra_bytes_pre_frame /*SDW_BPT_MSG_MAX_BYTES*/, &data_per_frame,
+						     &pdi0_buffer_size, &pdi1_buffer_size, &num_frames, &pad);
+		if (ret < 0)
+			goto deprepare_stream;
+		pr_err("bard: pdi1_buffer_size %d\n", pdi1_buffer_size);
+		if (!(pdi1_buffer_size % bra_buf_size))
+			break;
+		msg->len++;
+	} while (pdi1_buffer_size % bra_buf_size);
 
 	sdw->bpt_ctx.pdi0_buffer_size = pdi0_buffer_size;
 	sdw->bpt_ctx.pdi1_buffer_size = pdi1_buffer_size;
