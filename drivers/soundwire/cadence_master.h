@@ -213,7 +213,8 @@ int sdw_cdns_bpt_find_buffer_sizes(int command, /* 0: write, 1: read */
 				   int row, int col, unsigned int data_bytes,
 				   unsigned int requested_bytes_per_frame,
 				   unsigned int *data_per_frame, unsigned int *pdi0_buffer_size,
-				   unsigned int *pdi1_buffer_size, unsigned int *num_frames);
+				   unsigned int *pdi1_buffer_size, unsigned int *num_frames,
+				   unsigned int *pad);
 
 int sdw_cdns_prepare_write_dma_buffer(u8 dev_num, u32 start_register, u8 *data, int data_size,
 				      int data_per_frame, u8 *dma_buffer, int dma_buffer_size,

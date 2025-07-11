@@ -2102,7 +2102,8 @@ int sdw_cdns_bpt_find_buffer_sizes(int command, /* 0: write, 1: read */
 				   int row, int col, unsigned int data_bytes,
 				   unsigned int requested_bytes_per_frame,
 				   unsigned int *data_per_frame, unsigned int *pdi0_buffer_size,
-				   unsigned int *pdi1_buffer_size, unsigned int *num_frames)
+				   unsigned int *pdi1_buffer_size, unsigned int *num_frames,
+				   unsigned int *pad)
 {
 	unsigned int bpt_bits = row * (col - 1);
 	unsigned int bpt_bytes = bpt_bits >> 3;
@@ -2167,6 +2168,17 @@ int sdw_cdns_bpt_find_buffer_sizes(int command, /* 0: write, 1: read */
 			*pdi0_buffer_size += pdi0_tx_size;
 			*pdi1_buffer_size += pdi1_rx_size;
 		}
+#if 0 //bard: for test
+      		pr_err("bard: %s *pdi1_buffer_size %d\n", __func__, *pdi1_buffer_size);
+		*pad = 0;
+      		if (*pdi1_buffer_size % 8) {
+			int div = DIV_ROUND_UP(*pdi1_buffer_size, 8);
+
+			*pad = (8 * div) - *pdi1_buffer_size;
+			*pdi1_buffer_size = 8 * div;
+			pr_err("bard: %s new *pdi1_buffer_size %d\n", __func__, *pdi1_buffer_size);
+		}
+#endif
 	}
 
 	return 0;
@@ -2388,7 +2400,7 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 	 * Set message length = data_per_frame even if the required data is less then
 	 * data_per_frame in the last frame.
 	 */
-	pr_err("bard: initial data_size %d\n", data_size);
+	pr_err("bard: %s data_size %d dma_buffer_size %d\n", __func__, data_size, dma_buffer_size);
 	while (data_size >= data_per_frame) {
 		header[1] = data_per_frame;
 		header[2] = start_register >> 24 & 0xFF;
@@ -2402,8 +2414,6 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 		if (ret < 0)
 			return ret;
 
-		pr_err("bard: %s data_per_frame %d start_register %#x dma_buffer_size %d dma_data_written %d\n",
-			__func__, data_per_frame, start_register, dma_buffer_size, dma_data_written);
 		counter++;
 
 		data_size -= data_per_frame;

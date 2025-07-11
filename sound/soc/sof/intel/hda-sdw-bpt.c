@@ -117,6 +117,7 @@ static int hda_sdw_bpt_dma_prepare(struct device *dev, struct hdac_ext_stream **
 
 	dev_dbg(dev, "direction %d format_val %#x\n", direction, format);
 
+	pr_err("bard: %s bpt_num_bytes %d\n", __func__, bpt_num_bytes);
 	bpt_stream = hda_cl_prepare(dev, format, bpt_num_bytes, dmab_bdl, false, direction, false);
 	if (IS_ERR(bpt_stream)) {
 		dev_err(sdev->dev, "%s: SDW BPT DMA prepare failed: dir %d\n",
