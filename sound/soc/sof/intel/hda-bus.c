@@ -28,6 +28,8 @@ static void update_codec_wake_enable(struct hdac_bus *bus, unsigned int addr, bo
 	else
 		mask |= BIT(addr);
 
+	pr_err("bard: %s addr %#x link_power %d mask %#x\n",
+		__func__, addr, link_power, mask);
 	snd_hdac_chip_updatew(bus, WAKEEN, STATESTS_INT_MASK, mask);
 }
 

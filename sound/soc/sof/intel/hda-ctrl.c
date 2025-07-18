@@ -188,14 +188,19 @@ int hda_dsp_ctrl_init_chip(struct snd_sof_dev *sdev)
 	struct hdac_bus *bus = sof_to_bus(sdev);
 	struct hdac_stream *stream;
 	int sd_offset, ret = 0;
+	u16 wake_sts;
 	u32 gctl;
 
+	dev_info(sdev->dev, "bard: %s chip_init %d\n", __func__, bus->chip_init);
 	if (bus->chip_init)
 		return 0;
 
 	hda_codec_set_codec_wakeup(sdev, true);
 
 	hda_dsp_ctrl_misc_clock_gating(sdev, false);
+
+	wake_sts = snd_hdac_chip_readw(bus, STATESTS);
+	dev_info(sdev->dev, "bard: %s %d wake_sts %#x bus->codec_mask %#lx\n", __func__, __LINE__, wake_sts, bus->codec_mask);
 
 	/* clear WAKE_STS if not in reset */
 	gctl = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, SOF_HDA_GCTL);
@@ -221,6 +226,8 @@ int hda_dsp_ctrl_init_chip(struct snd_sof_dev *sdev)
 	usleep_range(1000, 1200);
 
 	hda_codec_detect_mask(sdev);
+	wake_sts = snd_hdac_chip_readw(bus, STATESTS);
+	dev_info(sdev->dev, "bard: %s %d wake_sts %#x bus->codec_mask %#lx\n", __func__, __LINE__, wake_sts, bus->codec_mask);
 
 	/* clear stream status */
 	list_for_each_entry(stream, &bus->stream_list, list) {
@@ -233,6 +240,8 @@ int hda_dsp_ctrl_init_chip(struct snd_sof_dev *sdev)
 	/* clear WAKESTS */
 	snd_sof_dsp_write(sdev, HDA_DSP_HDA_BAR, SOF_HDA_WAKESTS,
 			  bus->codec_mask);
+	wake_sts = snd_hdac_chip_readw(bus, STATESTS);
+	dev_info(sdev->dev, "bard: %s %d wake_sts %#x bus->codec_mask %#lx\n", __func__, __LINE__, wake_sts, bus->codec_mask);
 
 	hda_codec_rirb_status_clear(sdev);
 

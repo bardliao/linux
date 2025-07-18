@@ -99,6 +99,7 @@ void hda_codec_jack_wake_enable(struct snd_sof_dev *sdev, bool enable)
 		}
 	}
 
+	pr_err("bard: %s mask %#x enable %d\n", __func__, mask, enable);
 	snd_hdac_chip_updatew(bus, WAKEEN, mask & STATESTS_INT_MASK, val);
 }
 EXPORT_SYMBOL_NS_GPL(hda_codec_jack_wake_enable, "SND_SOC_SOF_HDA_AUDIO_CODEC");
@@ -223,6 +224,7 @@ void hda_codec_probe_bus(struct snd_sof_dev *sdev)
 	    sof_debug_check_flag(SOF_DBG_FORCE_NOCODEC))
 		return;
 
+	pr_err("bard: %s codec_mask %#lx\n", __func__, bus->codec_mask);
 	/* probe codecs in avail slots */
 	for (i = 0; i < HDA_MAX_CODECS; i++) {
 
@@ -246,6 +248,7 @@ void hda_codec_check_for_state_change(struct snd_sof_dev *sdev)
 
 	codec_mask = snd_hdac_chip_readw(bus, STATESTS);
 	if (codec_mask) {
+		pr_info("bard: %s codec_mask %#x\n", __func__, codec_mask);
 		hda_codec_jack_check(sdev);
 		snd_hdac_chip_writew(bus, STATESTS, codec_mask);
 	}
@@ -266,12 +269,12 @@ void hda_codec_detect_mask(struct snd_sof_dev *sdev)
 	/* detect codecs */
 	if (!bus->codec_mask) {
 		bus->codec_mask = snd_hdac_chip_readw(bus, STATESTS);
-		dev_dbg(bus->dev, "codec_mask = 0x%lx\n", bus->codec_mask);
+		dev_info(bus->dev, "bard: codec_mask = 0x%lx\n", bus->codec_mask);
 	}
 
 	if (hda_codec_mask != -1) {
 		bus->codec_mask &= hda_codec_mask;
-		dev_dbg(bus->dev, "filtered codec_mask = 0x%lx\n",
+		dev_info(bus->dev, "bard: filtered codec_mask = 0x%lx\n",
 			bus->codec_mask);
 	}
 }

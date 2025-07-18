@@ -156,6 +156,8 @@ bool lnl_sdw_check_wakeen_irq(struct snd_sof_dev *sdev)
 	 */
 	wake_sts = snd_hdac_chip_readw(bus, STATESTS);
 
+	if (wake_sts)
+		dev_info(sdev->dev, "bard: %s wake_sts %#x\n", __func__, wake_sts);
 	/* filter out the range of SDIs that can be set for SoundWire */
 	return wake_sts & GENMASK(SDW_MAX_DEVICES, SDW_INTEL_DEV_NUM_IDA_MIN);
 }
