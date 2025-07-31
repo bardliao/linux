@@ -124,6 +124,9 @@ static int hda_sdw_bpt_dma_prepare(struct device *dev, struct hdac_ext_stream **
 			__func__, direction);
 		return PTR_ERR(bpt_stream);
 	}
+	/* Mark the HDA stream link is used */
+	bpt_stream->link_locked = 1;
+
 	*sdw_bpt_stream = bpt_stream;
 
 	if (!sdev->dspless_mode_selected) {
@@ -195,6 +198,8 @@ static int hda_sdw_bpt_dma_deprepare(struct device *dev, struct hdac_ext_stream 
 
 		snd_sof_dsp_update_bits(sdev, HDA_DSP_PP_BAR, SOF_HDA_REG_PP_PPCTL, mask, 0);
 	}
+
+	snd_hdac_ext_stream_release(sdw_bpt_stream, HDAC_EXT_STREAM_TYPE_LINK);
 
 	return 0;
 }
