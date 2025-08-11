@@ -21,6 +21,8 @@
 #include "bus.h"
 #include "intel.h"
 
+#define BPT_FREQUENCY		192000 /* The max rate defined in rate_bits[] hdac_device.c */
+
 static int sdw_slave_bpt_stream_add(struct sdw_slave *slave, struct sdw_stream_runtime *stream)
 {
 	struct sdw_stream_config sconfig = {0};
@@ -152,6 +154,9 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	if (ret < 0)
 		goto deprepare_stream;
 
+	pr_err("bard: cdns->bus.params.row %d cdns->bus.audio_stream_hstart %d\n",
+		cdns->bus.params.row, cdns->bus.audio_stream_hstart);
+	cdns->bus.audio_stream_hstart = 8; //hack
 	ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row, cdns->bus.params.col,
 					     msg->len, SDW_BPT_MSG_MAX_BYTES, &data_per_frame,
 					     &pdi0_buffer_size, &pdi1_buffer_size, &num_frames);
@@ -165,6 +170,8 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 
 	alignment = hda_sdw_bpt_get_buf_size_alignment(rx_dma_bandwidth);
 
+	pr_err("bard: rx alignment %d pdi1_buffer_size was %d pdi0_buffer_size was %d\n", alignment, pdi1_buffer_size, pdi0_buffer_size);
+
 	if (command) { /* read */
 		/*
 		 * Add at most 3 fake frames for read command to make the pdi0_buffer_size a
@@ -177,11 +184,15 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 							     &data_per_frame,
 							     &tx_pad, &pdi1_fake_buffer_size,
 							     &fake_num_frames);
+			pr_err("bard: i %d pdi1_fake_buffer_size %d, new pdi1_buffer_size %d tx_pad %d fack_num_frames %d data_per_frame %d alignment %d\n",
+				i, pdi1_fake_buffer_size, pdi1_buffer_size + pdi1_fake_buffer_size, tx_pad, fake_num_frames, data_per_frame, alignment);
 			if (!((pdi1_buffer_size + pdi1_fake_buffer_size) % alignment) &&
 			    !((pdi0_buffer_size + tx_pad) % TX_BUF_ALIGNMENT)) {
 				pdi0_buffer_size += tx_pad;
 				pdi1_buffer_size += pdi1_fake_buffer_size;
 				fake_size = i;
+				pr_err("bard: pdi0_buffer_size %d tx_pad %d alignment %d fake_size %d\n",
+					pdi0_buffer_size, tx_pad, alignment, fake_size);
 				break;
 			}
 		}
@@ -195,6 +206,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 		pdi0_buffer_size += tx_pad;
 
 	}
+	pr_err("bard: pdi1_buffer_size is %d\n", pdi1_buffer_size);
 
 	dev_dbg(cdns->dev, "Message len %d transferred in %d frames (%d per frame)\n",
 		msg->len, num_frames, data_per_frame);

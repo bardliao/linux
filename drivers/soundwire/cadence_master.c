@@ -2242,7 +2242,10 @@ static int sdw_cdns_prepare_write_pd0_buffer(u8 *header, unsigned int header_siz
 	int data_written;
 	u8 *last_byte;
 	u8 crc;
+	u8 *dma_buffer_start;
+	int i;
 
+	dma_buffer_start = dma_buffer;
 	*dma_data_written = 0;
 
 	data_written = sdw_cdns_copy_write_data(header, header_size, dma_buffer, dma_buffer_size);
@@ -2257,6 +2260,7 @@ static int sdw_cdns_prepare_write_pd0_buffer(u8 *header, unsigned int header_siz
 
 	crc = SDW_CRC8_SEED;
 	crc = crc8(sdw_crc8_lookup_msb, header, header_size, crc);
+	pr_err("bard: header crc %x\n", crc);
 
 	data_written = sdw_cdns_copy_write_data(&crc, 1, dma_buffer, dma_buffer_size);
 	if (data_written < 0)
@@ -2285,6 +2289,12 @@ static int sdw_cdns_prepare_write_pd0_buffer(u8 *header, unsigned int header_siz
 	last_byte = dma_buffer - 1;
 	last_byte[0] = BIT(6);
 
+#if 1
+	pr_err("bard: %s end dma_data_written %d\n", __func__, *dma_data_written);
+	for (i = 0; i < *dma_data_written; i++) {
+		pr_err("bard: dma_buffer[%d] = %02x\n", i, dma_buffer_start[i]);
+	}
+#endif
 	return 0;
 }
 
@@ -2296,7 +2306,11 @@ static int sdw_cdns_prepare_read_pd0_buffer(u8 *header, unsigned int header_size
 	int data_written;
 	u8 *last_byte;
 	u8 crc;
+	u8 *dma_buffer_start;
+	int i;
 
+	pr_err("bard: %s frame_counter %d\n", __func__, frame_counter);
+	dma_buffer_start = dma_buffer;
 	*dma_data_written = 0;
 
 	data_written = sdw_cdns_copy_write_data(header, header_size, dma_buffer, dma_buffer_size);
@@ -2322,7 +2336,12 @@ static int sdw_cdns_prepare_read_pd0_buffer(u8 *header, unsigned int header_size
 	/* tag last byte */
 	last_byte = dma_buffer - 1;
 	last_byte[0] = BIT(6);
-
+#if 1
+	pr_err("bard: %s end dma_data_written %d\n", __func__, *dma_data_written);
+	for (i = 0; i < *dma_data_written; i++) {
+		pr_err("bard: dma_buffer[%d] = %02x\n", i, dma_buffer_start[i]);
+	}
+#endif
 	return 0;
 }
 
@@ -2372,6 +2391,7 @@ int sdw_cdns_prepare_write_dma_buffer(u8 dev_num, u32 start_register, u8 *data, 
 		start_register += data_per_frame;
 	}
 
+	pr_err("bard: %s data_size %d dma_buffer_size %d\n", __func__, data_size, dma_buffer_size);
 	if (data_size) {
 		header[1] = data_size;
 		header[2] = start_register >> 24 & 0xFF;
@@ -2389,6 +2409,7 @@ int sdw_cdns_prepare_write_dma_buffer(u8 dev_num, u32 start_register, u8 *data, 
 		total_dma_data_written += dma_data_written;
 	}
 
+	pr_err("bard: %s dma_buffer_size %d\n", __func__, dma_buffer_size);
 	*dma_buffer_total_bytes = total_dma_data_written;
 
 	return 0;
@@ -2406,6 +2427,7 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 	u8 counter;
 	int ret;
 
+	pr_err("bard: %s data_per_frame %d data_size %d\n", __func__, data_per_frame, data_size);
 	counter = CDNS_BPT_ROLLING_COUNTER_START;
 
 	header[0] = 0;			/* read command: BIT(1) cleared */
@@ -2489,6 +2511,8 @@ int sdw_cdns_prepare_read_dma_buffer(u8 dev_num, u32 start_register, int data_si
 		total_dma_data_written += dma_data_written;
 	}
 
+	if (dma_buffer_size)
+		pr_err("bard: dma_buffer_size %d total_dma_data_written %d\n", dma_buffer_size, total_dma_data_written);
 	*dma_buffer_total_bytes = total_dma_data_written;
 
 	return 0;
@@ -2522,6 +2546,7 @@ static int check_frame_start(u32 header, u8 counter)
 {
 	int ret;
 
+	pr_err("bard: header %#08x counter %d\n", header, counter);
 	/* check frame_start marker */
 	if (!(header & BIT(31)))
 		return -EIO;
@@ -2560,7 +2585,10 @@ int sdw_cdns_check_write_response(struct device *dev, u8 *dma_buffer,
 	p_data = (u32 *)dma_buffer;
 
 	for (i = 0; i < num_frames; i++) {
+		pr_err("bard: frame %d\n", i);
+		pr_err("bard: *p_data %04x\n", *p_data);
 		header = *p_data++;
+		pr_err("bard: *p_data %04x\n", *p_data);
 		footer = *p_data++;
 
 		ret = check_frame_start(header, counter);

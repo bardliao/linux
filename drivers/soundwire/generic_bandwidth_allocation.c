@@ -189,6 +189,7 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 			bus->audio_stream_hstart = hstart;
 	}
 
+	dev_err(bus->dev, "bard: %s audio_stream_hstart %d\n", __func__, bus->audio_stream_hstart);
 	t_data.lane = params->lane;
 	sdw_compute_slave_ports(m_rt, &t_data);
 }
@@ -197,6 +198,7 @@ static void _sdw_compute_port_params(struct sdw_bus *bus,
 				     struct sdw_group_params *params, int count)
 {
 	struct sdw_master_runtime *m_rt;
+	int audio_stream_hstart = bus->audio_stream_hstart;
 	int port_bo, i, l;
 	int hstop;
 
@@ -224,6 +226,10 @@ static void _sdw_compute_port_params(struct sdw_bus *bus,
 
 			hstop = hstop - params[i].hwidth;
 		}
+	}
+	/* If audio_stream_hstart was changed, update BRA port params */
+	if (audio_stream_hstart != bus->audio_stream_hstart) {
+		sdw_compute_dp0_port_params(bus);
 	}
 }
 
@@ -584,6 +590,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 			curr_dr_freq = (is_gear) ?
 				(bus->params.max_dr_freq >>  clk_buf[i]) :
 				clk_buf[i] * SDW_DOUBLE_RATE_FACTOR;
+		curr_dr_freq = bus->params.max_dr_freq; //bard: HACK to test BRA
 
 		if (curr_dr_freq * (mstr_prop->default_col - 1) >=
 		    bus->params.bandwidth * mstr_prop->default_col)
@@ -677,12 +684,18 @@ int sdw_compute_params(struct sdw_bus *bus, struct sdw_stream_runtime *stream)
 	if (ret < 0)
 		return ret;
 
+	/* Set initial audio_stream_hstart */
+	if (!bus->audio_stream_hstart)
+		bus->audio_stream_hstart = bus->params.col;
+	dev_err(bus->dev, "bard: %s %d set bus->audio_stream_hstart = %d\n", __func__, __LINE__, bus->audio_stream_hstart);
+
 	if (stream->type == SDW_STREAM_BPT) {
 		sdw_compute_dp0_port_params(bus);
 		return 0;
 	}
 
 	bus->audio_stream_hstart = bus->params.col;
+	dev_err(bus->dev, "bard: %s %d set bus->audio_stream_hstart = %d\n", __func__, __LINE__, bus->audio_stream_hstart);
 	/* Compute transport and port params */
 	ret = sdw_compute_port_params(bus, stream);
 	if (ret < 0) {
