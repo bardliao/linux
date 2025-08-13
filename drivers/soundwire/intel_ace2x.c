@@ -22,6 +22,7 @@
 #include "intel.h"
 
 #define BPT_FREQUENCY		192000 /* The max rate defined in rate_bits[] hdac_device.c */
+extern int bra_bytes_pre_frame;
 
 static int sdw_slave_bpt_stream_add(struct sdw_slave *slave, struct sdw_stream_runtime *stream)
 {
@@ -157,8 +158,11 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	pr_err("bard: cdns->bus.params.row %d cdns->bus.audio_stream_hstart %d\n",
 		cdns->bus.params.row, cdns->bus.audio_stream_hstart);
 	cdns->bus.audio_stream_hstart = 8; //hack
+	if (!bra_bytes_pre_frame)
+		bra_bytes_pre_frame = SDW_BPT_MSG_MAX_BYTES;
+
 	ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row, cdns->bus.params.col,
-					     msg->len, SDW_BPT_MSG_MAX_BYTES, &data_per_frame,
+					     msg->len, bra_bytes_pre_frame, &data_per_frame,
 					     &pdi0_buffer_size, &pdi1_buffer_size, &num_frames);
 	if (ret < 0)
 		goto deprepare_stream;
@@ -180,7 +184,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 		for (i = 1; i < data_per_frame * 3; i++) {
 			ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row,
 							     cdns->bus.audio_stream_hstart,
-							     i, SDW_BPT_MSG_MAX_BYTES,
+							     i, bra_bytes_pre_frame,
 							     &data_per_frame,
 							     &tx_pad, &pdi1_fake_buffer_size,
 							     &fake_num_frames);
