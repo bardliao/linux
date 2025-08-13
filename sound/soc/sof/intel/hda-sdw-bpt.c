@@ -247,6 +247,15 @@ static int hda_sdw_bpt_dma_disable(struct device *dev, struct hdac_ext_stream *s
 	return ret;
 }
 
+unsigned int hda_sdw_bpt_get_buf_size_alignment(unsigned int dma_bandwidth)
+{
+	unsigned int num_channels = DIV_ROUND_UP(dma_bandwidth, BPT_FREQUENCY * 32);
+	unsigned int data_block = num_channels * 4;
+
+	return data_block;
+}
+EXPORT_SYMBOL_NS(hda_sdw_bpt_get_buf_size_alignment, "SND_SOC_SOF_INTEL_HDA_SDW_BPT");
+
 int hda_sdw_bpt_open(struct device *dev, int link_id, struct hdac_ext_stream **bpt_tx_stream,
 		     struct snd_dma_buffer *dmab_tx_bdl, u32 bpt_tx_num_bytes,
 		     u32 tx_dma_bandwidth, struct hdac_ext_stream **bpt_rx_stream,
