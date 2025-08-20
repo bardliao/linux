@@ -59,11 +59,16 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	struct sdw_stream_config sconfig;
 	struct sdw_port_config *pconfig;
 	unsigned int pdi1_fake_buffer_size;
+	unsigned int pdi0_buffer_size_;
+	unsigned int pdi1_buffer_size_;
 	unsigned int pdi0_buffer_size;
 	unsigned int tx_dma_bandwidth;
+	unsigned int tx_dma_bandwidth_;
 	unsigned int pdi1_buffer_size;
 	unsigned int rx_dma_bandwidth;
+	unsigned int rx_dma_bandwidth_;
 	unsigned int fake_num_frames;
+	unsigned int data_per_frame_;
 	unsigned int data_per_frame;
 	unsigned int tx_total_bytes;
 	struct sdw_cdns_pdi *pdi0;
@@ -77,6 +82,11 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	int ret;
 	int dir;
 	int i;
+	int _BulkBandwidthBps;
+	int _BulkPacketSize;
+	int RequiredRenderBandwidth_tx;
+	int RequiredRenderBandwidth_rx;
+	unsigned int requiredFPS;
 
 	stream = sdw_alloc_stream("BPT", SDW_STREAM_BPT);
 	if (!stream)
@@ -174,7 +184,14 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 
 	alignment = hda_sdw_bpt_get_buf_size_alignment(rx_dma_bandwidth);
 
-	pr_err("bard: rx alignment %d pdi1_buffer_size was %d pdi0_buffer_size was %d\n", alignment, pdi1_buffer_size, pdi0_buffer_size);
+	pr_err("bard: rx alignment %d pdi1_buffer_size was %d pdi0_buffer_size was %d tx_bandwidth %d rx_bandwidth %d\n", alignment, pdi1_buffer_size, pdi0_buffer_size, tx_dma_bandwidth, rx_dma_bandwidth);
+	_BulkPacketSize = (cdns->bus.params.row * (cdns->bus.params.col - 1) / 8);
+	_BulkBandwidthBps = DIV_ROUND_UP(prop->default_frame_rate, (cdns->bus.params.row * cdns->bus.params.col)) * _BulkPacketSize;
+	requiredFPS = DIV_ROUND_UP(_BulkBandwidthBps, _BulkPacketSize);
+	RequiredRenderBandwidth_tx = pdi0_buffer_size_ * requiredFPS;
+	RequiredRenderBandwidth_rx = pdi1_buffer_size_ * requiredFPS;
+	pr_err("bard: prop->default_frame_rate %d _BulkBandwidthBps %d _BulkPacketSize %d requiredFPS %d RequiredRenderBandwidth_tx %d RequiredRenderBandwidth_rx %d\n",
+		prop->default_frame_rate, _BulkBandwidthBps, _BulkPacketSize, requiredFPS, RequiredRenderBandwidth_tx, RequiredRenderBandwidth_rx);
 
 	if (command) { /* read */
 		/*
@@ -188,8 +205,8 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 							     &data_per_frame,
 							     &tx_pad, &pdi1_fake_buffer_size,
 							     &fake_num_frames);
-			pr_err("bard: i %d pdi1_fake_buffer_size %d, new pdi1_buffer_size %d tx_pad %d fack_num_frames %d data_per_frame %d alignment %d\n",
-				i, pdi1_fake_buffer_size, pdi1_buffer_size + pdi1_fake_buffer_size, tx_pad, fake_num_frames, data_per_frame, alignment);
+//			pr_err("bard: i %d pdi1_fake_buffer_size %d, new pdi1_buffer_size %d tx_pad %d fack_num_frames %d data_per_frame %d alignment %d\n",
+//				i, pdi1_fake_buffer_size, pdi1_buffer_size + pdi1_fake_buffer_size, tx_pad, fake_num_frames, data_per_frame, alignment);
 			if (!((pdi1_buffer_size + pdi1_fake_buffer_size) % alignment) &&
 			    !((pdi0_buffer_size + tx_pad) % TX_BUF_ALIGNMENT)) {
 				pdi0_buffer_size += tx_pad;
@@ -214,9 +231,18 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 
 	dev_dbg(cdns->dev, "Message len %d transferred in %d frames (%d per frame)\n",
 		msg->len, num_frames, data_per_frame);
-	dev_dbg(cdns->dev, "sizes pdi0 %d pdi1 %d tx_bandwidth %d rx_bandwidth %d\n",
+	dev_dbg(cdns->dev, "bard: old sizes pdi0 %d pdi1 %d tx_bandwidth %d rx_bandwidth %d\n",
 		pdi0_buffer_size, pdi1_buffer_size, tx_dma_bandwidth, rx_dma_bandwidth);
 
+#if 1 //re-calculate bandwidth
+	tx_dma_bandwidth_ = div_u64((u64)pdi0_buffer_size * 8 * (u64)prop->default_frame_rate,
+				   num_frames + fake_num_frames);
+	rx_dma_bandwidth_ = div_u64((u64)pdi1_buffer_size * 8 * (u64)prop->default_frame_rate,
+				   num_frames + fake_num_frames);
+
+	dev_dbg(cdns->dev, "bard: new sizes pdi0 %d pdi1 %d tx_bandwidth %d rx_bandwidth %d\n",
+		pdi0_buffer_size, pdi1_buffer_size, tx_dma_bandwidth_, rx_dma_bandwidth_);
+#endif 
 	ret = hda_sdw_bpt_open(cdns->dev->parent, /* PCI device */
 			       sdw->instance, &sdw->bpt_ctx.bpt_tx_stream,
 			       &sdw->bpt_ctx.dmab_tx_bdl, pdi0_buffer_size, tx_dma_bandwidth,

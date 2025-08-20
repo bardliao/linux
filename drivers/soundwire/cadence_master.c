@@ -2243,7 +2243,7 @@ static int sdw_cdns_prepare_write_pd0_buffer(u8 *header, unsigned int header_siz
 	u8 *last_byte;
 	u8 crc;
 	u8 *dma_buffer_start;
-	int i;
+//	int i;
 
 	dma_buffer_start = dma_buffer;
 	*dma_data_written = 0;
@@ -2289,7 +2289,7 @@ static int sdw_cdns_prepare_write_pd0_buffer(u8 *header, unsigned int header_siz
 	last_byte = dma_buffer - 1;
 	last_byte[0] = BIT(6);
 
-#if 1
+#if 0
 	pr_err("bard: %s end dma_data_written %d\n", __func__, *dma_data_written);
 	for (i = 0; i < *dma_data_written; i++) {
 		pr_err("bard: dma_buffer[%d] = %02x\n", i, dma_buffer_start[i]);
@@ -2307,7 +2307,7 @@ static int sdw_cdns_prepare_read_pd0_buffer(u8 *header, unsigned int header_size
 	u8 *last_byte;
 	u8 crc;
 	u8 *dma_buffer_start;
-	int i;
+//	int i;
 
 	pr_err("bard: %s frame_counter %d\n", __func__, frame_counter);
 	dma_buffer_start = dma_buffer;
@@ -2336,7 +2336,7 @@ static int sdw_cdns_prepare_read_pd0_buffer(u8 *header, unsigned int header_size
 	/* tag last byte */
 	last_byte = dma_buffer - 1;
 	last_byte[0] = BIT(6);
-#if 1
+#if 0
 	pr_err("bard: %s end dma_data_written %d\n", __func__, *dma_data_written);
 	for (i = 0; i < *dma_data_written; i++) {
 		pr_err("bard: dma_buffer[%d] = %02x\n", i, dma_buffer_start[i]);

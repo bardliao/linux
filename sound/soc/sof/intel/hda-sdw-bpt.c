@@ -249,10 +249,14 @@ static int hda_sdw_bpt_dma_disable(struct device *dev, struct hdac_ext_stream *s
 
 unsigned int hda_sdw_bpt_get_buf_size_alignment(unsigned int dma_bandwidth)
 {
+#if 1
 	unsigned int num_channels = DIV_ROUND_UP(dma_bandwidth, BPT_FREQUENCY * 32);
 	unsigned int data_block = num_channels * 4;
 
 	return data_block;
+#else
+	return 24;
+#endif
 }
 EXPORT_SYMBOL_NS(hda_sdw_bpt_get_buf_size_alignment, "SND_SOC_SOF_INTEL_HDA_SDW_BPT");
 
@@ -267,9 +271,12 @@ int hda_sdw_bpt_open(struct device *dev, int link_id, struct hdac_ext_stream **b
 	unsigned int num_channels_rx;
 	int ret1;
 	int ret;
+	int dmaBandwidth;
 
 	num_channels_tx = DIV_ROUND_UP(tx_dma_bandwidth, BPT_FREQUENCY * 32);
-	pr_err("bard: bpt_tx_num_bytes is %d\n", bpt_tx_num_bytes);
+//	num_channels_rx = 2; //HACK
+	dmaBandwidth = BPT_FREQUENCY * 32 * num_channels_tx;
+	pr_err("bard: bpt_tx_num_bytes is %d num_channels_tx %d dmaBandwidth TX %d\n", bpt_tx_num_bytes, num_channels_tx, dmaBandwidth);
 
 	ret = hda_sdw_bpt_dma_prepare(dev, bpt_tx_stream, dmab_tx_bdl, bpt_tx_num_bytes,
 				      num_channels_tx, SNDRV_PCM_STREAM_PLAYBACK);
@@ -280,6 +287,9 @@ int hda_sdw_bpt_open(struct device *dev, int link_id, struct hdac_ext_stream **b
 	}
 
 	num_channels_rx = DIV_ROUND_UP(rx_dma_bandwidth, BPT_FREQUENCY * 32);
+//	num_channels_rx = 6; //HACK
+	dmaBandwidth = BPT_FREQUENCY * 32 * num_channels_rx;
+	pr_err("bard: bpt_rx_num_bytes is %d num_channels_rx %d dmaBandwidth RX %d\n", bpt_rx_num_bytes, num_channels_rx, dmaBandwidth);
 
 	ret = hda_sdw_bpt_dma_prepare(dev, bpt_rx_stream, dmab_rx_bdl, bpt_rx_num_bytes,
 				      num_channels_rx, SNDRV_PCM_STREAM_CAPTURE);
