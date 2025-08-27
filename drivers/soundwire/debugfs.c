@@ -142,6 +142,7 @@ DEFINE_SHOW_ATTRIBUTE(sdw_slave_reg);
 
 static int cmd;
 static int cmd_type;
+static int bpt_sec_num = 1;
 static u32 start_addr;
 static size_t num_bytes;
 static u8 read_buffer[MAX_CMD_BYTES];
@@ -222,17 +223,31 @@ DEFINE_DEBUGFS_ATTRIBUTE(set_num_bytes_fops, NULL,
 static int do_bpt_sequence(struct sdw_slave *slave, bool write, u8 *buffer)
 {
 	struct sdw_bpt_msg msg = {0};
+	struct sdw_bpt_section *sec;
+	int ret;
+	int i;
 
-	msg.addr = start_addr;
-	msg.len = num_bytes;
+	sec = kcalloc(bpt_sec_num, sizeof(*sec), GFP_KERNEL);
+	if (!sec)
+		return -ENOMEM;
+	msg.sections = bpt_sec_num;
+
+	for (i = 0; i < msg.sections; i++) {
+		sec[i].addr = start_addr;
+		sec[i].len = num_bytes;
+		sec[i].buf = buffer;
+	}
+
+	msg.sec = sec;
 	msg.dev_num = slave->dev_num;
 	if (write)
 		msg.flags = SDW_MSG_FLAG_WRITE;
 	else
 		msg.flags = SDW_MSG_FLAG_READ;
-	msg.buf = buffer;
 
-	return sdw_bpt_send_sync(slave->bus, slave, &msg);
+	ret = sdw_bpt_send_sync(slave->bus, slave, &msg);
+	kfree(sec);
+	return ret;
 }
 
 static int cmd_go(void *data, u64 value)
