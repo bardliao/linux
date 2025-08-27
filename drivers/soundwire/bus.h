@@ -72,6 +72,12 @@ struct sdw_msg {
 	bool page;
 };
 
+struct sdw_bpt_section {
+	u32 addr;
+	u32 len;
+	u8 *buf;
+};
+
 /**
  * struct sdw_btp_msg - Message structure
  * @addr: Start Register address accessed in the Slave
@@ -83,11 +89,10 @@ struct sdw_msg {
  * by Peripheral hardware for reads)
  */
 struct sdw_bpt_msg {
-	u32 addr;
-	u32 len;
+	struct sdw_bpt_section *sec;
+	int sections;
 	u8 dev_num;
 	u8 flags;
-	u8 *buf;
 };
 
 #define SDW_DOUBLE_RATE_FACTOR		2
