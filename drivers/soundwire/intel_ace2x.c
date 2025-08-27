@@ -21,6 +21,8 @@
 #include "bus.h"
 #include "intel.h"
 
+extern int bra_bytes_pre_frame;
+
 static int sdw_slave_bpt_stream_add(struct sdw_slave *slave, struct sdw_stream_runtime *stream)
 {
 	struct sdw_stream_config sconfig = {0};
@@ -162,6 +164,9 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	pr_err("bard: cdns->bus.params.row %d cdns->bus.audio_stream_hstart %d\n",
 		cdns->bus.params.row, cdns->bus.audio_stream_hstart);
 
+	if (!bra_bytes_pre_frame)
+		bra_bytes_pre_frame = SDW_BPT_MSG_MAX_BYTES;
+
 	len = 0;
 	pdi0_buffer_size = 0;
 	pdi1_buffer_size = 0;
@@ -169,7 +174,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	for (i = 0; i < msg->sections; i++) {
 		ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row,
 						     cdns->bus.audio_stream_hstart,
-						     msg->sec[i].len, SDW_BPT_MSG_MAX_BYTES,
+						     msg->sec[i].len, bra_bytes_pre_frame,
 						     &data_per_frame, &pdi0_buffer_size_,
 						     &pdi1_buffer_size_, &num_frames_);
 		if (ret < 0)
@@ -196,7 +201,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 		/* Get buffer size of a full frame */
 		ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row,
 						     cdns->bus.audio_stream_hstart,
-						     data_per_frame, SDW_BPT_MSG_MAX_BYTES,
+						     data_per_frame, bra_bytes_pre_frame,
 						     &data_per_frame, &pdi0_buf_size_pre_frame,
 						     &pdi1_buf_size_pre_frame, &fake_num_frames);
 		if (ret < 0)

@@ -147,6 +147,10 @@ static u32 start_addr;
 static size_t num_bytes;
 static u8 read_buffer[MAX_CMD_BYTES];
 static char *firmware_file;
+int bra_bytes_pre_frame = 1024;
+EXPORT_SYMBOL(bra_bytes_pre_frame);
+int bra_buf_size = 1;
+EXPORT_SYMBOL(bra_buf_size);
 
 static int set_command(void *data, u64 value)
 {
@@ -219,6 +223,44 @@ static int set_num_bytes(void *data, u64 value)
 }
 DEFINE_DEBUGFS_ATTRIBUTE(set_num_bytes_fops, NULL,
 			 set_num_bytes, "%llu\n");
+
+static int set_bytes_pre_frame(void *data, u64 value)
+{
+	struct sdw_slave *slave = data;
+
+	if (value == 0 || value > MAX_CMD_BYTES)
+		return -EINVAL;
+
+	/* Userspace changed the hardware state behind the kernel's back */
+	add_taint(TAINT_USER, LOCKDEP_STILL_OK);
+
+	dev_dbg(&slave->dev, "number of bytes pre frame %lld\n", value);
+
+	bra_bytes_pre_frame = value;
+
+	return 0;
+}
+DEFINE_DEBUGFS_ATTRIBUTE(set_bytes_pre_frame_fops, NULL,
+			 set_bytes_pre_frame, "%llu\n");
+
+static int set_buf_size(void *data, u64 value)
+{
+	struct sdw_slave *slave = data;
+
+//	if (value == 0 || value > 32)
+//		return -EINVAL;
+
+	/* Userspace changed the hardware state behind the kernel's back */
+	add_taint(TAINT_USER, LOCKDEP_STILL_OK);
+
+	dev_dbg(&slave->dev, "buffer size %lld\n", value);
+
+	bra_buf_size = value;
+
+	return 0;
+}
+DEFINE_DEBUGFS_ATTRIBUTE(set_bus_size_fops, NULL,
+			 set_buf_size, "%llu\n");
 
 static int do_bpt_sequence(struct sdw_slave *slave, bool write, u8 *buffer)
 {
@@ -362,6 +404,8 @@ void sdw_slave_debugfs_init(struct sdw_slave *slave)
 	debugfs_create_file("command_type", 0200, d, slave, &set_command_type_fops);
 	debugfs_create_file("start_address", 0200, d, slave, &set_start_address_fops);
 	debugfs_create_file("num_bytes", 0200, d, slave, &set_num_bytes_fops);
+	debugfs_create_file("bra_bytes_pre_frame", 0200, d, slave, &set_bytes_pre_frame_fops);
+	debugfs_create_file("bra_buf_size", 0200, d, slave, &set_bus_size_fops);
 	debugfs_create_file("go", 0200, d, slave, &cmd_go_fops);
 
 	debugfs_create_file("read_buffer", 0400, d, slave, &read_buffer_fops);
