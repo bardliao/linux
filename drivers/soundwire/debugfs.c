@@ -262,6 +262,22 @@ static int set_buf_size(void *data, u64 value)
 DEFINE_DEBUGFS_ATTRIBUTE(set_bus_size_fops, NULL,
 			 set_buf_size, "%llu\n");
 
+static int set_num_sec(void *data, u64 value)
+{
+	struct sdw_slave *slave = data;
+
+	/* Userspace changed the hardware state behind the kernel's back */
+	add_taint(TAINT_USER, LOCKDEP_STILL_OK);
+
+	dev_dbg(&slave->dev, "number of sections %lld\n", value);
+
+	bpt_sec_num = value;
+
+	return 0;
+}
+DEFINE_DEBUGFS_ATTRIBUTE(set_num_sec_fops, NULL,
+			 set_num_sec, "%llu\n");
+
 static int do_bpt_sequence(struct sdw_slave *slave, bool write, u8 *buffer)
 {
 	struct sdw_bpt_msg msg = {0};
@@ -279,6 +295,7 @@ static int do_bpt_sequence(struct sdw_slave *slave, bool write, u8 *buffer)
 		sec[i].len = num_bytes;
 		sec[i].buf = buffer;
 	}
+	sec[1].len = num_bytes / 3; //bard: HACK
 
 	msg.sec = sec;
 	msg.dev_num = slave->dev_num;
@@ -404,6 +421,7 @@ void sdw_slave_debugfs_init(struct sdw_slave *slave)
 	debugfs_create_file("command_type", 0200, d, slave, &set_command_type_fops);
 	debugfs_create_file("start_address", 0200, d, slave, &set_start_address_fops);
 	debugfs_create_file("num_bytes", 0200, d, slave, &set_num_bytes_fops);
+	debugfs_create_file("num_secs", 0200, d, slave, &set_num_sec_fops);
 	debugfs_create_file("bra_bytes_pre_frame", 0200, d, slave, &set_bytes_pre_frame_fops);
 	debugfs_create_file("bra_buf_size", 0200, d, slave, &set_bus_size_fops);
 	debugfs_create_file("go", 0200, d, slave, &cmd_go_fops);
