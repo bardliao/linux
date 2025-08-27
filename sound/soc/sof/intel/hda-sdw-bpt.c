@@ -273,6 +273,7 @@ int hda_sdw_bpt_open(struct device *dev, int link_id, struct hdac_ext_stream **b
 	int ret;
 
 	num_channels_tx = DIV_ROUND_UP(tx_dma_bandwidth, BPT_FREQUENCY * 32);
+	pr_err("bard: bpt_tx_num_bytes is %d\n", bpt_tx_num_bytes);
 
 	ret = hda_sdw_bpt_dma_prepare(dev, bpt_tx_stream, dmab_tx_bdl, bpt_tx_num_bytes,
 				      num_channels_tx, SNDRV_PCM_STREAM_PLAYBACK);
