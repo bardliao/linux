@@ -159,6 +159,9 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	if (ret < 0)
 		goto deprepare_stream;
 
+	pr_err("bard: cdns->bus.params.row %d cdns->bus.audio_stream_hstart %d\n",
+		cdns->bus.params.row, cdns->bus.audio_stream_hstart);
+
 	len = 0;
 	pdi0_buffer_size = 0;
 	pdi1_buffer_size = 0;
@@ -186,6 +189,8 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	rx_alignment = hda_sdw_bpt_get_buf_size_alignment(rx_dma_bandwidth);
 	tx_alignment = hda_sdw_bpt_get_buf_size_alignment(tx_dma_bandwidth);
 
+	pr_err("bard: rx alignment %d pdi1_buffer_size was %d pdi0_buffer_size was %d\n", alignment, pdi1_buffer_size, pdi0_buffer_size);
+
 	if (command) { /* read */
 		/* Get buffer size of a full frame */
 		ret = sdw_cdns_bpt_find_buffer_sizes(command, cdns->bus.params.row,
@@ -210,6 +215,8 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 		pdi0_buffer_size += (fake_num_frames * pdi0_buf_size_pre_frame);
 		tx_pad = tx_alignment - (pdi0_buffer_size % tx_alignment);
 		pdi0_buffer_size += tx_pad;
+		pr_err("bard: pdi0_buffer_size %d tx_pad %d alignment %d fake_size %d\n",
+			pdi0_buffer_size, tx_pad, alignment, fake_size);
 	} else { /* write */
 		/*
 		 * For the write command, the rx data block is 4, and the rx buffer size of a frame
@@ -220,6 +227,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 		pdi0_buffer_size += tx_pad;
 
 	}
+	pr_err("bard: pdi1_buffer_size is %d\n", pdi1_buffer_size);
 
 	dev_dbg(cdns->dev, "Message len %d transferred in %d frames (%d per frame)\n",
 		len, num_frames, data_per_frame);
