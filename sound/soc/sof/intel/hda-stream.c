@@ -70,6 +70,7 @@ static int hda_setup_bdle(struct snd_sof_dev *sdev,
 	struct hdac_bus *bus = sof_to_bus(sdev);
 	struct sof_intel_dsp_bdl *bdl = *bdlp;
 
+	pr_err("bard: %s hstream->index %d\n", __func__, hstream->index);
 	while (size > 0) {
 		dma_addr_t addr;
 		int chunk;
@@ -85,6 +86,7 @@ static int hda_setup_bdle(struct snd_sof_dev *sdev,
 		bdl->addr_h = cpu_to_le32(upper_32_bits(addr));
 		/* program BDL size */
 		chunk = snd_sgbuf_get_chunk_size(dmab, offset, size);
+		pr_err("bard chunk %d\n", chunk);
 		/* one BDLE should not cross 4K boundary */
 		if (bus->align_bdle_4k) {
 			u32 remain = 0x1000 - (offset & 0xfff);
@@ -118,6 +120,7 @@ int hda_dsp_stream_setup_bdl(struct snd_sof_dev *sdev,
 	int i, offset, period_bytes, periods;
 	int remain, ioc;
 
+	pr_err("bard: %s\n", __func__);
 	period_bytes = hstream->period_bytes;
 	dev_dbg(sdev->dev, "period_bytes: %#x, bufsize: %#x\n", period_bytes,
 		hstream->bufsize);
@@ -191,6 +194,7 @@ int hda_dsp_stream_spib_config(struct snd_sof_dev *sdev,
 	struct hdac_stream *hstream = &hext_stream->hstream;
 	u32 mask;
 
+	pr_err("bard: %s\n", __func__);
 	if (!sdev->bar[HDA_DSP_SPIB_BAR]) {
 		dev_err(sdev->dev, "error: address of spib capability is NULL\n");
 		return -EINVAL;
@@ -220,6 +224,7 @@ hda_dsp_stream_get(struct snd_sof_dev *sdev, int direction, u32 flags)
 	struct hdac_ext_stream *hext_stream = NULL;
 	struct hdac_stream *s;
 
+	pr_err("bard: %s\n", __func__);
 	spin_lock_irq(&bus->reg_lock);
 
 	/* get an unused stream */
@@ -276,6 +281,7 @@ int hda_dsp_stream_put(struct snd_sof_dev *sdev, int direction, int stream_tag)
 	bool dmi_l1_enable = true;
 	bool found = false;
 
+	pr_err("bard: %s\n", __func__);
 	spin_lock_irq(&bus->reg_lock);
 
 	/*
@@ -321,6 +327,7 @@ static int hda_dsp_stream_reset(struct snd_sof_dev *sdev, struct hdac_stream *hs
 	int timeout = HDA_DSP_STREAM_RESET_TIMEOUT;
 	u32 val;
 
+	pr_err("bard: %s\n", __func__);
 	/* enter stream reset */
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_HDA_BAR, sd_offset, SOF_STREAM_SD_OFFSET_CRST,
 				SOF_STREAM_SD_OFFSET_CRST);
@@ -354,6 +361,34 @@ static int hda_dsp_stream_reset(struct snd_sof_dev *sdev, struct hdac_stream *hs
 	return 0;
 }
 
+static const u32 sd_registers[] = {
+	SOF_HDA_ADSP_REG_SD_CTL,
+	SOF_HDA_ADSP_REG_SD_CTL_B2,
+	SOF_HDA_ADSP_REG_SD_STS,
+	SOF_HDA_ADSP_REG_SD_LPIB,
+	SOF_HDA_ADSP_REG_SD_CBL,
+	SOF_HDA_ADSP_REG_SD_LVI,
+	SOF_HDA_ADSP_REG_SD_FIFOW,
+	SOF_HDA_ADSP_REG_SD_FIFOSIZE,
+	SOF_HDA_ADSP_REG_SD_FORMAT,
+	SOF_HDA_ADSP_REG_SD_FIFOL,
+	SOF_HDA_ADSP_REG_SD_BDLPL,
+	SOF_HDA_ADSP_REG_SD_BDLPU,
+	SOF_HDA_ADSP_SD_ENTRY_SIZE,
+};
+
+void hda_dsp_stream_debug(struct snd_sof_dev *sdev, u32 sd_offset, const char * func)
+{
+	u32 val;
+	int i;
+
+	for(i = 0; i < ARRAY_SIZE(sd_registers); i++) {
+		val = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, sd_offset + sd_registers[i]);
+		pr_err("bard: %s SD reg 0x%02x %#x\n", func, sd_registers[i], val);
+	}
+}
+EXPORT_SYMBOL_NS(hda_dsp_stream_debug, "SND_SOC_SOF_INTEL_HDA_COMMON");
+
 int hda_dsp_stream_trigger(struct snd_sof_dev *sdev,
 			   struct hdac_ext_stream *hext_stream, int cmd)
 {
@@ -363,6 +398,7 @@ int hda_dsp_stream_trigger(struct snd_sof_dev *sdev,
 	int ret = 0;
 	u32 run;
 
+	pr_err("bard: %s cmd %d\n", __func__, cmd);
 	/* cmd must be for audio stream */
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
@@ -413,6 +449,7 @@ int hda_dsp_stream_trigger(struct snd_sof_dev *sdev,
 						HDA_DSP_STREAM_RUN_TIMEOUT);
 
 		if (ret >= 0) {
+			pr_err("bard: %s %d clear SD_INT\n", __func__, __LINE__);
 			snd_sof_dsp_write(sdev, HDA_DSP_HDA_BAR,
 					  sd_offset + SOF_HDA_ADSP_REG_SD_STS,
 					  SOF_HDA_CL_DMA_SD_INT_MASK);
@@ -436,6 +473,7 @@ int hda_dsp_stream_trigger(struct snd_sof_dev *sdev,
 			__func__, cmd, stream_name ? stream_name : "unknown stream");
 		kfree(stream_name);
 	}
+	hda_dsp_stream_debug(sdev, sd_offset, __func__);
 
 	return ret;
 }
@@ -450,6 +488,7 @@ int hda_dsp_iccmax_stream_hw_params(struct snd_sof_dev *sdev, struct hdac_ext_st
 	int ret;
 	u32 mask = 0x1 << hstream->index;
 
+	pr_err("bard: %s\n", __func__);
 	if (!hext_stream) {
 		dev_err(sdev->dev, "error: no stream available\n");
 		return -ENODEV;
@@ -528,6 +567,7 @@ int hda_dsp_stream_hw_params(struct snd_sof_dev *sdev,
 	u32 dma_start = SOF_HDA_SD_CTL_DMA_START;
 	u32 mask;
 	u32 run;
+	u32 val;
 
 	if (!hext_stream) {
 		dev_err(sdev->dev, "error: no stream available\n");
@@ -542,6 +582,7 @@ int hda_dsp_stream_hw_params(struct snd_sof_dev *sdev,
 	hstream = &hext_stream->hstream;
 	sd_offset = SOF_STREAM_SD_OFFSET(hstream);
 	mask = BIT(hstream->index);
+	pr_err("bard: %s hstream->stream_tag %d sd_offset %#x mask %#x\n", __func__, hstream->stream_tag, sd_offset, mask);
 
 	/* decouple host and link DMA if the DSP is used */
 	if (!sdev->dspless_mode_selected)
@@ -610,6 +651,8 @@ int hda_dsp_stream_hw_params(struct snd_sof_dev *sdev,
 		kfree(stream_name);
 		return ret;
 	}
+	val = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, sd_offset);
+	pr_err("bard: %s %d CTL %#x\n", __func__, __LINE__, val);
 
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_HDA_BAR,
 				sd_offset + SOF_HDA_ADSP_REG_SD_STS,
@@ -666,7 +709,7 @@ int hda_dsp_stream_hw_params(struct snd_sof_dev *sdev,
 	/* program last valid index */
 	snd_sof_dsp_update_bits(sdev, HDA_DSP_HDA_BAR,
 				sd_offset + SOF_HDA_ADSP_REG_SD_LVI,
-				0xffff, (hstream->frags - 1));
+				0xff, (hstream->frags - 1)); //Bard: according to HAS the LVI should be bit 0 to 7
 
 	/* program BDL address */
 	snd_sof_dsp_write(sdev, HDA_DSP_HDA_BAR,
@@ -704,6 +747,7 @@ int hda_dsp_stream_hw_params(struct snd_sof_dev *sdev,
 		hstream->fifo_size = 0;
 	}
 
+	hda_dsp_stream_debug(sdev, sd_offset, __func__);
 	return ret;
 }
 
@@ -716,6 +760,7 @@ int hda_dsp_stream_hw_free(struct snd_sof_dev *sdev,
 							 hstream);
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	ret = hda_dsp_stream_reset(sdev, hstream);
 	if (ret < 0)
 		return ret;
@@ -812,6 +857,7 @@ static bool hda_dsp_stream_check(struct hdac_bus *bus, u32 status)
 				hda_stream = container_of(hext_stream, struct sof_intel_hda_stream,
 							  hext_stream);
 
+				pr_err("bard: %s complete\n", __func__);
 				complete(&hda_stream->ioc);
 				continue;
 			}
@@ -871,6 +917,7 @@ int hda_dsp_stream_init(struct snd_sof_dev *sdev)
 	int i, num_playback, num_capture, num_total, ret;
 	u32 gcap;
 
+	pr_err("bard: %s\n", __func__);
 	gcap = snd_sof_dsp_read(sdev, HDA_DSP_HDA_BAR, SOF_HDA_GCAP);
 	dev_dbg(sdev->dev, "hda global caps = 0x%x\n", gcap);
 
@@ -1005,6 +1052,7 @@ void hda_dsp_stream_free(struct snd_sof_dev *sdev)
 	struct hdac_ext_stream *hext_stream;
 	struct sof_intel_hda_stream *hda_stream;
 
+	pr_err("bard: %s\n", __func__);
 	/* free position buffer */
 	if (bus->posbuf.area)
 		snd_dma_free_pages(&bus->posbuf);

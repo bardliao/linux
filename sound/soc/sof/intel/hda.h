@@ -124,6 +124,7 @@
 
 /* Stream Registers */
 #define SOF_HDA_ADSP_REG_SD_CTL			0x00
+#define SOF_HDA_ADSP_REG_SD_CTL_B2		0x02
 #define SOF_HDA_ADSP_REG_SD_STS			0x03
 #define SOF_HDA_ADSP_REG_SD_LPIB		0x04
 #define SOF_HDA_ADSP_REG_SD_CBL			0x08
@@ -1052,4 +1053,5 @@ static inline struct snd_sof_dev *widget_to_sdev(struct snd_soc_dapm_widget *w)
 	return snd_soc_component_get_drvdata(component);
 }
 
+void hda_dsp_stream_debug(struct snd_sof_dev *sdev, u32 sd_offset, const char * func);
 #endif

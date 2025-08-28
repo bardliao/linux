@@ -150,6 +150,7 @@ static int hda_sdw_bpt_dma_prepare(struct device *dev, struct hdac_ext_stream **
 
 		snd_hdac_ext_bus_link_set_stream_id(hlink, stream_tag);
 	}
+
 	return 0;
 }
 
@@ -203,6 +204,7 @@ static int hda_sdw_bpt_dma_enable(struct device *dev, struct hdac_ext_stream *sd
 	struct snd_sof_dev *sdev = dev_get_drvdata(dev);
 	int ret;
 
+	//msleep(100);
 	ret = hda_cl_trigger(sdev->dev, sdw_bpt_stream, SNDRV_PCM_TRIGGER_START);
 	if (ret < 0)
 		dev_err(sdev->dev, "%s: SDW BPT DMA trigger start failed\n", __func__);
@@ -220,6 +222,7 @@ static int hda_sdw_bpt_dma_enable(struct device *dev, struct hdac_ext_stream *sd
 		}
 		snd_hdac_ext_stream_start(sdw_bpt_stream);
 	}
+	//msleep(100);
 
 	return ret;
 }
@@ -369,24 +372,30 @@ EXPORT_SYMBOL_NS(hda_sdw_bpt_send_async, "SND_SOC_SOF_INTEL_HDA_SDW_BPT");
  * 3s is several orders of magnitude larger than what is needed for a
  * typical firmware download.
  */
-#define HDA_BPT_IOC_TIMEOUT_MS 3000
+#define HDA_BPT_IOC_TIMEOUT_MS 500
 
 int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 		     struct hdac_ext_stream *bpt_rx_stream)
 {
+//	struct snd_sof_dev *sdev = dev_get_drvdata(dev);
 	struct sof_intel_hda_stream *hda_tx_stream;
 	struct sof_intel_hda_stream *hda_rx_stream;
 	snd_pcm_uframes_t tx_position;
 	snd_pcm_uframes_t rx_position;
 	unsigned long time_tx_left;
 	unsigned long time_rx_left;
+	struct hdac_stream *hstream;
+	int sd_offset;
 	int ret = 0;
 	int ret1;
 	int i;
 
 	hda_tx_stream = container_of(bpt_tx_stream, struct sof_intel_hda_stream, hext_stream);
 	hda_rx_stream = container_of(bpt_rx_stream, struct sof_intel_hda_stream, hext_stream);
-
+	hstream = &bpt_tx_stream->hstream;
+	sd_offset = SOF_STREAM_SD_OFFSET(hstream);
+	pr_err("bard: wait for TX stream complete\n");
+#if 1
 	time_tx_left = wait_for_completion_timeout(&hda_tx_stream->ioc,
 						   msecs_to_jiffies(HDA_BPT_IOC_TIMEOUT_MS));
 	if (!time_tx_left) {
@@ -397,13 +406,16 @@ int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 		ret = -ETIMEDOUT;
 		goto dma_disable;
 	}
-
+#endif
 	/* Make sure the DMA is flushed */
 	i = 0;
 	do {
 		tx_position = hda_dsp_stream_get_position(hdac_stream(bpt_tx_stream),
 							  SNDRV_PCM_STREAM_PLAYBACK, false);
+//		dev_err(dev, "bard %s: i %d SDW BPT TX DMA position %ld\n",
+//			__func__, i, tx_position);
 		usleep_range(1000, 1010);
+		//hda_dsp_stream_debug(sdev, sd_offset, __func__);
 		i++;
 	} while (tx_position && i < HDA_BPT_IOC_TIMEOUT_MS);
 	if (tx_position) {
@@ -413,6 +425,10 @@ int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 		goto dma_disable;
 	}
 
+	pr_err("bard: wait for TX stream complete\n");
+	hstream = &bpt_rx_stream->hstream;
+	sd_offset = SOF_STREAM_SD_OFFSET(hstream);
+#if 1
 	/* the wait should be minimal here */
 	time_rx_left = wait_for_completion_timeout(&hda_rx_stream->ioc,
 						   msecs_to_jiffies(HDA_BPT_IOC_TIMEOUT_MS));
@@ -424,13 +440,16 @@ int hda_sdw_bpt_wait(struct device *dev, struct hdac_ext_stream *bpt_tx_stream,
 		ret = -ETIMEDOUT;
 		goto dma_disable;
 	}
-
+#endif
 	/* Make sure the DMA is flushed */
 	i = 0;
 	do {
 		rx_position = hda_dsp_stream_get_position(hdac_stream(bpt_rx_stream),
 							  SNDRV_PCM_STREAM_CAPTURE, false);
+//		dev_err(dev, "bard %s: i %d SDW BPT RX DMA position %ld\n",
+//			__func__, i, rx_position);
 		usleep_range(1000, 1010);
+		//hda_dsp_stream_debug(sdev, sd_offset, __func__);
 		i++;
 	} while (rx_position && i < HDA_BPT_IOC_TIMEOUT_MS);
 	if (rx_position) {

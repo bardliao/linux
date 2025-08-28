@@ -58,6 +58,7 @@ hda_cl_prepare(struct device *dev, unsigned int format, unsigned int size,
 	struct hdac_stream *hstream;
 	int ret;
 
+	pr_err("bard: %s direction %d\n", __func__, direction);
 	hext_stream = hda_dsp_stream_get(sdev, direction, 0);
 
 	if (!hext_stream) {
@@ -245,7 +246,11 @@ int hda_cl_trigger(struct device *dev, struct hdac_ext_stream *hext_stream, int 
 	struct hdac_stream *hstream = &hext_stream->hstream;
 	int sd_offset = SOF_STREAM_SD_OFFSET(hstream);
 	struct sof_intel_hda_stream *hda_stream;
+	u32 dma_start = SOF_HDA_SD_CTL_DMA_START;
+	u32 run;
+	int ret;
 
+	pr_err("bard: %s cmd %d\n", __func__, cmd);
 	/* code loader is special case that reuses stream ops */
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -258,13 +263,21 @@ int hda_cl_trigger(struct device *dev, struct hdac_ext_stream *hext_stream, int 
 					1 << hstream->index);
 
 		snd_sof_dsp_update_bits(sdev, HDA_DSP_HDA_BAR,
-					sd_offset,
-					SOF_HDA_SD_CTL_DMA_START |
-					SOF_HDA_CL_DMA_SD_INT_MASK,
-					SOF_HDA_SD_CTL_DMA_START |
-					SOF_HDA_CL_DMA_SD_INT_MASK);
+					sd_offset + SOF_HDA_ADSP_REG_SD_CTL,
+					SOF_HDA_SD_CTL_DMA_START,
+					SOF_HDA_SD_CTL_DMA_START);
 
-		hstream->running = true;
+		ret = snd_sof_dsp_read_poll_timeout(sdev,
+					HDA_DSP_HDA_BAR,
+					sd_offset, run,
+					((run &	dma_start) == dma_start),
+					HDA_DSP_REG_POLL_INTERVAL_US,
+					HDA_DSP_STREAM_RUN_TIMEOUT);
+
+		if (ret >= 0)
+			hstream->running = true;
+
+		hda_dsp_stream_debug(sdev, sd_offset, __func__);
 		return 0;
 	default:
 		return hda_dsp_stream_trigger(sdev, hext_stream, cmd);

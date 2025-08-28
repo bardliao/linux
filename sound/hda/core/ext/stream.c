@@ -199,6 +199,7 @@ void snd_hdac_ext_stream_reset(struct hdac_ext_stream *hext_stream)
 	unsigned char val;
 	int timeout;
 
+	pr_err("bard: %s stream_tag %d\n", __func__, hdac_stream(hext_stream)->stream_tag);
 	snd_hdac_ext_stream_clear(hext_stream);
 
 	snd_hdac_updatel(hext_stream->pplc_addr, AZX_REG_PPLCCTL,

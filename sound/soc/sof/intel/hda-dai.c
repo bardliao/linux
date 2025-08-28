@@ -114,6 +114,7 @@ hda_link_dma_cleanup(struct snd_pcm_substream *substream,
 	struct snd_sof_dev *sdev;
 	int stream_tag;
 
+	pr_err("bard: %s\n", __func__);
 	if (!ops) {
 		dev_err(cpu_dai->dev, "DAI widget ops not set\n");
 		return -EINVAL;
@@ -163,6 +164,7 @@ static int hda_link_dma_hw_params(struct snd_pcm_substream *substream,
 	struct snd_sof_dev *sdev;
 	int stream_tag;
 
+	pr_err("bard: %s\n", __func__);
 	if (!ops) {
 		dev_err(cpu_dai->dev, "DAI widget ops not set\n");
 		return -EINVAL;
@@ -239,6 +241,7 @@ static int __maybe_unused hda_dai_hw_params_data(struct snd_pcm_substream *subst
 	struct snd_sof_dev *sdev = widget_to_sdev(w);
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	if (!ops) {
 		dev_err(sdev->dev, "DAI widget ops not set\n");
 		return -EINVAL;
@@ -267,6 +270,7 @@ static int __maybe_unused hda_dai_hw_params(struct snd_pcm_substream *substream,
 	struct snd_sof_dai_config_data data = { 0 };
 	unsigned int flags = SOF_DAI_CONFIG_FLAGS_HW_PARAMS;
 
+	pr_err("bard: %s\n", __func__);
 	return hda_dai_hw_params_data(substream, params, dai, &data, flags);
 }
 
@@ -379,6 +383,7 @@ static int non_hda_dai_hw_params_data(struct snd_pcm_substream *substream,
 	int stream_id;
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	ops = hda_dai_get_ops(substream, cpu_dai);
 	if (!ops) {
 		dev_err(cpu_dai->dev, "DAI widget ops not set\n");
@@ -454,6 +459,7 @@ static int non_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	struct snd_sof_dai_config_data data = { 0 };
 	unsigned int flags = SOF_DAI_CONFIG_FLAGS_HW_PARAMS;
 
+	pr_err("bard: %s\n", __func__);
 	return non_hda_dai_hw_params_data(substream, params, cpu_dai, &data, flags);
 }
 
@@ -503,6 +509,7 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	int ret;
 	int i;
 
+	pr_err("bard: %s\n", __func__);
 	if (!w) {
 		dev_err(cpu_dai->dev, "%s widget not found, check amp link num in the topology\n",
 			cpu_dai->name);
@@ -610,6 +617,7 @@ int sdw_hda_dai_hw_free(struct snd_pcm_substream *substream,
 	struct snd_sof_dev *sdev;
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	ret = hda_dai_hw_free(substream, cpu_dai);
 	if (ret < 0) {
 		dev_err(cpu_dai->dev, "%s: non_hda_dai_hw_free failed %d\n", __func__, ret);

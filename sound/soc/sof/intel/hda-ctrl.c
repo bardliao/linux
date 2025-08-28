@@ -193,6 +193,7 @@ int hda_dsp_ctrl_init_chip(struct snd_sof_dev *sdev, bool detect_codec)
 	if (bus->chip_init)
 		return 0;
 
+	pr_err("bard: %s\n", __func__);
 	hda_codec_set_codec_wakeup(sdev, true);
 
 	hda_dsp_ctrl_misc_clock_gating(sdev, false);
@@ -281,6 +282,7 @@ void hda_dsp_ctrl_stop_chip(struct snd_sof_dev *sdev)
 	if (!bus->chip_init)
 		return;
 
+	pr_err("bard: %s\n", __func__);
 	/* disable interrupts in stream descriptor */
 	list_for_each_entry(stream, &bus->stream_list, list) {
 		sd_offset = SOF_STREAM_SD_OFFSET(stream);

@@ -68,7 +68,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 	unsigned int rx_dma_bandwidth;
 	unsigned int rx_dma_bandwidth_;
 	unsigned int fake_num_frames;
-	unsigned int data_per_frame_;
+//	unsigned int data_per_frame_;
 	unsigned int data_per_frame;
 	unsigned int tx_total_bytes;
 	struct sdw_cdns_pdi *pdi0;
