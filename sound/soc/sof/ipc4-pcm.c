@@ -751,6 +751,7 @@ static int sof_ipc4_pcm_dai_link_fixup_channels(struct snd_sof_dev *sdev,
 	unsigned int be_channels, val;
 	int i;
 
+	pr_err("bard: %s fe_channels %d\n", __func__, fe_channels);
 	if (WARN_ON_ONCE(!num_input_formats))
 		return -EINVAL;
 
@@ -759,8 +760,10 @@ static int sof_ipc4_pcm_dai_link_fixup_channels(struct snd_sof_dev *sdev,
 	 * need to only consider the input pin information.
 	 */
 	be_channels = SOF_IPC4_AUDIO_FORMAT_CFG_CHANNELS_COUNT(pin_fmts[0].audio_fmt.fmt_cfg);
+	pr_err("bard: %s be_channels %d\n", __func__, be_channels);	
 	for (i = 0; i < num_input_formats; i++) {
 		val = SOF_IPC4_AUDIO_FORMAT_CFG_CHANNELS_COUNT(pin_fmts[i].audio_fmt.fmt_cfg);
+		pr_err("bard: %s i %d val %d\n", __func__, i, val);	
 
 		if (val != be_channels)
 			single_be_channels = false;
@@ -831,6 +834,7 @@ static int sof_ipc4_pcm_dai_link_fixup(struct snd_soc_pcm_runtime *rtd,
 			if (pipeline->use_chain_dma)
 				return 0;
 
+			pr_err("bard: %s w->name %s\n", __func__, w->name);
 			if (dir == SNDRV_PCM_STREAM_PLAYBACK) {
 				if (sof_ipc4_copier_is_single_bitdepth(sdev,
 					available_fmt->output_pin_fmts,

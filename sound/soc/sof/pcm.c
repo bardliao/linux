@@ -127,6 +127,7 @@ static int sof_pcm_hw_params(struct snd_soc_component *component,
 	struct snd_sof_pcm *spcm;
 	int ret;
 
+	dev_err(sdev->dev, "bard: %s: channels %d\n", __func__, params_channels(params));
 	/* nothing to do for BE */
 	if (rtd->dai_link->no_pcm)
 		return 0;

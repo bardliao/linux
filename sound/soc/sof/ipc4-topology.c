@@ -2290,6 +2290,10 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 
 			/* Get channel_mask from ch_map */
 			ch_map = copier_data->base_config.audio_fmt.ch_map;
+			pr_err("bard: ch_map %#x out channel num %lu base channel num %lu\n",
+				ch_map, SOF_IPC4_AUDIO_FORMAT_CFG_CHANNELS_COUNT(copier_data->out_format.fmt_cfg),
+				SOF_IPC4_AUDIO_FORMAT_CFG_CHANNELS_COUNT(copier_data->base_config.audio_fmt.fmt_cfg));
+
 			for (i = 0; ch_map; i++) {
 				if ((ch_map & 0xf) != 0xf) {
 					ch_mask |= BIT(i);
@@ -2307,12 +2311,14 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				step = 0;
 			}
 
+			pr_err("bard: %s ch_count %d\n", __func__, ch_count);
 			/*
 			 * Set each gtw_cfg.node_id to blob->alh_cfg.mapping[]
 			 * for all widgets with the same stream name
 			 */
 			i = 0;
 			list_for_each_entry(w, &sdev->widget_list, list) {
+				struct sof_ipc4_pin_format *pin_fmts;
 				u32 node_type;
 
 				if (!WIDGET_IS_DAI(w->id) || !w->widget->sname ||
@@ -2329,6 +2335,10 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				blob->alh_cfg.mapping[i].device |=
 					SOF_IPC4_NODE_INDEX(alh_copier->dai_index);
 
+				pin_fmts = alh_copier->available_fmt.input_pin_fmts;
+				pr_err("bard: input be_channel %d\n", (unsigned int)SOF_IPC4_AUDIO_FORMAT_CFG_CHANNELS_COUNT(pin_fmts[0].audio_fmt.fmt_cfg));
+				pin_fmts = alh_copier->available_fmt.output_pin_fmts;
+				pr_err("bard: output be_channel %d\n", (unsigned int)SOF_IPC4_AUDIO_FORMAT_CFG_CHANNELS_COUNT(pin_fmts[0].audio_fmt.fmt_cfg));
 				/*
 				 * The mapping[i] device in ALH blob should be the same as the
 				 * dma_config_tlv[i] mapping device if a dma_config_tlv is present.
@@ -2352,6 +2362,9 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				 * registers for each codec.
 				 */
 				blob->alh_cfg.mapping[i].channel_mask = mask << (step * i);
+
+				pr_err("bard: %s widget %s blob->alh_cfg.mapping[%d].channel_mask %#x\n",
+					__func__, w->widget->name, i, blob->alh_cfg.mapping[i].channel_mask);
 
 				i++;
 			}

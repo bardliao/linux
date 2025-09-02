@@ -336,6 +336,7 @@ static int sdw_enable_disable_slave_ports(struct sdw_bus *bus,
 	else
 		addr = SDW_DPN_CHANNELEN_B0(p_rt->num);
 
+	pr_err("bard: %s p_rt->ch_mask %#x\n", __func__, p_rt->ch_mask);
 	/*
 	 * Since bus doesn't support sharing a port across two streams,
 	 * it is safe to reset this register

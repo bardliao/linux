@@ -545,6 +545,7 @@ static int cs35l56_sdw_dai_set_tdm_slot(struct snd_soc_dai *dai, unsigned int tx
 {
 	struct cs35l56_private *cs35l56 = snd_soc_component_get_drvdata(dai->component);
 
+	pr_err("bard: %s tx_mask %#x rx_mask %#x\n", __func__, tx_mask, rx_mask);
 	/* rx/tx are from point of view of the CPU end so opposite to our rx/tx */
 	cs35l56->rx_mask = tx_mask;
 	cs35l56->tx_mask = rx_mask;
@@ -593,6 +594,7 @@ static int cs35l56_sdw_dai_hw_params(struct snd_pcm_substream *substream,
 		sconfig.ch_count = hweight32(pconfig.ch_mask);
 	}
 
+	dev_err(cs35l56->base.dev, "bard: %s: channels %d pconfig.ch_mask %#x\n", __func__, params_channels(params), pconfig.ch_mask);
 	ret = sdw_stream_add_slave(cs35l56->sdw_peripheral, &sconfig, &pconfig,
 				   1, sdw_stream);
 	if (ret) {

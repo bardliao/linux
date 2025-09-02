@@ -734,6 +734,7 @@ static int intel_hw_params(struct snd_pcm_substream *substream,
 		return -EIO;
 
 	ch = params_channels(params);
+	pr_err("bard: %s ch %d\n", __func__, ch);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 		dir = SDW_DATA_DIR_RX;
 	else
