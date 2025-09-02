@@ -2300,6 +2300,13 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 
 			step = ch_count / blob->alh_cfg.device_count;
 			mask =  GENMASK(step - 1, 0);
+
+			/* Set the same mask to all devices if ch_count == out_ref_channels */
+			if (swidget->id == snd_soc_dapm_dai_in && ch_count == out_ref_channels) {
+				mask = ch_mask;
+				step = 0;
+			}
+
 			/*
 			 * Set each gtw_cfg.node_id to blob->alh_cfg.mapping[]
 			 * for all widgets with the same stream name
@@ -2344,10 +2351,7 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				 * the tables in soc_acpi files depending on the _ADR and devID
 				 * registers for each codec.
 				 */
-				if (w->id == snd_soc_dapm_dai_in)
-					blob->alh_cfg.mapping[i].channel_mask = ch_mask;
-				else
-					blob->alh_cfg.mapping[i].channel_mask = mask << (step * i);
+				blob->alh_cfg.mapping[i].channel_mask = mask << (step * i);
 
 				i++;
 			}
