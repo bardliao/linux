@@ -902,6 +902,12 @@ int sdw_hda_dai_hw_free(struct snd_pcm_substream *substream,
 int sdw_hda_dai_trigger(struct snd_pcm_substream *substream, int cmd,
 			struct snd_soc_dai *cpu_dai);
 
+struct hdac_ext_stream*
+hda_dsp_dma_channel_pair_get(struct device *dev, unsigned int format, unsigned int size,
+			     struct snd_dma_buffer *dmab, int direction);
+
+int hda_dsp_dma_channel_pair_put(struct device *dev, struct snd_dma_buffer *dmab,
+				 struct hdac_ext_stream *hext_stream);
 /* common dai driver */
 extern struct snd_soc_dai_driver skl_dai[];
 int hda_dsp_dais_suspend(struct snd_sof_dev *sdev);
