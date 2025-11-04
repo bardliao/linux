@@ -570,8 +570,12 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 		clk_buf = NULL;
 	}
 
-	/* If dynamic scaling is not supported, don't try higher freq */
-	if (!is_clock_scaling_supported(bus))
+	/*
+	 * If dynamic scaling is not supported, don't try higher freq.
+	 * Use the maximum freq to get maximum bandwidth and no need to try another freq
+	 * if BPT stream is running
+	 */
+	if (!is_clock_scaling_supported(bus) || bus->bpt_stream_refcount)
 		clk_values = 1;
 
 	for (i = 0; i < clk_values; i++) {
@@ -581,6 +585,10 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 			curr_dr_freq = (is_gear) ?
 				(bus->params.max_dr_freq >>  clk_buf[i]) :
 				clk_buf[i] * SDW_DOUBLE_RATE_FACTOR;
+
+		/* Use maximum freq to get maximum bandwidth if BPT stream is running */
+		if (bus->bpt_stream_refcount)
+			curr_dr_freq = bus->params.max_dr_freq;
 
 		if (curr_dr_freq * (mstr_prop->default_col - 1) >=
 		    bus->params.bandwidth * mstr_prop->default_col)
