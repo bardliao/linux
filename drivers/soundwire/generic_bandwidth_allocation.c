@@ -190,8 +190,8 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 	sdw_compute_slave_ports(m_rt, &t_data);
 }
 
-static void _sdw_compute_port_params(struct sdw_bus *bus,
-				     struct sdw_group_params *params, int count)
+static void _sdw_compute_port_params(struct sdw_bus *bus, struct sdw_group_params *params,
+				     int count, bool update_bpt_hstop)
 {
 	struct sdw_master_runtime *m_rt;
 	int port_bo, i, l;
@@ -223,6 +223,16 @@ static void _sdw_compute_port_params(struct sdw_bus *bus,
 			}
 
 			hstop = hstop - params[i].hwidth;
+			if (l == 0 && update_bpt_hstop && bus->bpt_hstop > hstop) {
+				/* Assume BPT stream uses lane 0 */
+				/*
+				 * hstart = hstop - params->hwidth + 1.
+				 * At this point after hstop = hstop - params[i].hwidth above,
+				 * the hstart is equal to hstop + 1, and bus->bpt_hstop should
+				 * be hstart - 1. so we can set bpt_hstop to hstop directly.
+				 */
+				bus->bpt_hstop = hstop;
+			}
 		}
 	}
 }
@@ -421,7 +431,7 @@ static int sdw_compute_port_params(struct sdw_bus *bus, struct sdw_stream_runtim
 	if (ret < 0)
 		goto free_params;
 
-	_sdw_compute_port_params(bus, params, group.count);
+	_sdw_compute_port_params(bus, params, group.count, stream->type == SDW_STREAM_BPT);
 
 free_params:
 	kfree(params);
@@ -680,6 +690,10 @@ out:
 	return 0;
 }
 
+#define SDW_DEFAULT_COL			4
+#define SDW_COL_RESERVED_FOR_AUDIO	2
+
+
 /**
  * sdw_compute_params: Compute bus, transport and port parameters
  *
@@ -695,10 +709,20 @@ int sdw_compute_params(struct sdw_bus *bus, struct sdw_stream_runtime *stream)
 	if (ret < 0)
 		return ret;
 
-	bus->bpt_hstop = bus->params.col - 1;
-	if (stream->type == SDW_STREAM_BPT) {
-		sdw_compute_dp0_port_params(bus);
-		return 0;
+	if (stream->type == SDW_STREAM_BPT && stream->state == SDW_STREAM_CONFIGURED) {
+		/*
+		 * Set the initial bpt_hstop when the BPT stream is preparing and it will be
+		 * updated in sdw_compute_port_params() below.
+		 */
+		bus->bpt_hstop = bus->params.col - 1;
+		/*
+		 * Reserve 2 columns for future audio stream if the bus->params.col is greater
+		 * than SDW_DEFAULT_COL (4) + reserved columns (2). And don't reserve columns
+		 * for future use otherwise. This ensures that the BPT stream will not meet the
+		 * bandwidth issue when there is no audio stream is open.
+		 */
+		if (bus->params.col >= (SDW_DEFAULT_COL + SDW_COL_RESERVED_FOR_AUDIO))
+			bus->bpt_hstop -= SDW_COL_RESERVED_FOR_AUDIO;
 	}
 
 	/* Compute transport and port params */
@@ -706,6 +730,16 @@ int sdw_compute_params(struct sdw_bus *bus, struct sdw_stream_runtime *stream)
 	if (ret < 0) {
 		dev_err(bus->dev, "Compute transport params failed: %d\n", ret);
 		return ret;
+	}
+
+	if (stream->type == SDW_STREAM_BPT) {
+		/* If there is only one column left, just use normal write. */
+		if (bus->bpt_hstop < 1) {
+			dev_err(bus->dev, "%s: No bandwidth for BPT stream\n",
+				__func__);
+			return -EAGAIN;
+		}
+		sdw_compute_dp0_port_params(bus);
 	}
 
 	return 0;
