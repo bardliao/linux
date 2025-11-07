@@ -571,6 +571,7 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 	unsigned int curr_dr_freq = 0;
 	int i, l, clk_values, ret;
 	bool is_gear = false;
+	int available_col;
 	int m_lane = 0;
 	u32 *clk_buf;
 
@@ -613,8 +614,14 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 
 		total_col = curr_dr_freq / mstr_prop->default_frame_rate / mstr_prop->default_row;
 
-		if (curr_dr_freq * (total_col - 1) >=
-		    bus->params.bandwidth * total_col)
+		if (bus->bpt_stream_refcount)
+			available_col = total_col - bus->bpt_hstop - 1;
+		else
+			available_col = total_col;
+
+		/* If the bandwidth of the available columns is sufficient, then we are good */
+		if (curr_dr_freq * (available_col - 1) >=
+		    bus->params.bandwidth * available_col)
 			break;
 
 		list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
