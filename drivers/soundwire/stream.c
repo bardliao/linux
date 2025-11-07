@@ -1274,6 +1274,8 @@ static struct sdw_master_runtime
 	if (stream->type == SDW_STREAM_BPT)
 		bus->bpt_stream_refcount++;
 
+	pr_err("bard: %s update bpt_stream_refcount %d stream_refcount %d\n",
+		__func__, bus->bpt_stream_refcount, bus->stream_refcount);
 	return m_rt;
 }
 
@@ -1324,6 +1326,8 @@ static void sdw_master_rt_free(struct sdw_master_runtime *m_rt,
 	if (stream->type == SDW_STREAM_BPT)
 		bus->bpt_stream_refcount--;
 	bus->stream_refcount--;
+	pr_err("bard: %s update bpt_stream_refcount %d stream_refcount %d\n",
+		__func__, bus->bpt_stream_refcount, bus->stream_refcount);
 }
 
 /**
@@ -1482,6 +1486,8 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 					m_rt->ch_count * m_rt->stream->params.bps;
 			}
 
+			pr_err("bard: %s: stream %s bus bandwidth %d\n",
+				__func__, stream->name, bus->params.bandwidth);
 			/* Compute params */
 			if (bus->compute_params) {
 				ret = bus->compute_params(bus, stream);
@@ -1789,6 +1795,8 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 		bus->params.bandwidth -= bandwidth - multi_lane_bandwidth;
 
 skip_bpt_stream:
+		pr_err("bard: %s stream %s bus bandwidth %d\n",
+			__func__, stream->name, bus->params.bandwidth);
 		/* Compute params */
 		if (bus->compute_params) {
 			ret = bus->compute_params(bus, stream);

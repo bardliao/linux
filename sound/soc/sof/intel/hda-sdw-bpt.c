@@ -337,6 +337,7 @@ int hda_sdw_bpt_send_async(struct device *dev, struct hdac_ext_stream *bpt_tx_st
 	int ret1;
 	int ret;
 
+	msleep(5000);
 	ret = hda_sdw_bpt_dma_enable(dev, bpt_tx_stream);
 	if (ret < 0) {
 		dev_err(dev, "%s: hda_sdw_bpt_dma_enable failed for TX: %d\n",

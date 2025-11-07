@@ -55,7 +55,7 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 
 			ch = hweight32(p_rt->ch_mask);
 
-			dev_dbg(&s_rt->slave->dev, "%s p_rt->lane %d\n", __func__, p_rt->lane);
+			dev_dbg(&s_rt->slave->dev, "bard: %s p_rt->lane %d hstart %d\n", __func__, p_rt->lane, t_data->hstart);
 			sdw_fill_xport_params(&p_rt->transport_params,
 					      p_rt->num, false,
 					      SDW_BLK_GRP_CNT_1,
@@ -156,6 +156,9 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 	hstart = hstop - params->hwidth + 1;
 	t_data.hstart = hstart;
 
+	pr_err("bard: bpt_stream_refcount %d bpt_hstop %d hstart %d\n",
+		bus->bpt_stream_refcount, bus->bpt_hstop, hstart);
+
 	list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
 		if (p_rt->lane != params->lane)
 			continue;
@@ -197,6 +200,7 @@ static void _sdw_compute_port_params(struct sdw_bus *bus, struct sdw_group_param
 	int port_bo, i, l;
 	int hstop;
 
+	pr_err("bard: %s update_bpt_hstop %d\n", __func__, update_bpt_hstop);
 	/* Run loop for all groups to compute transport parameters */
 	for (l = 0; l < SDW_MAX_LANES; l++) {
 		if (l > 0 && !bus->lane_used_bandwidth[l])
@@ -223,6 +227,7 @@ static void _sdw_compute_port_params(struct sdw_bus *bus, struct sdw_group_param
 			}
 
 			hstop = hstop - params[i].hwidth;
+			pr_err("bard: bus->bpt_hstop %d hstop[%d] = %d\n", bus->bpt_hstop, i, hstop);
 			if (l == 0 && update_bpt_hstop && bus->bpt_hstop > hstop) {
 				/* Assume BPT stream uses lane 0 */
 				/*
@@ -232,6 +237,7 @@ static void _sdw_compute_port_params(struct sdw_bus *bus, struct sdw_group_param
 				 * be hstart - 1. so we can set bpt_hstop to hstop directly.
 				 */
 				bus->bpt_hstop = hstop;
+				pr_err("bard: updated bpt_hstop to %d\n", bus->bpt_hstop);
 			}
 		}
 	}
@@ -447,6 +453,9 @@ static int sdw_select_row_col(struct sdw_bus *bus, int clk_freq)
 	struct sdw_master_prop *prop = &bus->prop;
 	int r, c;
 
+	pr_err("bard: %s clk_freq %d default_row %d default_col %d bandwidth %d\n",
+		__func__, clk_freq, prop->default_row, prop->default_col,
+		bus->params.bandwidth);
 	for (c = 0; c < SDW_FRAME_COLS; c++) {
 		for (r = 0; r < SDW_FRAME_ROWS; r++) {
 			if (sdw_rows[r] != prop->default_row ||
@@ -619,10 +628,15 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 		else
 			available_col = total_col;
 
+		pr_err("bard: %s available_col %d mstr_prop->default_col %d total_col %d bpt_stream_refcount %d\n",
+			__func__, available_col, mstr_prop->default_col, total_col, bus->bpt_stream_refcount);
+
 		/* If the bandwidth of the available columns is sufficient, then we are good */
 		if (curr_dr_freq * (available_col - 1) >=
-		    bus->params.bandwidth * available_col)
+		    bus->params.bandwidth * available_col) {
+			pr_err("bard: %s available_col %d break\n", __func__, available_col);
 			break;
+		}
 
 		list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
 			/* BPT stream always uses lane 0 */
@@ -719,6 +733,8 @@ int sdw_compute_params(struct sdw_bus *bus, struct sdw_stream_runtime *stream)
 	if (stream->type == SDW_STREAM_BPT && stream->state != SDW_STREAM_DEPREPARED)
 		bus->bpt_hstop = bus->params.col - 3;
 
+	pr_err("bard: %s stream name %s type %d state %d bpt_stream_refcount %d bpt_hstop: %d and updating bpt_hstop\n",
+		__func__, stream->name, stream->type, stream->state, bus->bpt_stream_refcount, bus->bpt_hstop);
 	/* Compute transport and port params */
 	ret = sdw_compute_port_params(bus, stream);
 	if (ret < 0) {

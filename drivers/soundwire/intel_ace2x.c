@@ -152,6 +152,7 @@ static int intel_ace2x_bpt_open_stream(struct sdw_intel *sdw, struct sdw_slave *
 
 	command = (msg->flags & SDW_MSG_FLAG_WRITE) ? 0 : 1;
 
+	pr_err("bard: %s bpt_hstop %d\n", __func__, cdns->bus.bpt_hstop);
 	ret = sdw_cdns_bpt_find_bandwidth(command, cdns->bus.params.row,
 					  cdns->bus.bpt_hstop + 1,
 					  prop->default_frame_rate,
