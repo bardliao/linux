@@ -601,6 +601,9 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 			break;
 
 		list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
+			/* BPT stream always uses lane 0 */
+			if (m_rt->stream->type == SDW_STREAM_BPT)
+				continue;
 			/*
 			 * Get the first s_rt that will be used to find the available lane that
 			 * can be used. No need to check all Peripherals because we can't use
