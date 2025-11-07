@@ -1495,8 +1495,11 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 		if (update_params) {
 			/* Increment cumulative bus bandwidth */
 			/* TODO: Update this during Device-Device support */
-			bus->params.bandwidth += m_rt->stream->params.rate *
-				m_rt->ch_count * m_rt->stream->params.bps;
+			/* Don't count BPT stream bandwidth, it will use the remaining bandwidth */
+			if (m_rt->stream->type != SDW_STREAM_BPT) {
+				bus->params.bandwidth += m_rt->stream->params.rate *
+					m_rt->ch_count * m_rt->stream->params.bps;
+			}
 
 			/* Compute params */
 			if (bus->compute_params) {
@@ -1785,6 +1788,10 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 
 		multi_lane_bandwidth = 0;
 
+		/* Don't count BPT stream bandwidth, it will use the remaining bandwidth */
+		if (m_rt->stream->type == SDW_STREAM_BPT)
+			goto skip_bpt_stream;
+
 		list_for_each_entry(p_rt, &m_rt->port_list, port_node) {
 			if (!p_rt->lane)
 				continue;
@@ -1800,6 +1807,7 @@ static int _sdw_deprepare_stream(struct sdw_stream_runtime *stream)
 		bandwidth = m_rt->stream->params.rate * m_rt->ch_count * m_rt->stream->params.bps;
 		bus->params.bandwidth -= bandwidth - multi_lane_bandwidth;
 
+skip_bpt_stream:
 		/* Compute params */
 		if (bus->compute_params) {
 			ret = bus->compute_params(bus, stream);
