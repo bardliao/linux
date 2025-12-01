@@ -27,18 +27,10 @@ enum tplg_device_id {
 
 #define SOF_INTEL_PLATFORM_NAME_MAX 4
 
-int sof_sdw_get_tplg_files(struct snd_soc_card *card, const struct snd_soc_acpi_mach *mach,
-			   const char *prefix, const char ***tplg_files, bool best_effort)
+static int get_platform_name(struct snd_soc_card *card,
+			     const struct snd_soc_acpi_mach *mach, char *platform)
 {
-	struct snd_soc_acpi_mach_params mach_params = mach->mach_params;
-	struct snd_soc_dai_link *dai_link;
-	const struct firmware *fw;
-	char platform[SOF_INTEL_PLATFORM_NAME_MAX];
-	unsigned long tplg_mask = 0;
-	int tplg_num = 0;
-	int tplg_dev;
 	int ret;
-	int i;
 
 	ret = sscanf(mach->sof_tplg_filename, "sof-%3s-*.tplg", platform);
 	if (ret != 1) {
@@ -46,6 +38,72 @@ int sof_sdw_get_tplg_files(struct snd_soc_card *card, const struct snd_soc_acpi_
 			platform, mach->sof_tplg_filename);
 		return -EINVAL;
 	}
+
+	return 0;
+}
+
+static bool all_tplg_files_exist(struct device *dev, const char ***tplg_files, int tplg_num)
+{
+	const struct firmware *fw;
+	int ret;
+	int i;
+
+	for (i = 0; i < tplg_num; i++) {
+		ret = firmware_request_nowarn(&fw, (*tplg_files)[i], dev);
+		if (!ret) {
+			release_firmware(fw);
+		} else {
+			dev_warn(dev,
+				 "Failed to open topology file: %s, you might need to\n",
+				 (*tplg_files)[i]);
+			dev_warn(dev,
+				 "download it from https://github.com/thesofproject/sof-bin/\n");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static char *get_tplg_filename(struct device *dev, const char *prefix,
+			       const char *platform, const char *tplg_dev_name,
+			       int dai_link_id, int tplg_dev)
+{
+	char *filename = NULL;
+	/*
+	 * The tplg file naming rule is sof-<platform>-<function>-id<BE id number>.tplg
+	 * where <platform> is only required for the devices that need NHLT blob like DMIC
+	 * as the nhlt blob is platform dependent.
+	 */
+	switch (tplg_dev) {
+	case TPLG_DEVICE_INTEL_PCH_DMIC:
+		filename = devm_kasprintf(dev, GFP_KERNEL, "%s/sof-%s-%s-id%d.tplg",
+					  prefix, platform, tplg_dev_name, dai_link_id);
+		break;
+	default:
+		filename = devm_kasprintf(dev, GFP_KERNEL, "%s/sof-%s-id%d.tplg",
+					  prefix, tplg_dev_name, dai_link_id);
+		break;
+	}
+
+	return filename;
+}
+
+int sof_sdw_get_tplg_files(struct snd_soc_card *card, const struct snd_soc_acpi_mach *mach,
+			   const char *prefix, const char ***tplg_files, bool best_effort)
+{
+	struct snd_soc_acpi_mach_params mach_params = mach->mach_params;
+	struct snd_soc_dai_link *dai_link;
+	char platform[SOF_INTEL_PLATFORM_NAME_MAX];
+	unsigned long tplg_mask = 0;
+	int tplg_num = 0;
+	int tplg_dev;
+	int ret;
+	int i;
+
+	ret = get_platform_name(card, mach, platform);
+	if (ret < 0)
+		return ret;
 
 	for_each_card_prelinks(card, i, dai_link) {
 		char *tplg_dev_name;
@@ -97,25 +155,9 @@ int sof_sdw_get_tplg_files(struct snd_soc_card *card, const struct snd_soc_acpi_
 
 		tplg_mask |= BIT(tplg_dev);
 
-		/*
-		 * The tplg file naming rule is sof-<platform>-<function>-id<BE id number>.tplg
-		 * where <platform> is only required for the DMIC function as the nhlt blob
-		 * is platform dependent.
-		 */
-		switch (tplg_dev) {
-		case TPLG_DEVICE_INTEL_PCH_DMIC:
-			(*tplg_files)[tplg_num] = devm_kasprintf(card->dev, GFP_KERNEL,
-								 "%s/sof-%s-%s-id%d.tplg",
-								 prefix, platform,
-								 tplg_dev_name, dai_link->id);
-			break;
-		default:
-			(*tplg_files)[tplg_num] = devm_kasprintf(card->dev, GFP_KERNEL,
-								 "%s/sof-%s-id%d.tplg",
-								 prefix, tplg_dev_name,
-								 dai_link->id);
-			break;
-		}
+		(*tplg_files)[tplg_num] = get_tplg_filename(card->dev, prefix, platform,
+							    tplg_dev_name, dai_link->id,
+							    tplg_dev);
 		if (!(*tplg_files)[tplg_num])
 			return -ENOMEM;
 		tplg_num++;
@@ -124,20 +166,10 @@ int sof_sdw_get_tplg_files(struct snd_soc_card *card, const struct snd_soc_acpi_
 	dev_dbg(card->dev, "tplg_mask %#lx tplg_num %d\n", tplg_mask, tplg_num);
 
 	/* Check presence of sub-topologies */
-	for (i = 0; i < tplg_num; i++) {
-		ret = firmware_request_nowarn(&fw, (*tplg_files)[i], card->dev);
-		if (!ret) {
-			release_firmware(fw);
-		} else {
-			dev_warn(card->dev,
-				 "Failed to open topology file: %s, you might need to\n",
-				 (*tplg_files)[i]);
-			dev_warn(card->dev,
-				 "download it from https://github.com/thesofproject/sof-bin/\n");
-			return 0;
-		}
-	}
+	if (all_tplg_files_exist(card->dev, tplg_files, tplg_num))
+		return tplg_num;
 
-	return tplg_num;
+	/* return 0 to use monolithic topology */
+	return 0;
 }
 EXPORT_SYMBOL_GPL(sof_sdw_get_tplg_files);
