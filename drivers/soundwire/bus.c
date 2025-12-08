@@ -15,6 +15,9 @@
 
 static DEFINE_IDA(sdw_bus_ida);
 
+#define SDW_CLK_STOP_MODE	SDW_CLK_STOP_MODE1
+
+
 static int sdw_get_id(struct sdw_bus *bus)
 {
 	int rc = ida_alloc(&sdw_bus_ida, GFP_KERNEL);
@@ -1079,7 +1082,7 @@ int sdw_bus_prep_clk_stop(struct sdw_bus *bus)
 		is_slave = true;
 
 		ret = sdw_slave_clk_stop_callback(slave,
-						  SDW_CLK_STOP_MODE0,
+						  SDW_CLK_STOP_MODE,
 						  SDW_CLK_PRE_PREPARE);
 		if (ret < 0 && ret != -ENODATA) {
 			dev_err(&slave->dev, "clock stop pre-prepare cb failed:%d\n", ret);
@@ -1091,7 +1094,7 @@ int sdw_bus_prep_clk_stop(struct sdw_bus *bus)
 			simple_clk_stop = false;
 
 			ret = sdw_slave_clk_stop_prepare(slave,
-							 SDW_CLK_STOP_MODE0,
+							 SDW_CLK_STOP_MODE,
 							 true);
 			if (ret < 0 && ret != -ENODATA) {
 				dev_err(&slave->dev, "clock stop prepare failed:%d\n", ret);
@@ -1131,7 +1134,7 @@ int sdw_bus_prep_clk_stop(struct sdw_bus *bus)
 			continue;
 
 		ret = sdw_slave_clk_stop_callback(slave,
-						  SDW_CLK_STOP_MODE0,
+						  SDW_CLK_STOP_MODE,
 						  SDW_CLK_POST_PREPARE);
 
 		if (ret < 0 && ret != -ENODATA) {
@@ -1204,7 +1207,7 @@ int sdw_bus_exit_clk_stop(struct sdw_bus *bus)
 		/* Identify if Slave(s) are available on Bus */
 		is_slave = true;
 
-		ret = sdw_slave_clk_stop_callback(slave, SDW_CLK_STOP_MODE0,
+		ret = sdw_slave_clk_stop_callback(slave, SDW_CLK_STOP_MODE,
 						  SDW_CLK_PRE_DEPREPARE);
 		if (ret < 0)
 			dev_warn(&slave->dev, "clock stop pre-deprepare cb failed:%d\n", ret);
@@ -1213,7 +1216,7 @@ int sdw_bus_exit_clk_stop(struct sdw_bus *bus)
 		if (!slave->prop.simple_clk_stop_capable) {
 			simple_clk_stop = false;
 
-			ret = sdw_slave_clk_stop_prepare(slave, SDW_CLK_STOP_MODE0,
+			ret = sdw_slave_clk_stop_prepare(slave, SDW_CLK_STOP_MODE,
 							 false);
 
 			if (ret < 0)
@@ -1243,7 +1246,7 @@ int sdw_bus_exit_clk_stop(struct sdw_bus *bus)
 		    slave->status != SDW_SLAVE_ALERT)
 			continue;
 
-		ret = sdw_slave_clk_stop_callback(slave, SDW_CLK_STOP_MODE0,
+		ret = sdw_slave_clk_stop_callback(slave, SDW_CLK_STOP_MODE,
 						  SDW_CLK_POST_DEPREPARE);
 		if (ret < 0)
 			dev_warn(&slave->dev, "clock stop post-deprepare cb failed:%d\n", ret);
