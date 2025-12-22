@@ -760,8 +760,11 @@ void hda_set_dai_drv_ops(struct snd_sof_dev *sdev, struct snd_sof_dsp_ops *ops)
 
 	if (sdev->pdata->ipc_type == SOF_IPC_TYPE_4 && !hda_use_tplg_nhlt) {
 		struct sof_ipc4_fw_data *ipc4_data = sdev->private;
+		struct snd_ipc4_nhlt *nhlt;
 
-		ipc4_data->nhlt = intel_nhlt_init(sdev->dev);
+		nhlt->nhlt = intel_nhlt_init(sdev->dev);
+
+		list_add(&nhlt->list, &ipc4_data->nhlt_list);
 	}
 }
 EXPORT_SYMBOL_NS(hda_set_dai_drv_ops, "SND_SOC_SOF_INTEL_HDA_COMMON");
@@ -770,9 +773,14 @@ void hda_ops_free(struct snd_sof_dev *sdev)
 {
 	if (sdev->pdata->ipc_type == SOF_IPC_TYPE_4) {
 		struct sof_ipc4_fw_data *ipc4_data = sdev->private;
+		struct snd_ipc4_nhlt *nhlt;
 
-		if (!hda_use_tplg_nhlt)
-			intel_nhlt_free(ipc4_data->nhlt);
+		if (!hda_use_tplg_nhlt) {
+			nhlt = list_first_entry(&ipc4_data->nhlt_list,
+						struct snd_ipc4_nhlt, list);
+			intel_nhlt_free(nhlt->nhlt);
+			list_del(&nhlt->list);
+		}
 
 		kfree(sdev->private);
 		sdev->private = NULL;
