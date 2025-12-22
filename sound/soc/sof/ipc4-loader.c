@@ -149,6 +149,8 @@ static size_t sof_ipc4_fw_parse_basefw_ext_man(struct snd_sof_dev *sdev)
 	ssize_t payload_offset;
 	int ret;
 
+	INIT_LIST_HEAD(&ipc4_data->nhlt_list);
+
 	fw_lib = devm_kzalloc(sdev->dev, sizeof(*fw_lib), GFP_KERNEL);
 	if (!fw_lib)
 		return -ENOMEM;
