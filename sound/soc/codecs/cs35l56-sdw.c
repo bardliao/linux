@@ -304,6 +304,15 @@ static int cs35l56_sdw_read_prop(struct sdw_slave *peripheral)
 	prop->quirks = SDW_SLAVE_QUIRKS_INVALID_INITIAL_PARITY;
 	prop->scp_int1_mask = SDW_SCP_INT1_BUS_CLASH | SDW_SCP_INT1_PARITY | SDW_SCP_INT1_IMPL_DEF;
 
+
+	prop->dp0_prop = devm_kzalloc(cs35l56->base.dev, sizeof(*prop->dp0_prop),
+				      GFP_KERNEL);
+	if (!prop->dp0_prop)
+		return -ENOMEM;
+
+	prop->dp0_prop->simple_ch_prep_sm = false; //true;
+	prop->dp0_prop->ch_prep_timeout = 10;
+
 	/* DP1 - playback */
 	ports[0].num = CS35L56_SDW1_PLAYBACK_PORT;
 	ports[0].type = SDW_DPN_FULL;
