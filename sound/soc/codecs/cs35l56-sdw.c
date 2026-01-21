@@ -35,6 +35,8 @@
 #define CS35L56_LATE_READ_POLL_US	10
 #define CS35L56_LATE_READ_TIMEOUT_US	1000
 
+#define CS35L56_SDW_BPT_WRITE_THRESHOLD	644
+
 static int cs35l56_sdw_poll_mem_status(struct sdw_slave *peripheral,
 				       unsigned int mask,
 				       unsigned int match)
@@ -95,6 +97,32 @@ static int cs35l56_sdw_slow_read(struct sdw_slave *peripheral, unsigned int reg,
 	return 0;
 }
 
+/* This is a copy of do_bpt_sequence() feels like a generic single section helper? */
+static int cs35l56_sdw_do_bpt(struct sdw_slave *slave, bool write,
+			      unsigned int start_addr, size_t num_bytes, u8 *buffer)
+{
+	struct sdw_bpt_msg msg = {0};
+	struct sdw_bpt_section *sec;
+
+	sec = kcalloc(1, sizeof(*sec), GFP_KERNEL);
+	if (!sec)
+		return -ENOMEM;
+	msg.sections = 1;
+
+	sec[0].addr = start_addr;
+	sec[0].len = num_bytes;
+
+	msg.sec = sec;
+	msg.dev_num = slave->dev_num;
+	if (write)
+		msg.flags = SDW_MSG_FLAG_WRITE;
+	else
+		msg.flags = SDW_MSG_FLAG_READ;
+	sec[0].buf = buffer;
+
+	return sdw_bpt_send_sync(slave->bus, slave, &msg);
+}
+
 static int cs35l56_sdw_read(void *context, const void *reg_buf,
 			    const size_t reg_size, void *val_buf,
 			    size_t val_size)
@@ -125,6 +153,29 @@ static inline void cs35l56_swab_copy(void *dest, const void *src, size_t nbytes)
 		*dest32++ = swab32(*src32++);
 }
 
+static int cs35l56_sdw_write_bpt(void *context,
+				 const void *reg_buf, size_t reg_size,
+				 const void *val_buf, size_t val_size)
+{
+	struct sdw_slave *peripheral = context;
+	unsigned int reg_addr = get_unaligned_le32(reg_buf);
+	u32 *swab_buf;	/* Define u32 so it is 32-bit aligned */
+	int ret;
+
+	swab_buf = kzalloc(val_size, GFP_KERNEL);
+	if (!swab_buf)
+		return -ENOMEM;
+
+	cs35l56_swab_copy(swab_buf, val_buf, val_size);
+
+	ret = cs35l56_sdw_do_bpt(peripheral, SDW_MSG_FLAG_WRITE, reg_addr,
+				 val_size, (u8 *)swab_buf);
+	dev_dbg(&peripheral->dev, "W addr %x %zd ret %d\n", reg_addr, val_size, ret);
+
+	kfree(swab_buf);
+	return ret;
+}
+
 static int cs35l56_sdw_gather_write(void *context,
 				    const void *reg_buf, size_t reg_size,
 				    const void *val_buf, size_t val_size)
@@ -134,6 +185,19 @@ static int cs35l56_sdw_gather_write(void *context,
 	unsigned int reg_addr = get_unaligned_le32(reg_buf);
 	u32 swab_buf[64];	/* Define u32 so it is 32-bit aligned */
 	int ret;
+
+	/*
+	 * Attempt BPT if the transfer is greater than a threshold number of bytes.
+	 *
+	 * If it succeeds return otherwise fall back to the existing raw write
+	 */
+	if (val_size > CS35L56_SDW_BPT_WRITE_THRESHOLD) {
+		ret = cs35l56_sdw_write_bpt(context, reg_buf, reg_size,
+						   val_buf, val_size);
+		dev_dbg(cs35l56->base.dev, "%s(): W %zd ret %d\n", __func__, val_size, ret);
+		if (!ret)
+			return 0;
+	}
 
 	while (val_size > sizeof(swab_buf)) {
 		cs35l56_swab_copy(swab_buf, val_buf, sizeof(swab_buf));
