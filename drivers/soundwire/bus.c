@@ -1502,6 +1502,7 @@ static int sdw_handle_dp0_interrupt(struct sdw_slave *slave, u8 *slave_status)
 {
 	u8 clear, impl_int_mask;
 	int status, status2, ret, count = 0;
+	int simont_complete;
 
 	status = sdw_read_no_pm(slave, SDW_DP0_INT);
 	if (status < 0) {
@@ -1511,6 +1512,7 @@ static int sdw_handle_dp0_interrupt(struct sdw_slave *slave, u8 *slave_status)
 	}
 
 	do {
+		simont_complete = 0;
 		clear = status & ~(SDW_DP0_INTERRUPTS | SDW_DP0_SDCA_CASCADE);
 
 		if (status & SDW_DP0_INT_TEST_FAIL) {
@@ -1524,7 +1526,7 @@ static int sdw_handle_dp0_interrupt(struct sdw_slave *slave, u8 *slave_status)
 		 */
 
 		if (status & SDW_DP0_INT_PORT_READY) {
-			complete(&slave->port_ready[0]);
+			simont_complete = 1;
 			clear |= SDW_DP0_INT_PORT_READY;
 		}
 
@@ -1559,6 +1561,9 @@ static int sdw_handle_dp0_interrupt(struct sdw_slave *slave, u8 *slave_status)
 		/* filter to limit loop to interrupts identified in the first status read */
 		status &= status2;
 
+		if (simont_complete)
+			complete(&slave->port_ready[0]);
+
 		count++;
 
 		/* we can get alerts while processing so keep retrying */
@@ -1575,6 +1580,7 @@ static int sdw_handle_port_interrupt(struct sdw_slave *slave,
 {
 	u8 clear, impl_int_mask;
 	int status, status2, ret, count = 0;
+	int simont_complete;
 	u32 addr;
 
 	if (port == 0)
@@ -1590,6 +1596,7 @@ static int sdw_handle_port_interrupt(struct sdw_slave *slave,
 	}
 
 	do {
+		simont_complete = 0;
 		clear = status & ~SDW_DPN_INTERRUPTS;
 
 		if (status & SDW_DPN_INT_TEST_FAIL) {
@@ -1602,7 +1609,7 @@ static int sdw_handle_port_interrupt(struct sdw_slave *slave,
 		 * for ports implementing CP_SM.
 		 */
 		if (status & SDW_DPN_INT_PORT_READY) {
-			complete(&slave->port_ready[port]);
+			simont_complete = 1;
 			clear |= SDW_DPN_INT_PORT_READY;
 		}
 
@@ -1631,6 +1638,9 @@ static int sdw_handle_port_interrupt(struct sdw_slave *slave,
 		}
 		/* filter to limit loop to interrupts identified in the first status read */
 		status &= status2;
+
+		if (simont_complete)
+			complete(&slave->port_ready[port]);
 
 		count++;
 
