@@ -87,6 +87,8 @@ int sdw_bus_master_add(struct sdw_bus *bus, struct device *parent,
 	lockdep_register_key(&bus->bus_lock_key);
 	__mutex_init(&bus->bus_lock, "bus_lock", &bus->bus_lock_key);
 
+	mutex_init(&bus->bpt_lock);
+
 	INIT_LIST_HEAD(&bus->slaves);
 	INIT_LIST_HEAD(&bus->m_rt_list);
 
@@ -2095,10 +2097,12 @@ int sdw_bpt_send_sync(struct sdw_bus *bus, struct sdw_slave *slave, struct sdw_b
 {
 	int ret;
 
+	mutex_lock(&bus->bpt_lock);
 	ret = sdw_bpt_send_async(bus, slave, msg);
-	if (ret < 0)
-		return ret;
+	if (ret >= 0)
+		ret = sdw_bpt_wait(bus, slave, msg);
+	mutex_unlock(&bus->bpt_lock);
 
-	return sdw_bpt_wait(bus, slave, msg);
+	return ret;
 }
 EXPORT_SYMBOL(sdw_bpt_send_sync);
