@@ -836,7 +836,43 @@ struct sdw_defer {
  */
 #define SDW_BPT_MSG_MAX_BYTES  (1024 * 1024)
 
-struct sdw_bpt_msg;
+/**
+ * enum sdw_msg_flags - Message xfer direction
+ * @SDW_MSG_FLAG_READ: Message is a read
+ * @SDW_MSG_FLAG_WRITE: Message is a write
+ */
+enum sdw_msg_flags {
+	SDW_MSG_FLAG_READ = 0,
+	SDW_MSG_FLAG_WRITE,
+};
+
+/**
+ * struct sdw_btp_section - Message section structure
+ * @addr: Start Register address accessed in the Slave
+ * @len: number of bytes to transfer. More than 64Kb can be transferred
+ * but a practical limit of SDW_BPT_MSG_MAX_BYTES is enforced.
+ * @buf: section data buffer (filled by host for write, filled
+ * by Peripheral hardware for reads)
+ */
+struct sdw_bpt_section {
+	u32 addr;
+	u32 len;
+	u8 *buf;
+};
+
+/**
+ * struct sdw_btp_msg - Message structure
+ * @sec: Pointer to array of sections
+ * @sections: Number of sections in the array
+ * @dev_num: Slave device number
+ * @flags: transfer flags, indicate if xfer is read or write
+ */
+struct sdw_bpt_msg {
+	struct sdw_bpt_section *sec;
+	int sections;
+	u8 dev_num;
+	u8 flags;
+};
 
 /**
  * struct sdw_master_ops - Master driver ops
