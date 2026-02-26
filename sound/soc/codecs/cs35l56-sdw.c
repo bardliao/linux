@@ -36,6 +36,7 @@
 #define CS35L56_LATE_READ_TIMEOUT_US	1000
 
 #define CS35L56_SDW_BPT_WRITE_THRESHOLD	644
+#define CS35L56_SDW_BPT_READ_THRESHOLD	400
 
 static int cs35l56_sdw_poll_mem_status(struct sdw_slave *peripheral,
 				       unsigned int mask,
@@ -135,10 +136,20 @@ static int cs35l56_sdw_read(void *context, const void *reg_buf,
 	if (cs35l56_is_otp_register(reg_addr - CS35L56_SDW_ADDR_OFFSET))
 		return cs35l56_sdw_slow_read(peripheral, reg_addr, (u8 *)val_buf, val_size);
 
+	if (val_size > CS35L56_SDW_BPT_READ_THRESHOLD) {
+		ret = cs35l56_sdw_do_bpt(peripheral, SDW_MSG_FLAG_READ, reg_addr,
+					 val_size, val_buf);
+		dev_dbg(&peripheral->dev, "R addr %x %zd ret %d\n",
+			reg_addr, val_size, ret);
+		if (!ret)
+			goto swab_out;
+	}
+
 	ret = regmap_raw_read(cs35l56->sdw_bus_regmap, reg_addr, val_buf, val_size);
 	if (ret)
 		return ret;
 
+swab_out:
 	swab32_array((u32 *)val_buf, val_size / sizeof(u32));
 
 	return 0;
