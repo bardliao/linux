@@ -132,17 +132,22 @@ static int cs35l56_sdw_read(void *context, const void *reg_buf,
 	struct cs35l56_private *cs35l56 = dev_get_drvdata(&peripheral->dev);
 	unsigned int reg_addr = get_unaligned_le32(reg_buf);
 	int ret;
+	int retries = 5;
 
 	if (cs35l56_is_otp_register(reg_addr - CS35L56_SDW_ADDR_OFFSET))
 		return cs35l56_sdw_slow_read(peripheral, reg_addr, (u8 *)val_buf, val_size);
 
 	if (val_size > CS35L56_SDW_BPT_READ_THRESHOLD) {
-		ret = cs35l56_sdw_do_bpt(peripheral, SDW_MSG_FLAG_READ, reg_addr,
-					 val_size, val_buf);
-		dev_dbg(&peripheral->dev, "R addr %x %zd ret %d\n",
-			reg_addr, val_size, ret);
-		if (!ret)
-			goto swab_out;
+		do {
+			ret = cs35l56_sdw_do_bpt(peripheral, SDW_MSG_FLAG_READ, reg_addr,
+						 val_size, val_buf);
+			dev_dbg(&peripheral->dev, "R addr %x %zd ret %d retries %d\n",
+				reg_addr, val_size, ret, retries);
+			if (!ret)
+				goto swab_out;
+			else if (ret == -EAGAIN)
+				usleep_range(retries*1000, retries*2000);
+		} while (--retries);
 	}
 
 	ret = regmap_raw_read(cs35l56->sdw_bus_regmap, reg_addr, val_buf, val_size);
@@ -172,6 +177,7 @@ static int cs35l56_sdw_write_bpt(void *context,
 	unsigned int reg_addr = get_unaligned_le32(reg_buf);
 	u32 *swab_buf;	/* Define u32 so it is 32-bit aligned */
 	int ret;
+	int retries = 5;
 
 	swab_buf = kzalloc(val_size, GFP_KERNEL);
 	if (!swab_buf)
@@ -179,9 +185,16 @@ static int cs35l56_sdw_write_bpt(void *context,
 
 	cs35l56_swab_copy(swab_buf, val_buf, val_size);
 
-	ret = cs35l56_sdw_do_bpt(peripheral, SDW_MSG_FLAG_WRITE, reg_addr,
-				 val_size, (u8 *)swab_buf);
-	dev_dbg(&peripheral->dev, "W addr %x %zd ret %d\n", reg_addr, val_size, ret);
+	do {
+		ret = cs35l56_sdw_do_bpt(peripheral, SDW_MSG_FLAG_WRITE, reg_addr,
+					 val_size, (u8 *)swab_buf);
+		dev_dbg(&peripheral->dev, "W addr %x %zd ret %d retries %d\n",
+			reg_addr, val_size, ret, retries);
+		if (!ret)
+			break;
+		else if (ret == -EAGAIN)
+			usleep_range(retries*1000, retries*2000);
+	} while (--retries);
 
 	kfree(swab_buf);
 	return ret;
