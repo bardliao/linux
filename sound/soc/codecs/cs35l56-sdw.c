@@ -104,7 +104,9 @@ static int cs35l56_sdw_do_bpt(struct sdw_slave *slave, bool write,
 {
 	struct sdw_bpt_msg msg = {0};
 	struct sdw_bpt_section *sec;
+	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	sec = kcalloc(1, sizeof(*sec), GFP_KERNEL);
 	if (!sec)
 		return -ENOMEM;
@@ -121,7 +123,9 @@ static int cs35l56_sdw_do_bpt(struct sdw_slave *slave, bool write,
 		msg.flags = SDW_MSG_FLAG_READ;
 	sec[0].buf = buffer;
 
-	return sdw_bpt_send_sync(slave->bus, slave, &msg);
+	ret = sdw_bpt_send_sync(slave->bus, slave, &msg);
+	pr_err("bard: %s ret %d\n", __func__, ret);
+	return ret;
 }
 
 static int cs35l56_sdw_read(void *context, const void *reg_buf,
