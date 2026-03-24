@@ -116,6 +116,7 @@ static int skl_hda_audio_probe(struct platform_device *pdev)
 	card->late_probe = skl_hda_card_late_probe;
 	card->add_dai_link = skl_hda_add_dai_link;
 
+	board_quirk |= SOF_SSP_MASK_HDMI_CAPTURE(0x5);
 	dev_dbg(&pdev->dev, "board_quirk = %lx\n", board_quirk);
 
 	/* initialize ctx with board quirk */
