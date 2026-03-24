@@ -378,7 +378,7 @@ static int cs35l56_sdw_read_prop(struct sdw_slave *peripheral)
 	prop->paging_support = true;
 	prop->quirks = SDW_SLAVE_QUIRKS_INVALID_INITIAL_PARITY;
 	prop->scp_int1_mask = SDW_SCP_INT1_BUS_CLASH | SDW_SCP_INT1_PARITY | SDW_SCP_INT1_IMPL_DEF;
-
+	prop->bra_block_alignment = 4;
 
 	prop->dp0_prop = devm_kzalloc(cs35l56->base.dev, sizeof(*prop->dp0_prop),
 				      GFP_KERNEL);
