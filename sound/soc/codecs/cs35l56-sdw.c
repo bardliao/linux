@@ -137,7 +137,7 @@ static int cs35l56_sdw_read(void *context, const void *reg_buf,
 	if (cs35l56_is_otp_register(reg_addr - CS35L56_SDW_ADDR_OFFSET))
 		return cs35l56_sdw_slow_read(peripheral, reg_addr, (u8 *)val_buf, val_size);
 
-	if (val_size > CS35L56_SDW_BPT_READ_THRESHOLD && peripheral->dev_num == 1) {
+	if (val_size > CS35L56_SDW_BPT_READ_THRESHOLD) {
 		do {
 			ret = cs35l56_sdw_do_bpt(peripheral, SDW_MSG_FLAG_READ, reg_addr,
 						 val_size, val_buf);
@@ -215,7 +215,7 @@ static int cs35l56_sdw_gather_write(void *context,
 	 *
 	 * If it succeeds return otherwise fall back to the existing raw write
 	 */
-	if (val_size > CS35L56_SDW_BPT_WRITE_THRESHOLD && peripheral->dev_num == 1) {
+	if (val_size > CS35L56_SDW_BPT_WRITE_THRESHOLD) {
 		ret = cs35l56_sdw_write_bpt(context, reg_buf, reg_size,
 						   val_buf, val_size);
 		dev_dbg(cs35l56->base.dev, "%s(): W %zd ret %d\n", __func__, val_size, ret);
