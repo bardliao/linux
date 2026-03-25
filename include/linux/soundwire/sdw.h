@@ -844,6 +844,12 @@ struct sdw_defer {
  */
 #define SDW_BPT_MSG_MAX_BYTES  (1024 * 1024)
 
+/*
+ * According to mipi SoundWire DisCo Specification_v2-1,
+ * this maximum value shall not exceed 470.
+ */
+#define SDW_BRA_MAX_BYTES_PER_FRAME  470
+
 /**
  * enum sdw_msg_flags - Message xfer direction
  * @SDW_MSG_FLAG_READ: Message is a read
