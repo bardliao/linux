@@ -308,22 +308,22 @@ static void intel_ace2x_bpt_close_stream(struct sdw_intel *sdw, struct sdw_slave
 				&sdw->bpt_ctx.dmab_tx_bdl, sdw->bpt_ctx.bpt_rx_stream,
 				&sdw->bpt_ctx.dmab_rx_bdl);
 	if (ret < 0)
-		dev_err(cdns->dev, "%s:  hda_sdw_bpt_close failed: ret %d\n",
+		dev_err(&slave->dev, "%s:  hda_sdw_bpt_close failed: ret %d\n",
 			__func__, ret);
 
 	ret = sdw_deprepare_stream(cdns->bus.bpt_stream);
 	if (ret < 0)
-		dev_err(cdns->dev, "%s: sdw_deprepare_stream failed: ret %d\n",
+		dev_err(&slave->dev, "%s: sdw_deprepare_stream failed: ret %d\n",
 			__func__, ret);
 
 	ret = sdw_stream_remove_master(&cdns->bus, cdns->bus.bpt_stream);
 	if (ret < 0)
-		dev_err(cdns->dev, "%s: remove master failed: %d\n",
+		dev_err(&slave->dev, "%s: remove master failed: %d\n",
 			__func__, ret);
 
 	ret = sdw_stream_remove_slave(slave, cdns->bus.bpt_stream);
 	if (ret < 0)
-		dev_err(cdns->dev, "%s: remove slave failed: %d\n",
+		dev_err(&slave->dev, "%s: remove slave failed: %d\n",
 			__func__, ret);
 
 	sdw_release_stream(cdns->bus.bpt_stream);
@@ -344,12 +344,12 @@ static int intel_ace2x_bpt_send_async(struct sdw_intel *sdw, struct sdw_slave *s
 		len += msg->sec[i].len;
 
 	if (len < INTEL_BPT_MSG_BYTE_MIN) {
-		dev_err(cdns->dev, "BPT message length %d is less than the minimum bytes %d\n",
+		dev_err(&slave->dev, "BPT message length %d is less than the minimum bytes %d\n",
 			len, INTEL_BPT_MSG_BYTE_MIN);
 		return -EINVAL;
 	}
 
-	dev_dbg(cdns->dev, "BPT Transfer start\n");
+	dev_dbg(&slave->dev, "BPT Transfer start\n");
 
 	ret = intel_ace2x_bpt_open_stream(sdw, slave, msg);
 	if (ret < 0)
@@ -358,7 +358,7 @@ static int intel_ace2x_bpt_send_async(struct sdw_intel *sdw, struct sdw_slave *s
 	ret = hda_sdw_bpt_send_async(cdns->dev->parent, /* PCI device */
 				     sdw->bpt_ctx.bpt_tx_stream, sdw->bpt_ctx.bpt_rx_stream);
 	if (ret < 0) {
-		dev_err(cdns->dev, "%s:   hda_sdw_bpt_send_async failed: %d\n",
+		dev_err(&slave->dev, "%s:   hda_sdw_bpt_send_async failed: %d\n",
 			__func__, ret);
 
 		intel_ace2x_bpt_close_stream(sdw, slave, msg);
@@ -368,7 +368,7 @@ static int intel_ace2x_bpt_send_async(struct sdw_intel *sdw, struct sdw_slave *s
 
 	ret = sdw_enable_stream(cdns->bus.bpt_stream);
 	if (ret < 0) {
-		dev_err(cdns->dev, "%s: sdw_stream_enable failed: %d\n",
+		dev_err(&slave->dev, "%s: sdw_stream_enable failed: %d\n",
 			__func__, ret);
 		intel_ace2x_bpt_close_stream(sdw, slave, msg);
 	}
@@ -382,16 +382,16 @@ static int intel_ace2x_bpt_wait(struct sdw_intel *sdw, struct sdw_slave *slave,
 	struct sdw_cdns *cdns = &sdw->cdns;
 	int ret;
 
-	dev_dbg(cdns->dev, "BPT Transfer wait\n");
+	dev_dbg(&slave->dev, "BPT Transfer wait\n");
 
 	ret = hda_sdw_bpt_wait(cdns->dev->parent, /* PCI device */
 			       sdw->bpt_ctx.bpt_tx_stream, sdw->bpt_ctx.bpt_rx_stream);
 	if (ret < 0)
-		dev_err(cdns->dev, "%s: hda_sdw_bpt_wait failed: %d\n", __func__, ret);
+		dev_err(&slave->dev, "%s: hda_sdw_bpt_wait failed: %d\n", __func__, ret);
 
 	ret = sdw_disable_stream(cdns->bus.bpt_stream);
 	if (ret < 0) {
-		dev_err(cdns->dev, "%s: sdw_stream_enable failed: %d\n",
+		dev_err(&slave->dev, "%s: sdw_stream_enable failed: %d\n",
 			__func__, ret);
 		goto err;
 	}
@@ -401,14 +401,14 @@ static int intel_ace2x_bpt_wait(struct sdw_intel *sdw, struct sdw_slave *slave,
 						    sdw->bpt_ctx.pdi1_buffer_size,
 						    sdw->bpt_ctx.num_frames);
 		if (ret < 0)
-			dev_err(cdns->dev, "%s: BPT Write failed %d\n", __func__, ret);
+			dev_err(&slave->dev, "%s: BPT Write failed %d\n", __func__, ret);
 	} else {
 		ret = sdw_cdns_check_read_response(cdns->dev, sdw->bpt_ctx.dmab_rx_bdl.area,
 						   sdw->bpt_ctx.pdi1_buffer_size,
 						   msg->sec, msg->sections, sdw->bpt_ctx.num_frames,
 						   sdw->bpt_ctx.data_per_frame);
 		if (ret < 0)
-			dev_err(cdns->dev, "%s: BPT Read failed %d\n", __func__, ret);
+			dev_err(&slave->dev, "%s: BPT Read failed %d\n", __func__, ret);
 	}
 
 err:
