@@ -146,7 +146,7 @@ static int cs35l56_sdw_read(void *context, const void *reg_buf,
 			if (!ret)
 				goto swab_out;
 			else if (ret == -EAGAIN)
-				usleep_range(retries*1000, retries*2000);
+				break;
 		} while (--retries);
 	}
 
@@ -193,7 +193,7 @@ static int cs35l56_sdw_write_bpt(void *context,
 		if (!ret)
 			break;
 		else if (ret == -EAGAIN)
-			usleep_range(retries*1000, retries*2000);
+			break;
 	} while (--retries);
 
 	kfree(swab_buf);
