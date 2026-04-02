@@ -1326,6 +1326,12 @@ int hda_data_stream_cleanup(struct device *dev, struct snd_dma_buffer *dmab,
 	int sd_offset = SOF_STREAM_SD_OFFSET(hstream);
 	int ret = 0;
 
+	/*
+	 * Reset SPIB. The SPIB value will only take effect when SPIB is enabled,
+	 * That's why we need to set the value with HDA_DSP_SPIB_ENABLE
+	 */
+	hda_dsp_stream_spib_config(sdev, hext_stream, HDA_DSP_SPIB_ENABLE, 0);
+
 	if (hstream->direction == SNDRV_PCM_STREAM_PLAYBACK)
 		ret = hda_dsp_stream_spib_config(sdev, hext_stream, HDA_DSP_SPIB_DISABLE, 0);
 	else
