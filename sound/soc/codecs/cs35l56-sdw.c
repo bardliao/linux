@@ -327,6 +327,18 @@ out:
 	pm_runtime_put_autosuspend(cs35l56->base.dev);
 }
 
+static void cs35l56_sdw_init_work(struct work_struct *work)
+{
+	struct cs35l56_private *cs35l56 = container_of(work,
+						       struct cs35l56_private,
+						       sdw_init_work);
+
+	if (!cs35l56->sdw_attached)
+		return;
+
+	cs35l56_sdw_init(cs35l56->sdw_peripheral);
+}
+
 static int cs35l56_sdw_interrupt(struct sdw_slave *peripheral,
 				 struct sdw_slave_intr_status *status)
 {
@@ -427,10 +439,10 @@ static int cs35l56_sdw_update_status(struct sdw_slave *peripheral,
 		if (cs35l56->sdw_attached)
 			break;
 
-		if (!cs35l56->base.init_done || cs35l56->soft_resetting)
-			cs35l56_sdw_init(peripheral);
-
 		cs35l56->sdw_attached = true;
+
+		if (!cs35l56->base.init_done || cs35l56->soft_resetting)
+			schedule_work(&cs35l56->sdw_init_work);
 		break;
 	case SDW_SLAVE_UNATTACHED:
 		dev_dbg(cs35l56->base.dev, "%s: UNATTACHED\n", __func__);
@@ -569,6 +581,7 @@ static int cs35l56_sdw_probe(struct sdw_slave *peripheral, const struct sdw_devi
 	cs35l56->base.dev = dev;
 	cs35l56->sdw_peripheral = peripheral;
 	cs35l56->sdw_link_num = peripheral->bus->link_id;
+	INIT_WORK(&cs35l56->sdw_init_work, cs35l56_sdw_init_work);
 	INIT_WORK(&cs35l56->sdw_irq_work, cs35l56_sdw_irq_work);
 
 	dev_set_drvdata(dev, cs35l56);
@@ -617,6 +630,8 @@ static void cs35l56_sdw_remove(struct sdw_slave *peripheral)
 	struct cs35l56_private *cs35l56 = dev_get_drvdata(&peripheral->dev);
 
 	/* Disable SoundWire interrupts */
+	cs35l56->sdw_attached = false;
+	cancel_work_sync(&cs35l56->sdw_init_work);
 	cs35l56->sdw_irq_no_unmask = true;
 	cancel_work_sync(&cs35l56->sdw_irq_work);
 	sdw_write_no_pm(peripheral, CS35L56_SDW_GEN_INT_MASK_1, 0);

@@ -39,6 +39,7 @@ struct cs35l56_private {
 	struct sdw_slave *sdw_peripheral;
 	struct regmap *sdw_bus_regmap;
 	const char *fallback_fw_suffix;
+	struct work_struct sdw_init_work;
 	struct work_struct sdw_irq_work;
 	bool sdw_irq_no_unmask;
 	bool soft_resetting;
