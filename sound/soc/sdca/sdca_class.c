@@ -35,6 +35,7 @@ static int class_read_prop(struct sdw_slave *sdw)
 	prop->scp_int1_mask = SDW_SCP_INT1_BUS_CLASH | SDW_SCP_INT1_PARITY |
 			      SDW_SCP_INT1_IMPL_DEF;
 
+	prop->bra_block_alignment = 4; //HACK for testing cs42l45 BRA
 	return 0;
 }
 
