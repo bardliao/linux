@@ -1102,7 +1102,7 @@ static int sof_connect_dai_widget(struct snd_soc_component *scomp,
 
 	full = NULL;
 	partial = NULL;
-	list_for_each_entry(rtd, &card->rtd_list, list) {
+	for_each_card_rtds(card, rtd) {
 		/* does stream match DAI link ? */
 		if (rtd->dai_link->stream_name) {
 			if (!strcmp(rtd->dai_link->stream_name, w->sname)) {
@@ -1167,7 +1167,7 @@ static void sof_disconnect_dai_widget(struct snd_soc_component *scomp,
 	else
 		return;
 
-	list_for_each_entry(rtd, &card->rtd_list, list) {
+	for_each_card_rtds(card, rtd) {
 		/* does stream match DAI link ? */
 		if (!rtd->dai_link->stream_name ||
 		    !strstr(rtd->dai_link->stream_name, sname))
