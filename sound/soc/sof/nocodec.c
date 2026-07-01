@@ -21,12 +21,13 @@ static struct snd_soc_card sof_nocodec_card = {
 static int sof_nocodec_bes_setup(struct device *dev,
 				 struct snd_soc_dai_driver *drv,
 				 struct snd_soc_dai_link *links,
-				 int link_num, struct snd_soc_card *card)
+				 int link_num)
 {
+	struct snd_soc_card *card = &sof_nocodec_card;
 	struct snd_soc_dai_link_component *dlc;
 	int i;
 
-	if (!drv || !links || !card)
+	if (!drv || !links)
 		return -EINVAL;
 
 	/* set up BE dai_links */
@@ -78,7 +79,7 @@ static int sof_nocodec_setup(struct device *dev,
 	if (!links)
 		return -ENOMEM;
 
-	return sof_nocodec_bes_setup(dev, dai_drivers, links, num_dai_drivers, &sof_nocodec_card);
+	return sof_nocodec_bes_setup(dev, dai_drivers, links, num_dai_drivers);
 }
 
 static int sof_nocodec_probe(struct platform_device *pdev)
