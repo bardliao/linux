@@ -616,6 +616,8 @@ static int sdw_compute_bus_params(struct sdw_bus *bus)
 	 * if any BPT stream is running
 	 */
 	list_for_each_entry(m_rt, &bus->m_rt_list, bus_node) {
+		pr_err("bard: %s stream->name %s stream->type %d stream->state %d\n",
+			__func__, m_rt->stream->name, m_rt->stream->type, m_rt->stream->state);
 		if (m_rt->stream->type == SDW_STREAM_BPT &&
 		    m_rt->stream->state < SDW_STREAM_DEPREPARED) {
 			clk_values = 1;
@@ -786,6 +788,7 @@ int sdw_compute_params(struct sdw_bus *bus, struct sdw_stream_runtime *stream)
 		return ret;
 	}
 
+	pr_err("bard: %s stream->state %d\n", __func__, stream->state);
 	if (stream->type == SDW_STREAM_BPT && stream->state != SDW_STREAM_DEPREPARED) {
 		/* No usable data columns left */
 		if (bus->params.bpt_hstop < 1) {
