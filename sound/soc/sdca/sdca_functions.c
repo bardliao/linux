@@ -200,6 +200,128 @@ void sdca_lookup_functions(struct sdw_slave *slave)
 }
 EXPORT_SYMBOL_NS(sdca_lookup_functions, "SND_SOC_SDCA");
 
+static int find_sdca_entity_iot(struct device *dev,
+				struct fwnode_handle *entity_node,
+				struct sdca_entity *entity);
+
+static int find_sdca_function_terminal_iot(struct device *dev,
+				   struct fwnode_handle *function_node,
+				   struct sdca_entity_iot *terminal_iot,
+				   int *num_terminal_iot,
+				   u32 *terminal_transducer_count)
+{
+	u32 *entity_list __free(kfree) = NULL;
+	int num_entities;
+	int i;
+
+	num_entities = fwnode_property_count_u32(function_node,
+					 "mipi-sdca-entity-id-list");
+	if (num_entities <= 0)
+		return 0;
+
+	entity_list = kcalloc(num_entities, sizeof(*entity_list), GFP_KERNEL);
+	if (!entity_list)
+		return -ENOMEM;
+
+	if (fwnode_property_read_u32_array(function_node,
+					   "mipi-sdca-entity-id-list",
+					   entity_list, num_entities))
+		return -EINVAL;
+
+	for (i = 0; i < num_entities; i++) {
+		struct fwnode_handle *entity_node;
+		char entity_property[SDCA_PROPERTY_LENGTH];
+		struct sdca_entity entity = {
+			.label = "Terminal",
+		};
+		int ret;
+
+		/* DisCo uses upper-case for hex numbers */
+		snprintf(entity_property, sizeof(entity_property),
+			 "mipi-sdca-entity-id-0x%X-subproperties", entity_list[i]);
+
+		entity_node = fwnode_get_named_child_node(function_node, entity_property);
+		if (!entity_node)
+			continue;
+
+		if (!fwnode_property_present(entity_node, "mipi-sdca-terminal-type")) {
+			fwnode_handle_put(entity_node);
+			continue;
+		}
+
+		/* Reuse the existing parser to fill the complete iot structure. */
+		ret = find_sdca_entity_iot(dev, entity_node, &entity);
+		if (ret) {
+			fwnode_handle_put(entity_node);
+			return ret;
+		}
+
+		if (entity.iot.num_transducer > *terminal_transducer_count)
+			*terminal_transducer_count = entity.iot.num_transducer;
+
+		if (terminal_iot)
+			terminal_iot[*num_terminal_iot] = entity.iot;
+
+		(*num_terminal_iot)++;
+
+		fwnode_handle_put(entity_node);
+	}
+
+	return 0;
+}
+
+void sdca_lookup_terminal_iot(struct sdw_slave *slave)
+{
+	struct sdca_entity_iot *terminal_iot;
+	int num_terminal_iot = 0;
+	int i;
+	int ret;
+
+	kfree(slave->sdca_data.terminal_iot);
+	slave->sdca_data.terminal_iot = NULL;
+	slave->sdca_data.num_terminal_iot = 0;
+	slave->sdca_data.terminal_transducer_count = 0;
+
+	for (i = 0; i < slave->sdca_data.num_functions; i++) {
+		ret = find_sdca_function_terminal_iot(&slave->dev,
+						      slave->sdca_data.function[i].node,
+						      NULL,
+						      &num_terminal_iot,
+						      &slave->sdca_data.terminal_transducer_count);
+		if (ret)
+			return;
+	}
+
+	if (!num_terminal_iot) {
+		dev_dbg(&slave->dev,
+			"no terminal entities found in SDCA firmware properties\n");
+		return;
+	}
+
+	terminal_iot = kcalloc(num_terminal_iot, sizeof(*terminal_iot), GFP_KERNEL);
+	if (!terminal_iot)
+		return;
+
+	num_terminal_iot = 0;
+	slave->sdca_data.terminal_transducer_count = 0;
+
+	for (i = 0; i < slave->sdca_data.num_functions; i++) {
+		ret = find_sdca_function_terminal_iot(&slave->dev,
+						      slave->sdca_data.function[i].node,
+						      terminal_iot,
+						      &num_terminal_iot,
+						      &slave->sdca_data.terminal_transducer_count);
+		if (ret) {
+			kfree(terminal_iot);
+			return;
+		}
+	}
+
+	slave->sdca_data.terminal_iot = terminal_iot;
+	slave->sdca_data.num_terminal_iot = num_terminal_iot;
+}
+EXPORT_SYMBOL_NS(sdca_lookup_terminal_iot, "SND_SOC_SDCA");
+
 struct raw_init_write {
 	__le32 addr;
 	u8 val;
@@ -1992,6 +2114,7 @@ static int find_sdca_cluster_channels(struct device *dev,
 		return -EINVAL;
 	}
 
+	dev_err(dev, "bard: channel count %d\n", num_channels);
 	channels = devm_kcalloc(dev, num_channels, sizeof(*channels), GFP_KERNEL);
 	if (!channels)
 		return -ENOMEM;

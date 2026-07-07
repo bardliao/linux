@@ -6,6 +6,7 @@
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_type.h>
 #include <sound/sdca.h>
+#include <sound/sdca_function.h>
 #include "bus.h"
 #include "sysfs_local.h"
 
@@ -14,6 +15,7 @@ static void sdw_slave_release(struct device *dev)
 	struct sdw_slave *slave = dev_to_sdw_dev(dev);
 
 	of_node_put(slave->dev.of_node);
+	kfree(slave->sdca_data.terminal_iot);
 	mutex_destroy(&slave->sdw_dev_lock);
 	kfree(slave);
 }
@@ -83,6 +85,13 @@ int sdw_slave_add(struct sdw_bus *bus,
 	 */
 	sdca_lookup_interface_revision(slave);
 	sdca_lookup_functions(slave);
+	sdca_lookup_terminal_iot(slave);
+	for (i = 0; i < slave->sdca_data.num_terminal_iot; i++)
+		dev_info(&slave->dev,
+			 "terminal_iot[%d]: type=%#x num_transducer=%d\n",
+			 i,
+			 slave->sdca_data.terminal_iot[i].type,
+			 slave->sdca_data.terminal_iot[i].num_transducer);
 
 	ret = device_register(&slave->dev);
 	if (ret) {
