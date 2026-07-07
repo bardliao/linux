@@ -46,6 +46,7 @@ int sof_sdw_get_tplg_files(struct snd_soc_card *card, const struct snd_soc_acpi_
 	int ret;
 	int i;
 
+	pr_err("bard: %s\n", __func__);
 	ret = sscanf(mach->sof_tplg_filename, "sof-%3s-*.tplg", platform);
 	if (ret != 1) {
 		dev_err(card->dev, "Invalid platform name %s of tplg %s\n",

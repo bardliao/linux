@@ -6,6 +6,7 @@
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_type.h>
 #include <sound/sdca.h>
+#include <sound/sdca_function.h>
 #include "bus.h"
 #include "sysfs_local.h"
 
@@ -14,6 +15,7 @@ static void sdw_slave_release(struct device *dev)
 	struct sdw_slave *slave = dev_to_sdw_dev(dev);
 
 	of_node_put(slave->dev.of_node);
+	kfree(slave->sdca_data.terminal_iot);
 	mutex_destroy(&slave->sdw_dev_lock);
 	kfree(slave);
 }
@@ -32,6 +34,7 @@ int sdw_slave_add(struct sdw_bus *bus,
 	int ret;
 	int i;
 
+	pr_err("bard: %s\n", __func__);
 	slave = kzalloc_obj(*slave);
 	if (!slave)
 		return -ENOMEM;
@@ -83,7 +86,28 @@ int sdw_slave_add(struct sdw_bus *bus,
 	 */
 	sdca_lookup_interface_revision(slave);
 	sdca_lookup_functions(slave);
-
+	dev_err(&slave->dev, "bard: SDCA functions found: %d", slave->sdca_data.num_functions);
+	i = -1;
+	/* check if we have any SDCA function data available */
+	if (slave->sdca_data.num_functions > 0) {
+		/* Look for Smart Amp function type */
+		for (i = 0; i < slave->sdca_data.num_functions; i++) {
+			if (slave->sdca_data.function[i].type ==
+			    SDCA_FUNCTION_TYPE_SMART_MIC) {
+				dev_info(&slave->dev, "bard: Found Smart mic function at index %d", i);
+				break;
+			}
+		}
+	}
+#if 0
+	sdca_lookup_terminal_iot(slave);
+	for (i = 0; i < slave->sdca_data.num_terminal_iot; i++)
+		dev_info(&slave->dev,
+			 "terminal_iot[%d]: type=%#x num_transducer=%d\n",
+			 i,
+			 slave->sdca_data.terminal_iot[i].type,
+			 slave->sdca_data.terminal_iot[i].num_transducer);
+#endif
 	ret = device_register(&slave->dev);
 	if (ret) {
 		dev_err(bus->dev, "Failed to add slave: ret %d\n", ret);

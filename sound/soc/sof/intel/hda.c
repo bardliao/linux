@@ -1370,12 +1370,24 @@ static struct snd_soc_acpi_mach *hda_sdw_machine_select(struct snd_sof_dev *sdev
 
 	dev_info(sdev->dev, "No SoundWire machine driver found for the ACPI-reported configuration:\n");
 	peripherals = hdev->sdw->peripherals;
-	for (i = 0; i < peripherals->num_peripherals; i++)
+	for (i = 0; i < peripherals->num_peripherals; i++) {
+		struct sdw_slave *peripheral = peripherals->array[i];
+		int j;
+
 		dev_info(sdev->dev, "link %d mfg_id 0x%04x part_id 0x%04x version %#x\n",
-			 peripherals->array[i]->bus->link_id,
-			 peripherals->array[i]->id.mfg_id,
-			 peripherals->array[i]->id.part_id,
-			 peripherals->array[i]->id.sdw_version);
+			 peripheral->bus->link_id,
+			 peripheral->id.mfg_id,
+			 peripheral->id.part_id,
+			 peripheral->id.sdw_version);
+
+		for (j = 0; j < peripheral->sdca_data.num_functions; j++) {
+			struct sdca_function_desc *function_desc = &peripheral->sdca_data.function[j];
+
+			dev_info(sdev->dev, "bard: link %d SDCA function[%d] name %s\n",
+				 peripheral->bus->link_id, j,
+				 function_desc->name ? function_desc->name : "(null)");
+		}
+	}
 
 	chip = get_chip_info(sdev->pdata);
 
