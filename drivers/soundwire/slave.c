@@ -6,6 +6,7 @@
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_type.h>
 #include <sound/sdca.h>
+#include <sound/sdca_function.h>
 #include "bus.h"
 #include "sysfs_local.h"
 
@@ -14,6 +15,7 @@ static void sdw_slave_release(struct device *dev)
 	struct sdw_slave *slave = dev_to_sdw_dev(dev);
 
 	of_node_put(slave->dev.of_node);
+	kfree(slave->sdca_data.terminal_iot);
 	mutex_destroy(&slave->sdw_dev_lock);
 	kfree(slave);
 }
@@ -28,10 +30,12 @@ EXPORT_SYMBOL_GPL(sdw_slave_type);
 int sdw_slave_add(struct sdw_bus *bus,
 		  struct sdw_slave_id *id, struct fwnode_handle *fwnode)
 {
+//	struct sdca_function_data *function_data = NULL;
 	struct sdw_slave *slave;
 	int ret;
 	int i;
 
+	pr_err("bard: %s\n", __func__);
 	slave = kzalloc_obj(*slave);
 	if (!slave)
 		return -ENOMEM;
@@ -100,6 +104,32 @@ int sdw_slave_add(struct sdw_bus *bus,
 		return ret;
 	}
 	sdw_slave_debugfs_init(slave);
+
+	dev_err(&slave->dev, "bard: SDCA functions found: %d", slave->sdca_data.num_functions);
+	i = -1;
+	if (slave->sdca_data.num_functions > 0) {
+		/* Look for Smart Amp function type */
+		for (i = 0; i < slave->sdca_data.num_functions; i++) {
+			dev_info(&slave->dev, "bard: Found function type %d at index %d",
+				 slave->sdca_data.function[i].type, i);
+
+			if (slave->sdca_data.function[i].type != SDCA_FUNCTION_TYPE_SMART_MIC)
+				continue;
+
+			dev_info(&slave->dev, "bard: mic num %d\n", sdca_get_mic_count(slave, &slave->sdca_data.function[i]));
+#if 0
+			function_data = kzalloc(sizeof(*function_data), GFP_KERNEL);
+			if (!function_data)
+				return -ENOMEM;
+
+			function_data->desc = &slave->sdca_data.function[i];
+			ret = sdca_parse_function(&slave->dev, slave, function_data);
+			dev_info(&slave->dev, "bard: %s sdca_parse_function return %d\n",
+				__func__, ret);
+			kfree(function_data);
+#endif
+		}
+	}
 
 	return ret;
 }

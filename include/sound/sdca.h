@@ -16,6 +16,7 @@ struct acpi_table_swft;
 struct fwnode_handle;
 struct sdw_slave;
 struct sdca_dev;
+struct sdca_entity_iot;
 
 #define SDCA_MAX_FUNCTION_COUNT 8
 
@@ -45,12 +46,20 @@ struct sdca_function_desc {
  * for changes between silicon versions.
  * @num_functions: Total number of supported SDCA functions. Invalid/unsupported
  * functions will be skipped.
+ * @terminal_iot: Dynamically allocated array with parsed Terminal Entity
+ * properties (struct sdca_entity_iot) gathered before device registration.
+ * @num_terminal_iot: Number of entries in @terminal_iot.
+ * @terminal_transducer_count: Maximum transducer count found in terminal
+ * entities across all SDCA functions.
  * @function: Array of function descriptors.
  * @swft: Pointer to the SWFT table, if available.
  */
 struct sdca_device_data {
 	u32 interface_revision;
 	int num_functions;
+	struct sdca_entity_iot *terminal_iot;
+	int num_terminal_iot;
+	u32 terminal_transducer_count;
 	struct sdca_function_desc function[SDCA_MAX_FUNCTION_COUNT];
 	struct acpi_table_swft *swft;
 };
@@ -63,6 +72,8 @@ enum sdca_quirk {
 #if IS_ENABLED(CONFIG_ACPI) && IS_ENABLED(CONFIG_SND_SOC_SDCA)
 
 void sdca_lookup_functions(struct sdw_slave *slave);
+int sdca_get_mic_count(struct sdw_slave *slave, struct sdca_function_desc *function);
+void sdca_lookup_terminal_iot(struct sdw_slave *slave);
 void sdca_lookup_swft(struct sdw_slave *slave);
 void sdca_lookup_interface_revision(struct sdw_slave *slave);
 bool sdca_device_quirk_match(struct sdw_slave *slave, enum sdca_quirk quirk);
@@ -72,6 +83,9 @@ void sdca_dev_unregister_functions(struct sdw_slave *slave);
 #else
 
 static inline void sdca_lookup_functions(struct sdw_slave *slave) {}
+static inline void sdca_lookup_function_entities(struct sdw_slave *slave,
+					 struct sdca_function_desc *function) {}
+static inline void sdca_lookup_terminal_iot(struct sdw_slave *slave) {}
 static inline void sdca_lookup_swft(struct sdw_slave *slave) {}
 static inline void sdca_lookup_interface_revision(struct sdw_slave *slave) {}
 static inline bool sdca_device_quirk_match(struct sdw_slave *slave, enum sdca_quirk quirk)
