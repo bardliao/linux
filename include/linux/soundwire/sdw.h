@@ -985,6 +985,8 @@ struct sdw_stream_runtime {
  * transport and port parameters
  * @defer_msg: Defer message
  * @params: Current bus parameters
+ * @enumeration_complete: completion utility to control potential races between
+ * enumeration completion and peripheral presence checks.
  * @stream_refcount: number of streams currently using this bus
  * @bpt_stream_refcount: number of BTP streams currently using this bus (should
  * be zero or one, multiple streams per link is not supported).
@@ -1013,6 +1015,7 @@ struct sdw_stream_runtime {
  * are supported. This flag is populated by drivers after reading
  * appropriate firmware (ACPI/DT).
  * @lane_used_bandwidth: how much bandwidth in bits per second is used by each lane
+ * @is_present: indicates whether any peripheral is present on the bus.
  */
 struct sdw_bus {
 	struct device *dev;
@@ -1026,6 +1029,7 @@ struct sdw_bus {
 	struct list_head m_rt_list;
 	struct sdw_defer defer_msg;
 	struct sdw_bus_params params;
+	struct completion enumeration_complete;
 	int stream_refcount;
 	int bpt_stream_refcount;
 	struct sdw_stream_runtime *bpt_stream;
@@ -1048,6 +1052,7 @@ struct sdw_bus {
 #endif
 	bool multi_link;
 	unsigned int lane_used_bandwidth[SDW_MAX_LANES];
+	bool is_present;
 };
 
 struct sdw_stream_runtime *sdw_alloc_stream(const char *stream_name, enum sdw_stream_type type);
