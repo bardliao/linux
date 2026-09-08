@@ -764,6 +764,7 @@ static int sof_pcm_probe(struct snd_soc_component *component)
 	const char *tplg_filename;
 	int ret;
 
+	pr_err("bard: %s\n", __func__);
 	/*
 	 * make sure the device is pm_runtime_active before loading the
 	 * topology and initiating IPC or bus transactions
@@ -827,6 +828,7 @@ void snd_sof_new_platform_drv(struct snd_sof_dev *sdev)
 	struct snd_sof_pdata *plat_data = sdev->pdata;
 	const char *drv_name;
 
+	pr_err("bard: %s\n", __func__);
 	if (plat_data->machine)
 		drv_name = plat_data->machine->drv_name;
 	else if (plat_data->of_machine)

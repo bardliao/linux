@@ -1357,6 +1357,7 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 		return ret;
 	}
 
+	pr_err("bard: num_devs=%d, num_ends=%d, num_aux=%d\n", num_devs, num_ends, num_aux);
 	num_confs = num_ends;
 
 	/*
@@ -1513,6 +1514,14 @@ static int sof_card_dai_links_create(struct snd_soc_card *card)
 		goto err_end;
 	}
 
+	for (i = 0; i < num_links; i++) {
+		pr_err("bard: link[%d]: name=%s, stream_name=%s, cpu_dai_name=%s, codec_name=%s, platform_name=%s\n",
+		       i, card->dai_link[i].name, card->dai_link[i].stream_name,
+		       card->dai_link[i].cpus->dai_name,
+		       card->dai_link[i].codecs->name,
+		       card->dai_link[i].platforms->name);
+	}
+
 	WARN_ON(codec_conf != card->codec_conf + card->num_configs);
 	WARN_ON(dai_links != card->dai_link + card->num_links);
 
@@ -1521,6 +1530,7 @@ err_end:
 err_dai:
 	kfree(sof_dais);
 
+	pr_err("bard: %s return %d\n", __func__, ret);
 	return ret;
 }
 
@@ -1619,6 +1629,7 @@ static int mc_probe(struct platform_device *pdev)
 
 	card->components = devm_kasprintf(card->dev, GFP_KERNEL,
 					  " cfg-amp:%d", amp_num);
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	if (!card->components)
 		return -ENOMEM;
 
@@ -1633,6 +1644,7 @@ static int mc_probe(struct platform_device *pdev)
 
 	/* Register the card */
 	ret = devm_snd_soc_register_card(card->dev, card);
+	pr_err("bard: %s %d ret %d\n", __func__, __LINE__, ret);
 	if (ret) {
 		dev_err_probe(card->dev, ret, "snd_soc_register_card failed %d\n", ret);
 		asoc_sdw_mc_dailink_exit_loop(card);
