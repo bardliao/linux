@@ -2311,6 +2311,7 @@ int asoc_sdw_count_sdw_endpoints(struct snd_soc_card *card,
 						return -EINVAL;
 					}
 					companion_amp_mask |= BIT(adr_dev->endpoints[j].group_id);
+					pr_err("bard: companion_amp_mask %#x group_id %d\n", companion_amp_mask, adr_dev->endpoints[j].group_id);
 					continue;
 				}
 				(*num_ends)++;
@@ -2332,6 +2333,7 @@ int asoc_sdw_count_sdw_endpoints(struct snd_soc_card *card,
 	}
 
 	*num_comp_amps = hweight32(companion_amp_mask);
+	pr_err("bard: companion_amp_mask %#x num_comp_amps %d\n", companion_amp_mask, *num_comp_amps);
 	dev_dbg(dev, "Found %d devices with %d endpoints\n", *num_devs, *num_ends);
 
 	return 0;
@@ -2466,6 +2468,7 @@ int asoc_sdw_parse_sdw_endpoints(struct device *dev,
 			}
 		}
 	}
+	pr_err("bard: %s companion_amp_mask %#x\n", __func__, companion_amp_mask);
 
 	for (adr_link = mach_params->links; adr_link->num_adr; adr_link++) {
 		int num_link_dailinks = 0;
@@ -2521,6 +2524,7 @@ int asoc_sdw_parse_sdw_endpoints(struct device *dev,
 
 			if (codec_info->count_sidecar && codec_info->add_sidecar) {
 				ret = codec_info->count_sidecar(ctx, &num_dais, num_devs);
+				pr_err("bard: count_sidecar %d\n", ret);
 				if (ret)
 					return ret;
 
@@ -2530,6 +2534,7 @@ int asoc_sdw_parse_sdw_endpoints(struct device *dev,
 			if (SDW_CLASS_ID(adr_dev->adr) && adr_dev->num_endpoints > 1)
 				check_sdca = true;
 
+			pr_err("bard adr_dev->num_endpoints %d\n", adr_dev->num_endpoints);
 			for (j = 0; j < adr_dev->num_endpoints; j++) {
 				const struct snd_soc_acpi_endpoint *adr_end;
 				const struct asoc_sdw_dai_info *dai_info;
@@ -2558,6 +2563,7 @@ int asoc_sdw_parse_sdw_endpoints(struct device *dev,
 
 					comp_index = hweight32(companion_amp_mask &
 							       (BIT(adr_end->group_id) - 1));
+					pr_err("bard: %s comp_index %d\n", __func__, comp_index);
 
 					comp_end = devm_kcalloc(dev, 1, sizeof(*comp_end),
 								GFP_KERNEL);
@@ -2569,6 +2575,11 @@ int asoc_sdw_parse_sdw_endpoints(struct device *dev,
 					comp_end->codec_name = codec_name;
 					comp_end->codec_info = codec_info;
 					comp_end->dai_info = dai_info;
+					pr_err("bard: codec_name %s dai_name %s\n", comp_end->codec_name, dai_info->dai_name);
+
+					dev_dbg(dev,
+						"bard endpoint %d is companion skip and add it to comp_ends\n",
+						j);
 
 					/* group_position = 0 is the main amp */
 					if (!adr_end->group_position)
@@ -2597,14 +2608,27 @@ int asoc_sdw_parse_sdw_endpoints(struct device *dev,
 					 * Check the endpoint if a matching quirk is set or SDCA
 					 * endpoint check is not necessary
 					 */
+					pr_err("bard: checking dev: %d, 0x%llx end: %d, dai: %d, quirk: 0x%lx to %s: %d\n",
+						ffs(adr_link->mask) - 1, adr_dev->adr,
+						adr_end->num, dai_info->dai_type,
+						dai_info->quirk,
+						adr_end->aggregated ? "group" : "solo",
+						adr_end->group_id);
 					if (dai_info->quirk &&
 					    !(dai_info->quirk_exclude ^ !!(dai_info->quirk & ctx->mc_quirk))) {
 						(*num_devs)--;
+						pr_err("bard: Skip dev: %d, 0x%llx end: %d, dai: %d, quirk: 0x%lx to %s: %d\n",
+							ffs(adr_link->mask) - 1, adr_dev->adr,
+							adr_end->num, dai_info->dai_type,
+							dai_info->quirk,
+							adr_end->aggregated ? "group" : "solo",
+							adr_end->group_id);
 						continue;
 					}
 				} else {
 					/* Check SDCA codec endpoint if there is no matching quirk */
 					ret = is_sdca_endpoint_present(dev, codec_info, adr_link, i, j);
+					pr_err("bard: is_sdca_endpoint_present ret %d\n", ret);
 					if (ret < 0)
 						return ret;
 
