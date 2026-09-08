@@ -981,6 +981,7 @@ static const struct snd_soc_dapm_route rt712_sdca_audio_map[] = {
 
 static const struct snd_soc_dapm_widget rt712_sdca_spk_dapm_widgets[] = {
 	SND_SOC_DAPM_AIF_IN("DP3RX", "DP3 Playback", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_IN("DP3RX-Comp", "DP3 Comp-In", 0, SND_SOC_NOPM, 0, 0),
 
 	/* Digital Interface */
 	SND_SOC_DAPM_PGA("FU06", SND_SOC_NOPM, 0, 0, NULL, 0),
@@ -998,6 +999,7 @@ static const struct snd_soc_dapm_widget rt712_sdca_spk_dapm_widgets[] = {
 
 static const struct snd_soc_dapm_route rt712_sdca_spk_dapm_routes[] = {
 	{ "FU06", NULL, "DP3RX" },
+	{ "FU06", NULL, "DP3RX-Comp" },
 	{ "FU06", NULL, "PDE 23" },
 	{ "OT23 L", "Switch", "FU06" },
 	{ "OT23 R", "Switch", "FU06" },
@@ -1456,9 +1458,24 @@ static int rt712_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct sdw_stream_runtime *sdw_stream;
 	int retval, port, num_channels;
 	unsigned int sampling_rate;
+	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+	struct snd_soc_dai *cpu_dai;
 
 	dev_dbg(dai->dev, "%s %s id %d", __func__, dai->name, dai->id);
-	sdw_stream = snd_soc_dai_get_dma_data(dai, substream);
+	dev_dbg(dai->dev, "%s substream stream %d", __func__, substream->stream);
+
+	if (dai->id == RT712_AIF4 && substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		cpu_dai = snd_soc_rtd_to_cpu(rtd, 0);
+		dev_dbg(dai->dev, "%s cpu_dai %s id %d", __func__, cpu_dai->name, cpu_dai->id);
+
+		sdw_stream = snd_soc_dai_get_stream(cpu_dai, 1);
+		if (IS_ERR(sdw_stream)) {
+			dev_err(rtd->dev, "%s no stream found for DAI %s id %d\n", __func__, cpu_dai->name, cpu_dai->id);
+			return PTR_ERR(sdw_stream);
+		}
+	} else {
+		sdw_stream = snd_soc_dai_get_dma_data(dai, substream);
+	}
 
 	if (!sdw_stream)
 		return -EINVAL;
@@ -1475,7 +1492,7 @@ static int rt712_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 		direction = SDW_DATA_DIR_RX;
 		if (dai->id == RT712_AIF1)
 			port = 1;
-		else if (dai->id == RT712_AIF2)
+		else if (dai->id == RT712_AIF2 || dai->id == RT712_AIF4)
 			port = 3;
 		else
 			return -EINVAL;
@@ -1493,6 +1510,8 @@ static int rt712_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 	stream_config.ch_count = params_channels(params);
 	stream_config.bps = snd_pcm_format_width(params_format(params));
 	stream_config.direction = direction;
+	if (dai->id == RT712_AIF4)
+		stream_config.type = SDW_STREAM_COMPANION;
 
 	num_channels = params_channels(params);
 	port_config.ch_mask = GENMASK(num_channels - 1, 0);
@@ -1542,6 +1561,7 @@ static int rt712_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 			sampling_rate);
 		break;
 	case RT712_AIF2:
+	case RT712_AIF4:
 		regmap_write(rt712->regmap,
 			SDW_SDCA_CTL(FUNC_NUM_AMP, RT712_SDCA_ENT_CS31, RT712_SDCA_CTL_SAMPLE_FREQ_INDEX, 0),
 			sampling_rate);
@@ -1570,12 +1590,109 @@ static int rt712_sdca_pcm_hw_free(struct snd_pcm_substream *substream,
 	struct sdw_stream_runtime *sdw_stream =
 		snd_soc_dai_get_dma_data(dai, substream);
 
+	printk("%s, ++++\n", __func__);
+
 	if (!rt712->slave)
 		return -EINVAL;
 
-	sdw_stream_remove_slave(rt712->slave, sdw_stream);
+	if (sdw_stream)
+		sdw_stream_remove_slave(rt712->slave, sdw_stream);
+
+	printk("%s, done\n", __func__);
+
 	return 0;
 }
+
+static int rt712_sdw_startup(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
+{
+	dev_dbg(dai->dev, "%s %s id %d", __func__, dai->name, dai->id);
+	dev_dbg(dai->dev, "%s substream stream %d", __func__, substream->stream);
+
+	if (dai->id == RT712_AIF4)
+		sdw_startup_stream(substream);
+
+	return 0;
+}
+
+static int rt712_sdw_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
+{
+	dev_dbg(dai->dev, "%s %s id %d", __func__, dai->name, dai->id);
+	dev_dbg(dai->dev, "%s substream stream %d", __func__, substream->stream);
+
+	{
+		int ret;
+		struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+		struct sdw_stream_runtime *sdw_stream;
+		struct snd_soc_dai *cpu_dai;
+
+		cpu_dai = snd_soc_rtd_to_cpu(rtd, 0);
+		sdw_stream = snd_soc_dai_get_stream(cpu_dai, 1);
+		if (IS_ERR(sdw_stream)) {
+			dev_err(rtd->dev, "%s no stream found for DAI %s id %d\n", __func__, cpu_dai->name, cpu_dai->id);
+			return PTR_ERR(sdw_stream);
+		}
+
+		ret = sdw_prepare_stream(sdw_stream);
+		if (ret)
+			dev_err(rtd->dev, "%s prepare failed: %d\n", __func__, ret);
+
+		ret = sdw_enable_stream(sdw_stream);
+		if (ret)
+			dev_err(rtd->dev, "%s trigger failed: %d\n", __func__, ret);
+
+		return ret;
+	}
+}
+
+static int rt712_sdw_trigger(struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
+{
+	dev_dbg(dai->dev, "%s %s id %d", __func__, dai->name, dai->id);
+	dev_dbg(dai->dev, "%s substream stream %d cmd %d", __func__, substream->stream, cmd);
+
+	{
+		struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+		struct sdw_stream_runtime *sdw_stream;
+		int ret;
+
+		sdw_stream = snd_soc_dai_get_stream(dai, substream->stream);
+		if (IS_ERR(sdw_stream)) {
+			dev_err(rtd->dev, "%s no stream found for DAI %s\n", __func__, dai->name);
+			return PTR_ERR(sdw_stream);
+		}
+
+		switch (cmd) {
+		case SNDRV_PCM_TRIGGER_START:
+		case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		case SNDRV_PCM_TRIGGER_RESUME:
+			ret = sdw_enable_stream(sdw_stream);
+			break;
+
+		case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		case SNDRV_PCM_TRIGGER_SUSPEND:
+		case SNDRV_PCM_TRIGGER_STOP:
+			ret = sdw_disable_stream(sdw_stream);
+			break;
+		default:
+			ret = -EINVAL;
+			break;
+		}
+
+		if (ret)
+			dev_err(rtd->dev, "%s trigger %d failed: %d\n", __func__, cmd, ret);
+
+		return ret;
+	}
+}
+
+static const struct snd_soc_dai_ops rt712_comp_ops = {
+	.startup = rt712_sdw_startup,
+	.prepare = rt712_sdw_prepare,
+	.trigger = rt712_sdw_trigger,
+	.hw_params = rt712_sdca_pcm_hw_params,
+	.hw_free = rt712_sdca_pcm_hw_free,
+	.set_stream = rt712_sdca_set_sdw_stream,
+	.shutdown = rt712_sdca_shutdown,
+};
 
 #define RT712_STEREO_RATES (SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 | \
 			SNDRV_PCM_RATE_192000)
@@ -1635,6 +1752,18 @@ static struct snd_soc_dai_driver rt712_sdca_dmic_dai[] = {
 			.formats = RT712_FORMATS,
 		},
 		.ops = &rt712_sdca_ops,
+	},
+	{
+		.name = "rt712-sdca-aif4",
+		.id = RT712_AIF4,
+		.playback = {
+			.stream_name = "DP3 Comp-In",
+			.channels_min = 2,
+			.channels_max = 2,
+			.rates = RT712_STEREO_RATES,
+			.formats = RT712_FORMATS,
+		},
+		.ops = &rt712_comp_ops,
 	}
 };
 

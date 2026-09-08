@@ -17,16 +17,11 @@
 
 #define RT1320_DEV_ID 0x6981
 #define RT1321_DEV_ID 0x7045
-#define RT1321_DEV_HV_VA0_ID 0x6997
-#define RT1321_DEV_HV_VA1_ID 0x7071
 
 /* imp-defined registers */
 #define RT1320_DEV_VERSION_ID_1 0xc404
 #define RT1320_DEV_ID_1 0xc405
 #define RT1320_DEV_ID_0 0xc406
-
-#define RT1320_HV_DEV_ID_0 0xf622
-#define RT1320_HV_DEV_ID_1 0xf623
 
 #define RT1320_POWER_STATE 0xc560
 
@@ -87,6 +82,7 @@
 enum {
 	RT1320_AIF1,
 	RT1320_AIF2,
+	RT1320_AIF3,
 };
 
 /*
@@ -97,12 +93,6 @@ enum rt1320_version_id {
 	RT1320_VA,
 	RT1320_VB,
 	RT1320_VC,
-};
-
-enum rt1321_version_id {
-	RT1321_VA0,
-	RT1321_VA1,
-	RT1321_VA2,
 };
 
 #define RT1320_VER_B_ID 0x07392238
@@ -120,6 +110,12 @@ enum rt1321_version_id {
 #define RT1321_CMD_PARAM_ADDR 0x3fc2d310
 #define RT1321_DSPFW_STATUS_ADDR 0x3fc2dfc4
 
+// #define RT1320_AFX0_LOAD_ADDR 0x3fc2ab80
+// #define RT1320_AFX1_LOAD_ADDR 0x3fc2b780
+// #define RT1320_AFXRTLSM_LOAD_ADDR 0x3fc252e0
+// #define RT1321_AFX0_LOAD_ADDR 0x3fc2d300
+// #define RT1321_AFX1_LOAD_ADDR 0x3fc2a300
+
 /* FW parameter id 6, 7 */
 struct rt1320_datafixpoint {
 	int silencedetect;
@@ -131,20 +127,6 @@ struct rt1320_datafixpoint {
 	int t;
 	int invrs;
 };
-
-/* FW parameter id 1300 */
-typedef struct FwPara_HwSwGain {
-	unsigned int SwAdvGain;
-	unsigned int SwBasGain;
-	unsigned int HwAdvGain;
-	unsigned int HwBasGain;
-	unsigned int reserve0;
-	unsigned int reserve1;
-	unsigned int reserve2;
-	unsigned int reserve3;
-	unsigned int reserve4;
-	unsigned int reserve5;
-} __attribute__((packed)) FwPara_Get_HwSwGain;
 
 struct rt1320_paramcmd {
 	unsigned char moudleid;
@@ -184,7 +166,6 @@ struct rt1320_sdw_priv {
 	bool hw_init;
 	bool first_hw_init;
 	int version_id;
-	int brown_out;
 	unsigned int dev_id;
 	bool fu_dapm_mute;
 	bool fu_mixer_mute[4];
@@ -197,9 +178,9 @@ struct rt1320_sdw_priv {
 	const char *dspfw_name;
 	bool cali_done;
 	bool fw_load_done;
-	bool rae_update_done;
 	struct work_struct load_dspfw_work;
 	struct sdw_bpt_msg bra_msg;
+	struct sdw_stream_runtime *comp_sdw_stream;
 };
 
 #endif /* __RT1320_SDW_H__ */
