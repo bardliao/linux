@@ -95,6 +95,24 @@ static const struct snd_soc_acpi_endpoint spk_r_endpoint = {
 	.group_id = 1,
 };
 
+static const struct snd_soc_acpi_endpoint companion_amp_endpoint[] = {
+	/* Amp Endpoint */
+	{
+		.num = 0,
+		.aggregated = 0,
+		.group_position = 0,
+		.group_id = 0,
+	},
+	/* Companion Amp Endpoint */
+	{
+		.num = 1,
+		.aggregated = 0,
+		.group_position = 0,
+		.group_id = 0,
+		.companion = 1,
+	},
+};
+
 static const struct snd_soc_acpi_endpoint jack_dmic_endpoints[] = {
 	/* Jack Endpoint */
 	{
@@ -133,6 +151,31 @@ static const struct snd_soc_acpi_endpoint jack_amp_g1_dmic_endpoints[] = {
 		.aggregated = 0,
 		.group_position = 0,
 		.group_id = 0,
+	},
+};
+
+static const struct snd_soc_acpi_endpoint jack_dmic_comp_amp_endpoints[] = {
+	/* Jack Endpoint */
+	{
+		.num = 0,
+		.aggregated = 0,
+		.group_position = 0,
+		.group_id = 0,
+	},
+	/* DMIC Endpoint */
+	{
+		.num = 2,
+		.aggregated = 0,
+		.group_position = 0,
+		.group_id = 0,
+	},
+	/* Companion Amp Endpoint */
+	{
+		.num = 3,
+		.aggregated = 0,
+		.group_position = 1,
+		.group_id = 0,
+		.companion = 1,
 	},
 };
 
@@ -214,6 +257,15 @@ static const struct snd_soc_acpi_adr_device rt712_vb_3_group1_adr[] = {
 	}
 };
 
+static const struct snd_soc_acpi_adr_device rt712_vb_3_comp_adr[] = {
+	{
+		.adr = 0x000330025D071201ull,
+		.num_endpoints = ARRAY_SIZE(jack_dmic_comp_amp_endpoints),
+		.endpoints = jack_dmic_comp_amp_endpoints,
+		.name_prefix = "rt712"
+	}
+};
+
 static const struct snd_soc_acpi_adr_device rt713_vb_2_adr[] = {
 	{
 		.adr = 0x000230025d071301ull,
@@ -268,11 +320,11 @@ static const struct snd_soc_acpi_adr_device rt1320_1_group2_adr[] = {
 	}
 };
 
-static const struct snd_soc_acpi_adr_device rt1320_2_group1_adr[] = {
+static const struct snd_soc_acpi_adr_device rt1320_2_comp_adr[] = {
 	{
 		.adr = 0x000230025D132001ull,
-		.num_endpoints = 1,
-		.endpoints = &spk_r_endpoint,
+		.num_endpoints = ARRAY_SIZE(companion_amp_endpoint),
+		.endpoints = companion_amp_endpoint,
 		.name_prefix = "rt1320-1"
 	}
 };
@@ -415,13 +467,13 @@ static const struct snd_soc_acpi_link_adr ptl_sdw_rt712_vb_l2_rt1320_l1[] = {
 static const struct snd_soc_acpi_link_adr ptl_sdw_rt712_vb_l3_rt1320_l2[] = {
 	{
 		.mask = BIT(3),
-		.num_adr = ARRAY_SIZE(rt712_vb_3_group1_adr),
-		.adr_d = rt712_vb_3_group1_adr,
+		.num_adr = ARRAY_SIZE(rt712_vb_3_comp_adr),
+		.adr_d = rt712_vb_3_comp_adr,
 	},
 	{
 		.mask = BIT(2),
-		.num_adr = ARRAY_SIZE(rt1320_2_group1_adr),
-		.adr_d = rt1320_2_group1_adr,
+		.num_adr = ARRAY_SIZE(rt1320_2_comp_adr),
+		.adr_d = rt1320_2_comp_adr,
 	},
 	{}
 };
