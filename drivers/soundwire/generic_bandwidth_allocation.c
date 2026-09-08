@@ -41,6 +41,7 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 	struct sdw_bus_params *b_params = &m_rt->bus->params;
 
 	port_bo = t_data->block_offset;
+	printk("%s, initial block offset: %d m_rt->direction %d type %d\n", __func__, port_bo, m_rt->direction, m_rt->stream->type);
 
 	list_for_each_entry(s_rt, &m_rt->slave_rt_list, m_rt_node) {
 		rate = m_rt->stream->params.rate;
@@ -53,6 +54,13 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 				continue;
 
 			ch = hweight32(p_rt->ch_mask);
+
+			printk("%s, part id: 0x%x Port: %d Ch: %d Rate: %d Bps: %d lane: %d bo: %d\n",
+			       __func__, s_rt->slave->id.part_id, p_rt->num, ch,
+			       rate, bps, p_rt->lane, port_bo);
+			printk("%s, Transport params: hstart: %d hstop: %d blk_offset: %d sub_blk_offset: %d\n",
+			       __func__, t_data->hstart, t_data->hstop,
+			       t_data->block_offset, t_data->sub_block_offset);
 
 			dev_dbg(&s_rt->slave->dev, "%s p_rt->lane %d\n", __func__, p_rt->lane);
 			sdw_fill_xport_params(&p_rt->transport_params,
@@ -73,6 +81,8 @@ void sdw_compute_slave_ports(struct sdw_master_runtime *m_rt,
 
 			if (m_rt->stream->type == SDW_STREAM_COMPANION)
 				port_bo = t_data->block_offset;
+
+			printk("%s, port_bo: %d, slave_total_ch %d\n", __func__, port_bo, slave_total_ch);
 		}
 
 		if (m_rt->direction == SDW_DATA_DIR_TX &&
@@ -181,11 +191,18 @@ static void sdw_compute_master_ports(struct sdw_master_runtime *m_rt,
 			continue;
 		}
 
+		printk("%s, Master Port: %d Ch: %d Rate: %d Bps: %d lane: %d bo: %d\n",
+		       __func__, p_rt->num, ch, rate, bps, p_rt->lane, *port_bo);
+
 		t_data.hstart = hstart;
 		t_data.hstop = hstop;
 		t_data.block_offset = *port_bo;
 		t_data.sub_block_offset = 0;
 		(*port_bo) += bps * ch;
+
+		printk("%s, Master Port: %d hstart %d hstop %d block_offset %d sub_block_offset %d\n", __func__, p_rt->num,
+		       t_data.hstart, t_data.hstop,
+		       t_data.block_offset, t_data.sub_block_offset);
 	}
 
 	t_data.lane = params->lane;
