@@ -2517,10 +2517,11 @@ int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
 	int tplg_cnt = 0;
 	int ret;
 	int i;
-
 	const char **tplg_files __free(kfree) =
 		kcalloc(scomp->card->num_links, sizeof(*tplg_files),
 			GFP_KERNEL);
+
+	pr_err("bard: %s\n", __func__);
 	if (!tplg_files)
 		return -ENOMEM;
 
@@ -2546,6 +2547,7 @@ int snd_sof_load_topology(struct snd_soc_component *scomp, const char *file)
 								       tplg_filename_prefix,
 								       &tplg_files,
 								       no_fallback);
+		pr_err("bard: %s tplg_cnt %d\n", __func__, tplg_cnt);
 		if (tplg_cnt < 0)
 			return tplg_cnt;
 	}
