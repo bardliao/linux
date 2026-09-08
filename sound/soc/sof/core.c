@@ -459,6 +459,7 @@ static int sof_probe_continue(struct snd_sof_dev *sdev)
         };
 	int ret;
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	/* set initial power state to D3 */
 	sdev->dsp_power_state = state;
 
@@ -499,6 +500,7 @@ static int sof_probe_continue(struct snd_sof_dev *sdev)
 		goto ipc_err;
 	}
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	/* set up platform component driver after initializing the IPC ops */
 	snd_sof_new_platform_drv(sdev);
 
@@ -551,6 +553,7 @@ static int sof_probe_continue(struct snd_sof_dev *sdev)
 	}
 
 skip_dsp_init:
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	/* hereafter all FW boot flows are for PM reasons */
 	sdev->first_boot = false;
 
@@ -590,6 +593,7 @@ skip_dsp_init:
 
 	sdev->probe_completed = true;
 
+	pr_err("bard: %s %d\n", __func__, __LINE__);
 	return 0;
 
 sof_machine_err:
