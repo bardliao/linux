@@ -105,7 +105,7 @@ static const struct snd_soc_acpi_endpoint companion_amp_endpoint[] = {
 	},
 	/* Companion Amp Endpoint */
 	{
-		.num = 1,
+		.num = 2,
 		.aggregated = 0,
 		.group_position = 0,
 		.group_id = 0,
