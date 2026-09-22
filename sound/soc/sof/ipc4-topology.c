@@ -753,7 +753,7 @@ static int sof_ipc4_widget_setup_pcm(struct snd_sof_widget *swidget)
 			      SOF_STREAM_CAPTURE_D0I3_TOKENS,
 			      swidget->tuples,
 			      swidget->num_tuples, sizeof(d0i3), 1);
-	sps->d0i3_compatible = !!d0i3;
+//	sps->d0i3_compatible = !!d0i3;
 
 	/* Set default DMA buffer size if it is not specified in topology */
 	if (!sps->dsp_max_burst_size_in_ms) {

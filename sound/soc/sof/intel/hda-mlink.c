@@ -917,6 +917,13 @@ int hda_bus_ml_resume(struct hdac_bus *bus)
 	struct hdac_ext_link *hlink;
 	int ret;
 
+	dev_err(bus->dev, "bard: %s\n", __func__);
+	if (bus->ignore_suspend) {
+		dev_dbg(bus->dev, "hda links remained active during system suspend\n");
+		bus->ignore_suspend = false;
+		return 0;
+	}
+
 	/* power up links that were active before suspend */
 	list_for_each_entry(hlink, &bus->hlink_list, list) {
 		struct hdac_ext2_link *h2link = hdac_ext_link_to_ext2(hlink);
@@ -935,6 +942,12 @@ int hda_bus_ml_suspend(struct hdac_bus *bus)
 {
 	struct hdac_ext_link *hlink;
 	int ret;
+
+	dev_err(bus->dev, "bard: %s bus %p\n", __func__, bus);
+	if (bus->ignore_suspend) {
+		dev_dbg(bus->dev, "hda links ignore system suspend\n");
+		return 0;
+	}
 
 	list_for_each_entry(hlink, &bus->hlink_list, list) {
 		struct hdac_ext2_link *h2link = hdac_ext_link_to_ext2(hlink);

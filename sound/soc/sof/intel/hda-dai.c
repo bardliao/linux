@@ -513,6 +513,7 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 	int ret;
 	int i;
 
+	dev_err(cpu_dai->dev, "bard: %s\n", __func__);
 	if (!w) {
 		dev_err(cpu_dai->dev, "%s widget not found, check amp link num in the topology\n",
 			cpu_dai->name);
@@ -608,6 +609,7 @@ int sdw_hda_dai_hw_params(struct snd_pcm_substream *substream,
 		memcpy(&ipc4_copier->dma_config_tlv[cpu_dai_id], dma_config_tlv,
 		       sizeof(*dma_config_tlv));
 	}
+
 	return 0;
 }
 EXPORT_SYMBOL_NS(sdw_hda_dai_hw_params, "SND_SOC_SOF_INTEL_HDA_COMMON");

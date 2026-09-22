@@ -1069,6 +1069,7 @@ struct sdw_bus {
 	bool multi_link;
 	unsigned int lane_used_bandwidth[SDW_MAX_LANES];
 	bool is_present;
+	bool ignore_suspend;
 };
 
 struct sdw_stream_runtime *sdw_alloc_stream(const char *stream_name, enum sdw_stream_type type);

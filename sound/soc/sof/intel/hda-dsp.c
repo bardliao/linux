@@ -523,15 +523,12 @@ static int hda_dsp_update_d0i3c_register(struct snd_sof_dev *sdev, u8 value)
 	return 0;
 }
 
-/*
- * d0i3 streaming is enabled if all the active streams can
- * work in d0i3 state and playback is enabled
- */
+/* D0i3 streaming is enabled if all active streams can work in D0i3. */
 static bool hda_dsp_d0i3_streaming_applicable(struct snd_sof_dev *sdev)
 {
 	struct snd_pcm_substream *substream;
 	struct snd_sof_pcm *spcm;
-	bool playback_active = false;
+	bool active = false;
 	int dir;
 
 	list_for_each_entry(spcm, &sdev->pcm_list, list) {
@@ -540,15 +537,28 @@ static bool hda_dsp_d0i3_streaming_applicable(struct snd_sof_dev *sdev)
 			if (!substream || !substream->runtime)
 				continue;
 
-			if (!spcm->stream[dir].d0i3_compatible)
-				return false;
+			active = true;
+			dev_info(sdev->dev,
+				 "WoV D0i3 eligibility: pcm=%s dir=%s compatible=%d ignored=%d\n",
+				 spcm->pcm.pcm_name,
+				 dir == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture",
+				 spcm->stream[dir].d0i3_compatible,
+				 spcm->stream[dir].suspend_ignored);
 
-			if (dir == SNDRV_PCM_STREAM_PLAYBACK)
-				playback_active = true;
+			if (!spcm->stream[dir].d0i3_compatible) {
+				dev_info(sdev->dev,
+					 "WoV D0i3 streaming disabled: incompatible active stream\n");
+				return false;
+			}
+
 		}
 	}
 
-	return playback_active;
+	dev_info(sdev->dev,
+		 "WoV D0i3 streaming eligibility: active=%d result=%d\n",
+		 active, active);
+
+	return active;
 }
 
 static int hda_dsp_set_D0_state(struct snd_sof_dev *sdev,
@@ -678,6 +688,7 @@ static int hda_dsp_set_power_state(struct snd_sof_dev *sdev,
 {
 	int ret = 0;
 
+	dev_err(sdev->dev, "bard: %s target_state->state %d\n", __func__, target_state->state);
 	switch (target_state->state) {
 	case SOF_DSP_PM_D0:
 		ret = hda_dsp_set_D0_state(sdev, target_state);

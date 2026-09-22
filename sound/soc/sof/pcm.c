@@ -402,7 +402,7 @@ static int sof_pcm_trigger(struct snd_soc_component *component,
 	if (!spcm)
 		return -EINVAL;
 
-	spcm_dbg(spcm, substream->stream, "Entry: trigger (cmd: %d)\n", cmd);
+	spcm_dbg(spcm, substream->stream, "bard: Entry: trigger (cmd: %d)\n", cmd);
 
 	spcm->pending_stop[substream->stream] = false;
 
@@ -440,10 +440,13 @@ static int sof_pcm_trigger(struct snd_soc_component *component,
 		 * If DSP D0I3 is allowed during S0iX, set the suspend_ignored flag for
 		 * D0I3-compatible streams to keep the firmware pipeline running
 		 */
+		pr_err("bard: d0i3_supported_in_s0ix %d sdev->system_suspend_target %d stream %d d0i3_compatible %d\n",
+			pcm_ops->d0i3_supported_in_s0ix, sdev->system_suspend_target, substream->stream, spcm->stream[substream->stream].d0i3_compatible);
 		if (pcm_ops && pcm_ops->d0i3_supported_in_s0ix &&
 		    sdev->system_suspend_target == SOF_SUSPEND_S0IX &&
 		    spcm->stream[substream->stream].d0i3_compatible) {
 			spcm->stream[substream->stream].suspend_ignored = true;
+			pr_err("bard: set %s suspend_ignored = true\n", spcm->pcm.pcm_name);
 			return 0;
 		}
 
