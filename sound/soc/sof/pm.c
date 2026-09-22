@@ -27,6 +27,7 @@ static u32 snd_sof_dsp_power_target(struct snd_sof_dev *sdev)
 {
 	u32 target_dsp_state;
 
+	pr_err("bard: %s suspend target %d\n", __func__, sdev->system_suspend_target);
 	switch (sdev->system_suspend_target) {
 	case SOF_SUSPEND_S5:
 	case SOF_SUSPEND_S4:
@@ -167,6 +168,7 @@ static int sof_resume(struct device *dev, bool runtime_resume)
 	bool on_demand_boot;
 	int ret;
 
+	pr_err("bard: %s runtime_resume %d\n", __func__, runtime_resume);
 	/* do nothing if dsp resume callbacks are not set */
 	if (!runtime_resume && !sof_ops(sdev)->resume)
 		return 0;
@@ -236,6 +238,7 @@ static int sof_suspend(struct device *dev, bool runtime_suspend)
 	u32 old_state = sdev->dsp_power_state.state;
 	int ret;
 
+	pr_err("bard: %s runtime_suspend %d\n", __func__, runtime_suspend);
 	/* do nothing if dsp suspend callback is not set */
 	if (!runtime_suspend && !sof_ops(sdev)->suspend)
 		return 0;

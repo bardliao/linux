@@ -12,6 +12,7 @@
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_intel.h>
 #include <linux/string_choices.h>
+#include <linux/suspend.h>
 #include <sound/hdaudio.h>
 #include <sound/hda-mlink.h>
 #include <sound/hda-sdw-bpt.h>
@@ -936,10 +937,33 @@ static const struct snd_soc_dai_ops intel_pcm_dai_ops = {
 	.get_stream = intel_get_sdw_stream,
 };
 
+static bool intel_dai_ignore_suspend(struct snd_soc_dai *dai)
+{
+	struct snd_soc_card *card = dai->component->card;
+	struct snd_soc_pcm_runtime *rtd;
+	struct snd_soc_dai *rtd_dai;
+	int i;
+
+	if (!card)
+		return false;
+
+	for_each_card_rtds(card, rtd) {
+		for_each_rtd_dais(rtd, i, rtd_dai) {
+			if (rtd_dai == dai)
+				return rtd->dai_link->ignore_suspend;
+		}
+	}
+
+	pr_err("bard: %s: %s: return false\n", __func__, dai->name);
+	return false;
+}
+
 static int intel_component_dais_suspend(struct snd_soc_component *component)
 {
 	struct snd_soc_dai *dai;
+	struct sdw_bus *bus = NULL;
 
+	pr_err("bard: %s component %s\n", __func__, component->name);
 	/*
 	 * Mark all open streams as suspended.
 	 * Open streams at this point can be in SUSPENDED, PAUSED or STOPPED
@@ -951,8 +975,19 @@ static int intel_component_dais_suspend(struct snd_soc_component *component)
 	for_each_component_dais(component, dai) {
 		struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
 		struct sdw_cdns_dai_runtime *dai_runtime;
+		struct sdw_intel *sdw = cdns_to_intel(cdns);
 
+		bus = &cdns->bus;
 		dai_runtime = cdns->dai_runtime_array[dai->id];
+
+		if (dai_runtime &&
+		    (intel_dai_ignore_suspend(dai) ||
+		     (pm_suspend_target_state == PM_SUSPEND_TO_IDLE &&
+		      sdw->link_res->d0i3_compatible))) {
+			bus->ignore_suspend = true;
+			pr_err("bard: %s ignore suspend for dai %s\n", __func__, dai->name);
+			continue;
+		}
 
 		if (dai_runtime)
 			dai_runtime->suspended = true;

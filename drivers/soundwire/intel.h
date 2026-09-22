@@ -44,6 +44,7 @@ struct sdw_intel_link_res {
 	u32 *shim_mask;
 	u32 clock_stop_quirks;
 	bool mic_privacy;
+	bool d0i3_compatible;
 	u32 link_mask;
 	struct sdw_cdns *cdns;
 	struct list_head list;
@@ -197,6 +198,7 @@ static inline int sdw_intel_stop_bus(struct sdw_intel *sdw, bool clock_stop, boo
 
 static inline int sdw_intel_link_power_up(struct sdw_intel *sdw)
 {
+	pr_err("bard: %s\n", __func__);
 	if (SDW_INTEL_CHECK_OPS(sdw, link_power_up))
 		return SDW_INTEL_OPS(sdw, link_power_up)(sdw);
 	return -ENOTSUPP;
@@ -204,6 +206,7 @@ static inline int sdw_intel_link_power_up(struct sdw_intel *sdw)
 
 static inline int sdw_intel_link_power_down(struct sdw_intel *sdw)
 {
+	pr_err("bard: %s\n", __func__);
 	if (SDW_INTEL_CHECK_OPS(sdw, link_power_down))
 		return SDW_INTEL_OPS(sdw, link_power_down)(sdw);
 	return -ENOTSUPP;

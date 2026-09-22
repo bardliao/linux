@@ -13,6 +13,7 @@
 #include <linux/io.h>
 #include <linux/auxiliary_bus.h>
 #include <sound/pcm_params.h>
+#include <sound/hdaudio.h>
 #include <linux/pm_runtime.h>
 #include <sound/soc.h>
 #include <linux/soundwire/sdw_registers.h>
@@ -641,9 +642,20 @@ static int __maybe_unused intel_suspend(struct device *dev)
 	u32 clock_stop_quirks;
 	int ret;
 
-	if (bus->prop.hw_disabled || !sdw->startup_done) {
+	dev_err(dev, "bard: %s d0i3_compatible %d\n", __func__, sdw->link_res->d0i3_compatible);
+	if (bus->prop.hw_disabled || !sdw->startup_done /*||
+	    sdw->link_res->d0i3_compatible*/) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
+		return 0;
+	}
+
+	dev_err(dev, "bard: %s: ignore_suspend %d\n", __func__, bus->ignore_suspend);
+	if (bus->ignore_suspend) {
+		dev_dbg(dev, "bard: SoundWire master %d ignores system suspend sdw->link_res->hbus %p\n",
+			bus->link_id, sdw->link_res->hbus);
+		/* propagate to the shared HDA controller so hda_bus_ml_suspend() also bails out */
+		sdw->link_res->hbus->ignore_suspend = true;
 		return 0;
 	}
 
@@ -690,6 +702,7 @@ static int __maybe_unused intel_suspend_runtime(struct device *dev)
 	u32 clock_stop_quirks;
 	int ret;
 
+	dev_err(dev, "bard: %s\n", __func__);
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
@@ -728,9 +741,18 @@ static int __maybe_unused intel_resume(struct device *dev)
 	struct sdw_bus *bus = &cdns->bus;
 	int ret;
 
-	if (bus->prop.hw_disabled || !sdw->startup_done) {
+	dev_err(dev, "bard: %s\n", __func__);
+	if (bus->prop.hw_disabled || !sdw->startup_done /*||
+	    sdw->link_res->d0i3_compatible*/) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
+		return 0;
+	}
+
+	if (bus->ignore_suspend) {
+		dev_dbg(dev, "SoundWire master %d remained active during system suspend\n",
+			bus->link_id);
+		bus->ignore_suspend = false;
 		return 0;
 	}
 
@@ -785,6 +807,7 @@ static int __maybe_unused intel_resume_runtime(struct device *dev)
 	u32 clock_stop_quirks;
 	int ret;
 
+	dev_err(dev, "bard: %s\n", __func__);
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);

@@ -1804,6 +1804,12 @@ static int sof_dai_load(struct snd_soc_component *scomp, int index,
 		return ret;
 	}
 
+	/* HACK */
+	spcm->stream[SNDRV_PCM_STREAM_PLAYBACK].d0i3_compatible = true;
+	spcm->stream[SNDRV_PCM_STREAM_CAPTURE].d0i3_compatible = true;
+	dev_err(scomp->dev, "bard: forcing %s d0i3_compatible for capture stream\n", spcm->pcm.pcm_name);
+
+
 	/* do we need to allocate playback PCM DMA pages */
 	if (!spcm->pcm.playback)
 		goto capture;
