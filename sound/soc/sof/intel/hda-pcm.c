@@ -352,6 +352,15 @@ int hda_dsp_pcm_open(struct snd_sof_dev *sdev,
 	    spcm->stream[substream->stream].d0i3_compatible)
 		flags |= SOF_HDA_STREAM_DMI_L1_COMPATIBLE;
 
+	/*
+	 * d0i3 on a capture stream indicates WoV support which needs to allow
+	 * RESUME. The core will ignore the trigger but applications must not
+	 * try to restart the WoV capture stream due to not supported RESUME
+	 */
+	if (direction == SNDRV_PCM_STREAM_CAPTURE &&
+	    spcm->stream[substream->stream].d0i3_compatible)
+		runtime->hw.info |= SNDRV_PCM_INFO_RESUME;
+
 	dsp_stream = hda_dsp_stream_get(sdev, direction, flags);
 	if (!dsp_stream) {
 		dev_err(sdev->dev, "error: no stream available\n");
