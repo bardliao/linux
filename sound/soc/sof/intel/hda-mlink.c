@@ -985,6 +985,35 @@ struct hdac_ext_link *hdac_bus_eml_dmic_get_hlink(struct hdac_bus *bus)
 }
 EXPORT_SYMBOL_NS(hdac_bus_eml_dmic_get_hlink, "SND_SOC_SOF_HDA_MLINK");
 
+void hdac_bus_eml_dmic_log_state(struct hdac_bus *bus, const char *phase)
+{
+	struct hdac_ext2_link *h2link;
+	struct hdac_ext_link *hlink;
+	u32 spa;
+	u32 cpa;
+	u32 lctl;
+
+	h2link = find_ext2_link(bus, true, AZX_REG_ML_LEPTR_ID_INTEL_DMIC);
+	if (!h2link) {
+		dev_info(bus->dev, "WoV %s: DMIC alternate link not found\n", phase);
+		return;
+	}
+
+	hlink = &h2link->hext_link;
+	lctl = readl(hlink->ml_addr + AZX_REG_ML_LCTL);
+	spa = FIELD_GET(GENMASK(AZX_ML_LCTL_CPA_SHIFT - 1,
+				AZX_ML_LCTL_SPA_SHIFT), lctl);
+	cpa = FIELD_GET(GENMASK(AZX_ML_LCTL_CPA_SHIFT + HDAML_MAX_SUBLINKS - 1,
+				AZX_ML_LCTL_CPA_SHIFT), lctl);
+
+	dev_info(bus->dev,
+		 "WoV %s: DMIC LCTL=%#x SPA=%#x CPA=%#x offload=%d slcount=%d ref0=%d\n",
+		 phase, lctl, spa, cpa,
+		 !!(lctl & AZX_ML_LCTL_OFLEN), h2link->slcount,
+		 h2link->sublink_ref_count[0]);
+}
+EXPORT_SYMBOL_NS(hdac_bus_eml_dmic_log_state, "SND_SOC_SOF_HDA_MLINK");
+
 struct hdac_ext_link *hdac_bus_eml_sdw_get_hlink(struct hdac_bus *bus)
 {
 	struct hdac_ext2_link *h2link;
