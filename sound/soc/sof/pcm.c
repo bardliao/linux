@@ -428,6 +428,13 @@ static int sof_pcm_trigger(struct snd_soc_component *component,
 		if (pcm_ops && pcm_ops->ipc_first_on_start)
 			ipc_first = true;
 		break;
+	case SNDRV_PCM_TRIGGER_RESUME:
+		if (spcm->stream[substream->stream].suspend_ignored) {
+			spcm->stream[substream->stream].suspend_ignored = false;
+			return 0;
+		}
+		spcm_err(spcm, substream->stream, "RESUME trigger is not supported\n");
+		return -EINVAL;
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		/*
 		 * Set the suspend_ignored flag for D0I3-compatible streams used
