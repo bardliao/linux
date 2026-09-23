@@ -791,6 +791,77 @@ EXPORT_SYMBOL_NS(hda_dsp_set_power_state_ipc4, "SND_SOC_SOF_INTEL_HDA_COMMON");
  *		 is in D3.
  */
 
+static void hda_dsp_log_wov_position(struct snd_sof_dev *sdev, const char *phase)
+{
+	const struct sof_ipc_pcm_ops *pcm_ops = sof_ipc_get_ops(sdev, pcm);
+	struct snd_pcm_substream *substream;
+	struct snd_sof_pcm *spcm;
+	struct hdac_stream *hstream;
+	u32 ctl;
+	u32 lpib;
+	int dir;
+
+	hdac_bus_eml_dmic_log_state(sof_to_bus(sdev), phase);
+
+	list_for_each_entry(spcm, &sdev->pcm_list, list) {
+		for_each_pcm_streams(dir) {
+			struct snd_pcm_runtime *runtime;
+			snd_pcm_uframes_t ipc_pointer = 0;
+			size_t buffer_bytes;
+			u64 ipc_pointer_bytes = 0;
+			u64 link_llp = 0;
+			u64 appl_bytes;
+			u32 posbuf = 0;
+			u32 spib = 0;
+			u32 cbl;
+			int ipc_pointer_ret = -EOPNOTSUPP;
+
+			substream = spcm->stream[dir].substream;
+			if (!substream || !substream->runtime)
+				continue;
+
+			runtime = substream->runtime;
+			hstream = runtime->private_data;
+			if (!hstream)
+				continue;
+
+			ctl = snd_hdac_stream_readl(hstream, SD_CTL);
+			lpib = snd_hdac_stream_get_pos_lpib(hstream);
+			cbl = snd_hdac_stream_readl(hstream, SD_CBL);
+			if (hstream->posbuf)
+				posbuf = snd_hdac_stream_get_pos_posbuf(hstream);
+			if (hstream->spib_addr)
+				spib = sof_io_read(sdev, hstream->spib_addr);
+
+			buffer_bytes = snd_pcm_lib_buffer_bytes(substream);
+			appl_bytes = frames_to_bytes(runtime, READ_ONCE(runtime->control->appl_ptr));
+			if (buffer_bytes)
+				appl_bytes %= buffer_bytes;
+
+			if (pcm_ops && pcm_ops->pointer)
+				ipc_pointer_ret = pcm_ops->pointer(sdev->component, substream,
+								   &ipc_pointer);
+			if (!ipc_pointer_ret)
+				ipc_pointer_bytes = frames_to_bytes(runtime, ipc_pointer);
+			if (sof_ops(sdev) && sof_ops(sdev)->get_dai_frame_counter)
+				link_llp = snd_sof_pcm_get_dai_frame_counter(sdev, sdev->component,
+									       substream);
+
+			dev_info(sdev->dev,
+				 "WoV %s: pcm=%s dir=%s stream=%d ignored=%d ctl=%#x run=%d lpib=%u posbuf=%u posbuf_valid=%d spib=%u cbl=%u appl=%llu ipc_ptr_ret=%d ipc_ptr_frames=%lu ipc_ptr_bytes=%llu link_llp_valid=%d link_llp_raw=%llu ipc_host=%llu buffer=%zu\n",
+				 phase, spcm->pcm.pcm_name,
+				 dir == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture",
+				 hstream->index, spcm->stream[dir].suspend_ignored, ctl,
+				 !!(ctl & SD_CTL_DMA_START), lpib, posbuf, !!hstream->posbuf,
+				 spib, cbl, appl_bytes, ipc_pointer_ret,
+				 (unsigned long)ipc_pointer, ipc_pointer_bytes,
+				 !!(sof_ops(sdev) && sof_ops(sdev)->get_dai_frame_counter), link_llp,
+				 spcm->stream[dir].posn.host_posn,
+				 buffer_bytes);
+		}
+	}
+}
+
 static int hda_suspend(struct snd_sof_dev *sdev, bool runtime_suspend)
 {
 	struct sof_intel_hda_dev *hda = sdev->pdata->hw_pdata;
@@ -947,6 +1018,8 @@ int hda_dsp_resume(struct snd_sof_dev *sdev)
 						HDA_VS_INTEL_EM2,
 						HDA_VS_INTEL_EM2_L1SEN, 0);
 
+		hda_dsp_log_wov_position(sdev, "resume");
+
 		/* restore and disable the system wakeup */
 		pci_restore_state(pci);
 		disable_irq_wake(pci->irq);
@@ -1032,6 +1105,8 @@ int hda_dsp_suspend(struct snd_sof_dev *sdev, u32 target_state)
 	}
 
 	if (target_state == SOF_DSP_PM_D0) {
+		hda_dsp_log_wov_position(sdev, "suspend");
+
 		/* Set DSP power state */
 		ret = snd_sof_dsp_set_power_state(sdev, &target_dsp_state);
 		if (ret < 0) {

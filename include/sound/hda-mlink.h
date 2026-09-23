@@ -74,6 +74,7 @@ enum hda_bus_ml_link_type hda_bus_ml_link_get_type(struct hdac_ext_link *hlink);
 struct hdac_ext_link *hdac_bus_eml_ssp_get_hlink(struct hdac_bus *bus);
 struct hdac_ext_link *hdac_bus_eml_dmic_get_hlink(struct hdac_bus *bus);
 struct hdac_ext_link *hdac_bus_eml_sdw_get_hlink(struct hdac_bus *bus);
+void hdac_bus_eml_dmic_log_state(struct hdac_bus *bus, const char *phase);
 
 struct mutex *hdac_bus_eml_get_mutex(struct hdac_bus *bus, bool alt, int elid);
 
@@ -198,6 +199,9 @@ hdac_bus_eml_ssp_get_hlink(struct hdac_bus *bus) { return NULL; }
 
 static inline struct hdac_ext_link *
 hdac_bus_eml_dmic_get_hlink(struct hdac_bus *bus) { return NULL; }
+
+static inline void
+hdac_bus_eml_dmic_log_state(struct hdac_bus *bus, const char *phase) { }
 
 static inline struct hdac_ext_link *
 hdac_bus_eml_sdw_get_hlink(struct hdac_bus *bus) { return NULL; }
