@@ -968,10 +968,16 @@ static int create_sdw_dailink(struct snd_soc_card *card,
 		}
 
 		/* create stream name according to first link id */
-		name = devm_kasprintf(dev, GFP_KERNEL,
-				      sdw_stream_name[stream],
-				      ffs(sof_end->link_mask) - 1,
-				      type_strings[sof_end->dai_info->dai_type]);
+		if (sof_end->dai_info->link_name)
+			name = devm_kasprintf(dev, GFP_KERNEL, "%s-%s",
+					      sof_end->dai_info->link_name,
+					      stream == SNDRV_PCM_STREAM_PLAYBACK ?
+					      "Playback" : "Capture");
+		else
+			name = devm_kasprintf(dev, GFP_KERNEL,
+					      sdw_stream_name[stream],
+					      ffs(sof_end->link_mask) - 1,
+					      type_strings[sof_end->dai_info->dai_type]);
 		if (!name)
 			return -ENOMEM;
 
