@@ -38,8 +38,12 @@ struct  rt721_sdca_priv {
 	bool fu0f_mixer_l_mute;
 	bool fu0f_mixer_r_mute;
 	/* For DMIC */
+	int wf_id;
+	int hw_vid;
 	bool fu1e_dapm_mute;
 	bool fu1e_mixer_mute[4];
+	bool fu14_dapm_mute;
+	bool fu14_mixer_mute[2];
 };
 
 struct rt721_sdca_dmic_kctrl_priv {
@@ -214,6 +218,10 @@ struct rt721_sdca_dmic_kctrl_priv {
 #define RT721_SDCA_ENT_XU03			0x03
 #define RT721_SDCA_ENT_XU0D			0x0d
 #define RT721_SDCA_ENT_FU55			0x55
+#define RT721_SDCA_ENT0				0x00
+#define RT721_SDCA_ENT_PPU21			0x02
+#define RT721_SDCA_ENT_FU14			0x6a
+#define RT721_SDCA_ENT_CS14			0x6b
 
 /* RT721 SDCA control */
 #define RT721_SDCA_CTL_SAMPLE_FREQ_INDEX		0x10
@@ -265,6 +273,7 @@ enum {
 	RT721_AIF1, /* For headset mic and headphone */
 	RT721_AIF2, /* For speaker */
 	RT721_AIF3, /* For dmic */
+	RT721_AIF4, /* For USLD */
 	RT721_AIFS,
 };
 

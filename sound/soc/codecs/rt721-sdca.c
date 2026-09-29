@@ -542,6 +542,54 @@ static int rt721_sdca_fu1e_capture_put(struct snd_kcontrol *kcontrol,
 	return changed;
 }
 
+static int rt721_sdca_set_fu14_capture_ctl(struct rt721_sdca_priv *rt721)
+{
+	int err, i;
+	unsigned int ch_mute;
+
+	for (i = 0; i < ARRAY_SIZE(rt721->fu14_mixer_mute); i++) {
+		ch_mute = rt721->fu14_dapm_mute || rt721->fu14_mixer_mute[i];
+		err = regmap_write(rt721->regmap,
+				SDW_SDCA_CTL(FUNC_NUM_MIC_ARRAY, RT721_SDCA_ENT_FU14,
+				RT721_SDCA_CTL_FU_MUTE, CH_01) + i, ch_mute);
+		if (err < 0)
+			return err;
+	}
+
+	return 0;
+}
+
+static int rt721_sdca_fu14_capture_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct rt721_sdca_priv *rt721 = snd_soc_component_get_drvdata(component);
+	int err, changed = 0;
+
+	if (rt721->fu14_mixer_mute[0] != !ucontrol->value.integer.value[0] ||
+		rt721->fu14_mixer_mute[1] != !ucontrol->value.integer.value[1])
+		changed = 1;
+
+	rt721->fu14_mixer_mute[0] = !ucontrol->value.integer.value[0];
+	rt721->fu14_mixer_mute[1] = !ucontrol->value.integer.value[1];
+	err = rt721_sdca_set_fu14_capture_ctl(rt721);
+	if (err < 0)
+		return err;
+
+	return changed;
+}
+
+static int rt721_sdca_fu14_capture_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct rt721_sdca_priv *rt721 = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = !rt721->fu14_mixer_mute[0];
+	ucontrol->value.integer.value[1] = !rt721->fu14_mixer_mute[1];
+	return 0;
+}
+
 static int rt721_sdca_set_fu0f_capture_ctl(struct rt721_sdca_priv *rt721)
 {
 	int err;
@@ -625,7 +673,8 @@ static int rt721_sdca_dmic_set_gain_get(struct snd_kcontrol *kcontrol,
 	unsigned int adc_vol_flag = 0;
 	const unsigned int interval_offset = 0xc0;
 
-	if (strstr(ucontrol->id.name, "FU1E Capture Volume"))
+	if (strstr(ucontrol->id.name, "FU1E Capture Volume") ||
+		strstr(ucontrol->id.name, "FU14 Capture Volume"))
 		adc_vol_flag = 1;
 
 	/* check all channels */
@@ -658,7 +707,8 @@ static int rt721_sdca_dmic_set_gain_put(struct snd_kcontrol *kcontrol,
 	const unsigned int interval_offset = 0xc0;
 	int err;
 
-	if (strstr(ucontrol->id.name, "FU1E Capture Volume"))
+	if (strstr(ucontrol->id.name, "FU1E Capture Volume") ||
+		strstr(ucontrol->id.name, "FU14 Capture Volume"))
 		adc_vol_flag = 1;
 
 	/* check all channels */
@@ -742,6 +792,13 @@ static const struct snd_kcontrol_new rt721_sdca_controls[] = {
 			RT721_SDCA_CTL_FU_CH_GAIN, CH_01),
 		rt721_sdca_dmic_set_gain_get, rt721_sdca_dmic_set_gain_put,
 			4, 3, boost_vol_tlv, rt721_sdca_fu_info),
+	SOC_DOUBLE_EXT("FU14 Capture Switch", SND_SOC_NOPM, 0, 1, 1, 0,
+		rt721_sdca_fu14_capture_get, rt721_sdca_fu14_capture_put),
+	RT_SDCA_EXT_TLV("FU14 Capture Volume",
+		SDW_SDCA_CTL(FUNC_NUM_MIC_ARRAY, RT721_SDCA_ENT_FU14,
+			RT721_SDCA_CTL_FU_VOLUME, CH_01),
+		rt721_sdca_dmic_set_gain_get, rt721_sdca_dmic_set_gain_put,
+			2, 0x3f, mic_vol_tlv, rt721_sdca_fu_info),
 };
 
 static int rt721_sdca_adc_mux_get(struct snd_kcontrol *kcontrol,
@@ -997,6 +1054,26 @@ static int rt721_sdca_fu113_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static int rt721_sdca_fu14_event(struct snd_soc_dapm_widget *w,
+	struct snd_kcontrol *kcontrol, int event)
+{
+	struct snd_soc_component *component =
+		snd_soc_dapm_to_component(w->dapm);
+	struct rt721_sdca_priv *rt721 = snd_soc_component_get_drvdata(component);
+
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		rt721->fu14_dapm_mute = false;
+		rt721_sdca_set_fu14_capture_ctl(rt721);
+		break;
+	case SND_SOC_DAPM_PRE_PMD:
+		rt721->fu14_dapm_mute = true;
+		rt721_sdca_set_fu14_capture_ctl(rt721);
+		break;
+	}
+	return 0;
+}
+
 static int rt721_sdca_fu36_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
@@ -1146,6 +1223,9 @@ static const struct snd_soc_dapm_widget rt721_sdca_dapm_widgets[] = {
 	SND_SOC_DAPM_ADC_E("FU 113", NULL, SND_SOC_NOPM, 0, 0,
 		rt721_sdca_fu113_event,
 		SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
+	SND_SOC_DAPM_ADC_E("FU 14", NULL, SND_SOC_NOPM, 0, 0,
+		rt721_sdca_fu14_event,
+		SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
 	SND_SOC_DAPM_MUX("ADC 09 Mux", SND_SOC_NOPM, 0, 0,
 		&rt721_sdca_adc09_mux),
 	SND_SOC_DAPM_MUX("ADC 08 R Mux", SND_SOC_NOPM, 0, 0,
@@ -1165,6 +1245,7 @@ static const struct snd_soc_dapm_widget rt721_sdca_dapm_widgets[] = {
 	SND_SOC_DAPM_AIF_OUT("DP2TX", "DP2 Headset Capture", 0, SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_AIF_IN("DP3RX", "DP3 Speaker Playback", 0, SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_AIF_OUT("DP6TX", "DP6 DMic Capture", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_IN("DP4TX", "DP4 USLD Capture", 0, SND_SOC_NOPM, 0, 0),
 };
 
 static const struct snd_soc_dapm_route rt721_sdca_audio_map[] = {
@@ -1208,6 +1289,13 @@ static const struct snd_soc_dapm_route rt721_sdca_audio_map[] = {
 	{"FU 113", NULL, "ADC 10 L Mux"},
 	{"DP2TX", NULL, "FU 36"},
 	{"DP6TX", NULL, "FU 113"},
+
+	{"FU 14", NULL, "PDE 11"},
+	{"FU 14", NULL, "ADC 07 R Mux"},
+	{"FU 14", NULL, "ADC 07 L Mux"},
+	{"FU 14", NULL, "ADC 10 R Mux"},
+	{"FU 14", NULL, "ADC 10 L Mux"},
+	{"DP4TX", NULL, "FU 14"},
 
 	{"HP", NULL, "PDE 47"},
 	{"HP", NULL, "FU 42"},
@@ -1303,6 +1391,8 @@ static int rt721_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 			port = 2;
 		else if (dai->id == RT721_AIF3)
 			port = 6;
+		else if (dai->id == RT721_AIF4)
+			port = 4;
 		else
 			return -EINVAL;
 	}
@@ -1382,6 +1472,11 @@ static int rt721_sdca_pcm_hw_params(struct snd_pcm_substream *substream,
 			SDW_SDCA_CTL(FUNC_NUM_MIC_ARRAY, RT721_SDCA_ENT_CS1F,
 				RT721_SDCA_CTL_SAMPLE_FREQ_INDEX, 0), sampling_rate);
 
+	if (dai->id == RT721_AIF4)
+		regmap_write(rt721->regmap,
+			SDW_SDCA_CTL(FUNC_NUM_MIC_ARRAY, RT721_SDCA_ENT_CS14,
+				RT721_SDCA_CTL_SAMPLE_FREQ_INDEX, 0), sampling_rate);
+
 	return 0;
 }
 
@@ -1455,6 +1550,18 @@ static struct snd_soc_dai_driver rt721_sdca_dai[] = {
 			.formats = RT721_FORMATS,
 		},
 		.ops = &rt721_sdca_ops,
+	},
+	{
+		.name = "rt721-sdca-aif4",
+		.id = RT721_AIF4,
+		.capture = {
+			.stream_name = "DP4 USLD Capture",
+			.channels_min = 1,
+			.channels_max = 2,
+			.rates = RT721_STEREO_RATES,
+			.formats = RT721_FORMATS,
+		},
+		.ops = &rt721_sdca_ops,
 	}
 };
 
@@ -1488,10 +1595,14 @@ int rt721_sdca_init(struct device *dev, struct regmap *regmap,
 	rt721->hw_init = false;
 	rt721->first_hw_init = false;
 	rt721->fu1e_dapm_mute = true;
+	rt721->fu14_dapm_mute = true;
 	rt721->fu0f_dapm_mute = true;
 	rt721->fu0f_mixer_l_mute = rt721->fu0f_mixer_r_mute = true;
 	rt721->fu1e_mixer_mute[0] = rt721->fu1e_mixer_mute[1] =
 		rt721->fu1e_mixer_mute[2] = rt721->fu1e_mixer_mute[3] = true;
+
+	rt721->wf_id = -1;
+	rt721->fu14_mixer_mute[0] = rt721->fu14_mixer_mute[1] = false;
 
 	return devm_snd_soc_register_component(dev,
 			&soc_sdca_dev_rt721, rt721_sdca_dai, ARRAY_SIZE(rt721_sdca_dai));

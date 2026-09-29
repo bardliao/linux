@@ -241,9 +241,10 @@ static int rt721_sdca_read_prop(struct sdw_slave *slave)
 	 * port = 1 for headphone playback
 	 * port = 2 for headset-mic capture
 	 * port = 3 for speaker playback
+	 * port = 4 for USLD capture
 	 * port = 6 for digital-mic capture
 	 */
-	prop->source_ports = BIT(6) | BIT(2); /* BITMAP: 01000100 */
+	prop->source_ports = BIT(6) | BIT(4) | BIT(2); /* BITMAP: 01010100 */
 	prop->sink_ports = BIT(3) | BIT(1); /* BITMAP:  00001010 */
 
 	nval = hweight32(prop->source_ports);
