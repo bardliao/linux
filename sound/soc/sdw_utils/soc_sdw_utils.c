@@ -682,8 +682,18 @@ struct asoc_sdw_codec_info codec_info_list[] = {
 				.quirk = SOC_SDW_CODEC_MIC,
 				.quirk_exclude = true,
 			},
+			/* For WoV */
+			{
+				.direction = {false, true},
+				.dai_name = "rt721-sdca-aif4",
+				.link_name = "Wake on Voice",
+				.dai_type = SOC_SDW_DAI_TYPE_MIC,
+				.dailink = {SOC_SDW_UNUSED_DAI_ID, SOC_SDW_WOV_DAI_ID},
+				.rtd_init = asoc_sdw_rt_dmic_rtd_init,
+				.quirk = SOC_SDW_CODEC_WOV_MIC,
+			},
 		},
-		.dai_num = 3,
+		.dai_num = 4,
 	},
 	{
 		.vendor_id = 0x025d,
