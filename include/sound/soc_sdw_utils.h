@@ -38,6 +38,8 @@
 #define SOC_SDW_AMP_OUT_DAI_ID		2
 #define SOC_SDW_AMP_IN_DAI_ID		3
 #define SOC_SDW_DMIC_DAI_ID		4
+/* Use a relatively large value to avoid conflicts with non-SoundWire links. */
+#define SOC_SDW_WOV_DAI_ID		31
 
 #define SOC_SDW_DAI_TYPE_JACK		0
 #define SOC_SDW_DAI_TYPE_AMP		1
@@ -62,6 +64,7 @@ struct asoc_sdw_dai_info {
 	const char *codec_name;
 	const char *dai_name;
 	const char *component_name;
+	const char *link_name; /* DAI link name */
 	const int dai_type;
 	const int dailink[2]; /* dailink id for each direction */
 	const struct snd_kcontrol_new *controls;
