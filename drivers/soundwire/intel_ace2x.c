@@ -12,6 +12,7 @@
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_intel.h>
 #include <linux/string_choices.h>
+#include <linux/suspend.h>
 #include <sound/hdaudio.h>
 #include <sound/hda-mlink.h>
 #include <sound/hda-sdw-bpt.h>
@@ -887,6 +888,8 @@ static void *intel_get_sdw_stream(struct snd_soc_dai *dai,
 	return dai_runtime->stream;
 }
 
+static bool intel_dai_ignore_suspend(struct snd_soc_dai *dai);
+
 static int intel_trigger(struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
 {
 	struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
@@ -912,6 +915,12 @@ static int intel_trigger(struct snd_pcm_substream *substream, int cmd, struct sn
 		return -EIO;
 	}
 
+	if (cmd == SNDRV_PCM_TRIGGER_SUSPEND &&
+	    (intel_dai_ignore_suspend(dai) ||
+	     (pm_suspend_target_state == PM_SUSPEND_TO_IDLE &&
+	      sdw->link_res->d0i3_compatible)))
+		cdns->bus.ignore_suspend = true;
+
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		dai_runtime->paused = true;
@@ -936,6 +945,26 @@ static const struct snd_soc_dai_ops intel_pcm_dai_ops = {
 	.get_stream = intel_get_sdw_stream,
 };
 
+static bool intel_dai_ignore_suspend(struct snd_soc_dai *dai)
+{
+	struct snd_soc_card *card = dai->component->card;
+	struct snd_soc_pcm_runtime *rtd;
+	struct snd_soc_dai *rtd_dai;
+	int i;
+
+	if (!card)
+		return false;
+
+	for_each_card_rtds(card, rtd) {
+		for_each_rtd_dais(rtd, i, rtd_dai) {
+			if (rtd_dai == dai)
+				return rtd->dai_link->ignore_suspend;
+		}
+	}
+
+	return false;
+}
+
 static int intel_component_dais_suspend(struct snd_soc_component *component)
 {
 	struct snd_soc_dai *dai;
@@ -951,6 +980,9 @@ static int intel_component_dais_suspend(struct snd_soc_component *component)
 	for_each_component_dais(component, dai) {
 		struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
 		struct sdw_cdns_dai_runtime *dai_runtime;
+
+		if (cdns->bus.ignore_suspend)
+			continue;
 
 		dai_runtime = cdns->dai_runtime_array[dai->id];
 

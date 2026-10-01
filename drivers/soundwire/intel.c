@@ -12,6 +12,7 @@
 #include <linux/io.h>
 #include <sound/pcm_params.h>
 #include <linux/pm_runtime.h>
+#include <linux/suspend.h>
 #include <sound/soc.h>
 #include <linux/soundwire/sdw_registers.h>
 #include <linux/soundwire/sdw.h>
@@ -937,9 +938,30 @@ static int intel_component_probe(struct snd_soc_component *component)
 	return 0;
 }
 
+static bool intel_dai_ignore_suspend(struct snd_soc_dai *dai)
+{
+	struct snd_soc_card *card = dai->component->card;
+	struct snd_soc_pcm_runtime *rtd;
+	struct snd_soc_dai *rtd_dai;
+	int i;
+
+	if (!card)
+		return false;
+
+	for_each_card_rtds(card, rtd) {
+		for_each_rtd_dais(rtd, i, rtd_dai) {
+			if (rtd_dai == dai)
+				return rtd->dai_link->ignore_suspend;
+		}
+	}
+
+	return false;
+}
+
 static int intel_component_dais_suspend(struct snd_soc_component *component)
 {
 	struct snd_soc_dai *dai;
+	struct sdw_bus *bus = NULL;
 
 	/*
 	 * Mark all open streams as suspended.
@@ -952,8 +974,18 @@ static int intel_component_dais_suspend(struct snd_soc_component *component)
 	for_each_component_dais(component, dai) {
 		struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
 		struct sdw_cdns_dai_runtime *dai_runtime;
+		struct sdw_intel *sdw = cdns_to_intel(cdns);
 
+		bus = &cdns->bus;
 		dai_runtime = cdns->dai_runtime_array[dai->id];
+
+		if (dai_runtime &&
+		    (intel_dai_ignore_suspend(dai) ||
+		     (pm_suspend_target_state == PM_SUSPEND_TO_IDLE &&
+		      sdw->link_res->d0i3_compatible))) {
+			bus->ignore_suspend = true;
+			continue;
+		}
 
 		if (dai_runtime)
 			dai_runtime->suspended = true;

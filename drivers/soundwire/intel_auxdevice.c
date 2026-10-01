@@ -13,6 +13,7 @@
 #include <linux/io.h>
 #include <linux/auxiliary_bus.h>
 #include <sound/pcm_params.h>
+#include <sound/hdaudio.h>
 #include <linux/pm_runtime.h>
 #include <sound/soc.h>
 #include <linux/soundwire/sdw_registers.h>
@@ -647,6 +648,12 @@ static int __maybe_unused intel_suspend(struct device *dev)
 		return 0;
 	}
 
+	if (bus->ignore_suspend) {
+		/* propagate to the shared HDA controller so hda_bus_ml_suspend() also bails out */
+		sdw->link_res->hbus->ignore_suspend = true;
+		return 0;
+	}
+
 	/* Prevent runtime PM from racing with the code below. */
 	pm_runtime_disable(dev);
 
@@ -731,6 +738,13 @@ static int __maybe_unused intel_resume(struct device *dev)
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
+		return 0;
+	}
+
+	if (bus->ignore_suspend) {
+		dev_dbg(dev, "SoundWire master %d remained active during system suspend\n",
+			bus->link_id);
+		bus->ignore_suspend = false;
 		return 0;
 	}
 
