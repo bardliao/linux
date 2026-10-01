@@ -379,6 +379,7 @@ static int hda_ipc4_pre_trigger(struct snd_sof_dev *sdev, struct snd_soc_dai *cp
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+	case SNDRV_PCM_TRIGGER_RESUME:
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
@@ -424,6 +425,8 @@ static int hda_trigger(struct snd_sof_dev *sdev, struct snd_soc_dai *cpu_dai,
 		hext_stream->pplcllpl = 0;
 		hext_stream->pplcllpu = 0;
 		snd_hdac_ext_stream_clear(hext_stream);
+		break;
+	case SNDRV_PCM_TRIGGER_RESUME:
 		break;
 	default:
 		dev_err(sdev->dev, "unknown trigger command %d\n", cmd);
@@ -489,6 +492,7 @@ static int hda_ipc4_post_trigger(struct snd_sof_dev *sdev, struct snd_soc_dai *c
 		swidget->spipe->started_count = 0;
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+	case SNDRV_PCM_TRIGGER_RESUME:
 		break;
 	default:
 		dev_err(sdev->dev, "unknown trigger command %d\n", cmd);
