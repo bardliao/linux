@@ -1086,6 +1086,7 @@ int sdw_stream_remove_master(struct sdw_bus *bus,
 int sdw_startup_stream(void *sdw_substream);
 int sdw_prepare_stream(struct sdw_stream_runtime *stream);
 int sdw_enable_stream(struct sdw_stream_runtime *stream);
+bool sdw_stream_ignore_suspend(struct sdw_stream_runtime *stream);
 int sdw_disable_stream(struct sdw_stream_runtime *stream);
 int sdw_deprepare_stream(struct sdw_stream_runtime *stream);
 void sdw_shutdown_stream(void *sdw_substream);

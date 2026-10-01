@@ -1682,8 +1682,15 @@ int asoc_sdw_trigger(struct snd_pcm_substream *substream, int cmd)
 		return PTR_ERR(sdw_stream);
 	}
 
+	dev_info(rtd->dev, "SDW trigger: dai=%s stream=%s dir=%d cmd=%d state_before=%d\n",
+		 dai->name, sdw_stream->name, substream->stream, cmd, sdw_stream->state);
+
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_RESUME:
+		if (sdw_stream->state == SDW_STREAM_ENABLED) {
+			ret = 0;
+			break;
+		}
 		/*
 		 * The peripherals lose their port configuration when the
 		 * controller is power-gated during system suspend, and an
@@ -1705,14 +1712,24 @@ int asoc_sdw_trigger(struct snd_pcm_substream *substream, int cmd)
 		break;
 
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_STOP:
 		ret = sdw_disable_stream(sdw_stream);
 		break;
+	case SNDRV_PCM_TRIGGER_SUSPEND: {
+		bool ignore_suspend = sdw_stream_ignore_suspend(sdw_stream);
+
+		dev_info(rtd->dev, "SDW trigger: dai=%s stream=%s ignore_suspend=%d\n",
+			 dai->name, sdw_stream->name, ignore_suspend);
+		ret = ignore_suspend ? 0 : sdw_disable_stream(sdw_stream);
+		break;
+	}
 	default:
 		ret = -EINVAL;
 		break;
 	}
+
+	dev_info(rtd->dev, "SDW trigger: dai=%s stream=%s dir=%d cmd=%d state_after=%d ret=%d\n",
+		 dai->name, sdw_stream->name, substream->stream, cmd, sdw_stream->state, ret);
 
 	if (ret)
 		dev_err(rtd->dev, "%s trigger %d failed: %d\n", __func__, cmd, ret);
