@@ -44,6 +44,7 @@ struct sdw_intel_link_res {
 	u32 *shim_mask;
 	u32 clock_stop_quirks;
 	bool mic_privacy;
+	bool d0i3_compatible;
 	u32 link_mask;
 	struct sdw_cdns *cdns;
 	struct list_head list;

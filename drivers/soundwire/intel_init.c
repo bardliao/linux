@@ -348,6 +348,27 @@ int sdw_intel_startup(struct sdw_intel_ctx *ctx)
 	return sdw_intel_startup_controller(ctx);
 }
 EXPORT_SYMBOL_NS(sdw_intel_startup, "SOUNDWIRE_INTEL_INIT");
+
+int sdw_intel_set_link_d0i3_compatible(struct sdw_intel_ctx *ctx,
+					       int link_id, bool enable)
+{
+	struct sdw_intel_link_dev *ldev;
+
+	if (!ctx || link_id < 0 || link_id >= ctx->count)
+		return -EINVAL;
+
+	if (!(ctx->link_mask & BIT(link_id)))
+		return -ENODEV;
+
+	ldev = ctx->ldev[link_id];
+	if (!ldev)
+		return -ENODEV;
+
+	ldev->link_res.d0i3_compatible = enable;
+
+	return 0;
+}
+EXPORT_SYMBOL_NS(sdw_intel_set_link_d0i3_compatible, "SOUNDWIRE_INTEL_INIT");
 /**
  * sdw_intel_exit() - SoundWire Intel exit
  * @ctx: SoundWire context allocated in the probe
