@@ -1419,6 +1419,8 @@ static int dapm_suspend_check(struct snd_soc_dapm_widget *widget)
 	struct device *dev = snd_soc_dapm_to_dev(widget->dapm);
 	int level = snd_power_get_state(widget->dapm->card->snd_card);
 
+	dev_err(dev, "bard: widget %s level %d widget->ignore_suspend %d\n",
+		widget->name, level, widget->ignore_suspend);
 	switch (level) {
 	case SNDRV_CTL_POWER_D3hot:
 	case SNDRV_CTL_POWER_D3cold:
