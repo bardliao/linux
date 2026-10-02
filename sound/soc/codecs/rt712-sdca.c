@@ -1460,9 +1460,22 @@ static const struct snd_soc_dapm_route rt712_sdca_dmic_audio_map[] = {
 static int rt712_sdca_dmic_probe(struct snd_soc_component *component)
 {
 	struct rt712_sdca_priv *rt712 = snd_soc_component_get_drvdata(component);
+	struct snd_soc_dapm_context *dapm = snd_soc_component_to_dapm(component);
 	int ret;
 
 	rt712->dmic_component = component;
+
+	ret = snd_soc_dapm_ignore_suspend(dapm, "DP8 Capture");
+	if (ret)
+		return ret;
+
+	ret = snd_soc_dapm_ignore_suspend(dapm, "DMIC1");
+	if (ret)
+		return ret;
+
+	ret = snd_soc_dapm_ignore_suspend(dapm, "DMIC2");
+	if (ret)
+		return ret;
 
 	if (!rt712->first_hw_init)
 		return 0;
