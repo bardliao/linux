@@ -86,6 +86,29 @@ sof_pcm_setup_connected_widgets(struct snd_sof_dev *sdev, struct snd_soc_pcm_run
 			return ret;
 		}
 
+		if (spcm->stream[dir].d0i3_compatible) {
+			struct snd_soc_dapm_widget_list *connected_widgets;
+			struct snd_soc_dapm_widget *widget;
+			int connected, i;
+
+			connected = snd_soc_dapm_dai_get_connected_widgets(dai, dir,
+									    &connected_widgets,
+									    NULL);
+			if (connected >= 0) {
+				for_each_dapm_widgets(connected_widgets, i, widget) {
+					dev_info(sdev->dev,
+						 "D0i3-compatible PCM %s connected widget: %s\n",
+						 spcm->pcm.caps[dir].name,
+						 widget->name);
+				}
+				snd_soc_dapm_dai_free_widgets(&connected_widgets);
+			} else {
+				dev_dbg(sdev->dev,
+					"failed to enumerate D0i3-compatible PCM %s widgets: %d\n",
+					spcm->pcm.caps[dir].name, connected);
+			}
+		}
+
 		spcm->stream[dir].list = list;
 
 		ret = sof_widget_list_prepare(sdev, spcm, params, platform_params, dir);
