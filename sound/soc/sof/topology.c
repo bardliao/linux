@@ -1206,6 +1206,8 @@ static int spcm_bind(struct snd_soc_component *scomp, struct snd_sof_pcm *spcm,
 	}
 
 	spcm->stream[dir].comp_id = host_widget->comp_id;
+	if (spcm->stream[dir].d0i3_compatible)
+		host_widget->widget->ignore_suspend = 1;
 
 	return 0;
 }
