@@ -353,7 +353,6 @@ struct hdac_bus {
 	bool not_use_interrupts:1;	/* prohibiting the RIRB IRQ */
 	bool access_sdnctl_in_dword:1;	/* accessing the sdnctl register by dword */
 	bool use_pio_for_commands:1;	/* Use PIO instead of CORB for commands */
-	bool ignore_suspend:1;		/* keep links powered over system suspend */
 
 	int poll_count;
 

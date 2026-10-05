@@ -13,7 +13,6 @@
 #include <linux/io.h>
 #include <linux/auxiliary_bus.h>
 #include <sound/pcm_params.h>
-#include <sound/hdaudio.h>
 #include <linux/pm_runtime.h>
 #include <sound/soc.h>
 #include <linux/soundwire/sdw_registers.h>
@@ -649,8 +648,6 @@ static int __maybe_unused intel_suspend(struct device *dev)
 	}
 
 	if (bus->ignore_suspend) {
-		/* propagate to the shared HDA controller so hda_bus_ml_suspend() also bails out */
-		sdw->link_res->hbus->ignore_suspend = true;
 		return 0;
 	}
 
