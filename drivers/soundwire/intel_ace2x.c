@@ -12,6 +12,7 @@
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_intel.h>
 #include <linux/string_choices.h>
+#include <linux/suspend.h>
 #include <sound/hdaudio.h>
 #include <sound/hda-mlink.h>
 #include <sound/hda-sdw-bpt.h>
@@ -919,6 +920,10 @@ static int intel_trigger(struct snd_pcm_substream *substream, int cmd, struct sn
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		dai_runtime->paused = false;
+		break;
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+		if (sdw->link_res->d0i3_compatible)
+			cdns->bus.ignore_suspend = true;
 		break;
 	default:
 		break;

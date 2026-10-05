@@ -12,6 +12,7 @@
 #include <linux/io.h>
 #include <sound/pcm_params.h>
 #include <linux/pm_runtime.h>
+#include <linux/suspend.h>
 #include <sound/soc.h>
 #include <linux/soundwire/sdw_registers.h>
 #include <linux/soundwire/sdw.h>
@@ -895,6 +896,7 @@ static void *intel_get_sdw_stream(struct snd_soc_dai *dai,
 static int intel_trigger(struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
 {
 	struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
+	struct sdw_intel *sdw = cdns_to_intel(cdns);
 	struct sdw_cdns_dai_runtime *dai_runtime;
 	int ret = 0;
 
@@ -912,6 +914,10 @@ static int intel_trigger(struct snd_pcm_substream *substream, int cmd, struct sn
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		dai_runtime->paused = false;
+		break;
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+		if (sdw->link_res->d0i3_compatible)
+			cdns->bus.ignore_suspend = true;
 		break;
 	default:
 		break;
