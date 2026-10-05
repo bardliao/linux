@@ -1679,6 +1679,23 @@ state_err:
 }
 EXPORT_SYMBOL(sdw_enable_stream);
 
+bool sdw_stream_ignore_suspend(struct sdw_stream_runtime *stream)
+{
+	struct sdw_master_runtime *master;
+
+	if (list_empty(&stream->master_list))
+		return false;
+
+	list_for_each_entry(master, &stream->master_list, stream_node) {
+		if (!master->bus->ops || !master->bus->ops->is_suspend_ignored ||
+		    !master->bus->ops->is_suspend_ignored(master->bus))
+			return false;
+	}
+
+	return true;
+}
+EXPORT_SYMBOL(sdw_stream_ignore_suspend);
+
 static int _sdw_disable_stream(struct sdw_stream_runtime *stream)
 {
 	struct sdw_master_runtime *m_rt;
