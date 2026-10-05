@@ -876,6 +876,7 @@ struct sdw_bpt_msg;
  * using BTP protocol
  * @bpt_wait: wait for message completion using BTP protocol
  * and release resources
+ * @is_suspend_ignored: Check whether the bus should remain active during system suspend
  */
 struct sdw_master_ops {
 	int (*read_prop)(struct sdw_bus *bus);
@@ -895,6 +896,7 @@ struct sdw_master_ops {
 	int (*bpt_send_async)(struct sdw_bus *bus, struct sdw_slave *slave,
 			      struct sdw_bpt_msg *msg);
 	int (*bpt_wait)(struct sdw_bus *bus, struct sdw_slave *slave, struct sdw_bpt_msg *msg);
+	bool (*is_suspend_ignored)(struct sdw_bus *bus);
 };
 
 int sdw_bus_master_add(struct sdw_bus *bus, struct device *parent,

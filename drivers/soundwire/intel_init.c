@@ -86,6 +86,7 @@ static struct sdw_intel_link_dev *intel_link_dev_register(struct sdw_intel_res *
 	link->clock_stop_quirks = res->clock_stop_quirks;
 	link->shim_mask = &ctx->shim_mask;
 	link->link_mask = ctx->link_mask;
+	link->ctx = ctx;
 
 	link->hbus = res->hbus;
 
