@@ -950,7 +950,11 @@ static int intel_component_dais_suspend(struct snd_soc_component *component)
 	 */
 	for_each_component_dais(component, dai) {
 		struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
+		struct sdw_intel *sdw = cdns_to_intel(cdns);
 		struct sdw_cdns_dai_runtime *dai_runtime;
+
+		if (sdw->link_res->ctx->ignore_suspend)
+			continue;
 
 		dai_runtime = cdns->dai_runtime_array[dai->id];
 

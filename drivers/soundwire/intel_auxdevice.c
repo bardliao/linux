@@ -155,6 +155,13 @@ static void generic_new_peripheral_assigned(struct sdw_bus *bus,
 		sdw->link_res->hw_ops->program_sdi(sdw, dev_num);
 }
 
+static bool intel_is_suspend_ignored(struct sdw_bus *bus)
+{
+	struct sdw_intel *sdw = cdns_to_intel(bus_to_cdns(bus));
+
+	return sdw->link_res->ctx->ignore_suspend;
+}
+
 static int sdw_master_read_intel_prop(struct sdw_bus *bus)
 {
 	struct sdw_master_prop *prop = &bus->prop;
@@ -301,6 +308,7 @@ static struct sdw_master_ops sdw_intel_ops = {
 
 	.bpt_send_async = generic_bpt_send_async,
 	.bpt_wait = generic_bpt_wait,
+	.is_suspend_ignored = intel_is_suspend_ignored,
 };
 
 /*
@@ -647,6 +655,10 @@ static int __maybe_unused intel_suspend(struct device *dev)
 		return 0;
 	}
 
+	if (sdw->link_res->ctx->ignore_suspend) {
+		return 0;
+	}
+
 	/* Prevent runtime PM from racing with the code below. */
 	pm_runtime_disable(dev);
 
@@ -730,6 +742,13 @@ static int __maybe_unused intel_resume(struct device *dev)
 
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
+			bus->link_id);
+		return 0;
+	}
+
+	/* Keep the shared flag set until all links have completed system resume. */
+	if (sdw->link_res->ctx->ignore_suspend) {
+		dev_dbg(dev, "SoundWire master %d remained active during system suspend\n",
 			bus->link_id);
 		return 0;
 	}
