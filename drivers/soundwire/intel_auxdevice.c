@@ -647,6 +647,10 @@ static int __maybe_unused intel_suspend(struct device *dev)
 		return 0;
 	}
 
+	if (bus->ignore_suspend) {
+		return 0;
+	}
+
 	/* Prevent runtime PM from racing with the code below. */
 	pm_runtime_disable(dev);
 
@@ -731,6 +735,14 @@ static int __maybe_unused intel_resume(struct device *dev)
 	if (bus->prop.hw_disabled || !sdw->startup_done) {
 		dev_dbg(dev, "SoundWire master %d is disabled or not-started, ignoring\n",
 			bus->link_id);
+		return 0;
+	}
+
+	/* TODO: Do we need to set bus->ignore_suspend = false? */
+	if (bus->ignore_suspend) {
+		dev_dbg(dev, "SoundWire master %d remained active during system suspend\n",
+			bus->link_id);
+		bus->ignore_suspend = false;
 		return 0;
 	}
 
