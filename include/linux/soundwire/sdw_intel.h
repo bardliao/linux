@@ -286,6 +286,7 @@ struct hdac_bus;
  * struct sdw_intel_ctx - context allocated by the controller
  * driver probe
  * @count: link count
+ * @ignore_suspend: whether the controller should remain active during system suspend
  * @mmio_base: mmio base of SoundWire registers, only used to check
  * hardware capabilities after all power dependencies are settled.
  * @link_mask: bit-wise mask listing SoundWire links reported by the
@@ -302,6 +303,7 @@ struct hdac_bus;
  */
 struct sdw_intel_ctx {
 	int count;
+	bool ignore_suspend;
 	void __iomem *mmio_base;
 	u32 link_mask;
 	acpi_handle handle;

@@ -915,9 +915,13 @@ static int intel_trigger(struct snd_pcm_substream *substream, int cmd, struct sn
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		dai_runtime->paused = false;
 		break;
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+		sdw->link_res->ctx->ignore_suspend = false;
+		break;
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		if (sdw->link_res->d0i3_compatible)
-			cdns->bus.ignore_suspend = true;
+			sdw->link_res->ctx->ignore_suspend = true;
 		break;
 	default:
 		break;
@@ -957,9 +961,10 @@ static int intel_component_dais_suspend(struct snd_soc_component *component)
 	 */
 	for_each_component_dais(component, dai) {
 		struct sdw_cdns *cdns = snd_soc_dai_get_drvdata(dai);
+		struct sdw_intel *sdw = cdns_to_intel(cdns);
 		struct sdw_cdns_dai_runtime *dai_runtime;
 
-		if (cdns->bus.ignore_suspend)
+		if (sdw->link_res->ctx->ignore_suspend)
 			continue;
 
 		dai_runtime = cdns->dai_runtime_array[dai->id];

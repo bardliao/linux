@@ -1687,7 +1687,8 @@ bool sdw_stream_ignore_suspend(struct sdw_stream_runtime *stream)
 		return false;
 
 	list_for_each_entry(master, &stream->master_list, stream_node) {
-		if (!master->bus->ignore_suspend)
+		if (!master->bus->ops || !master->bus->ops->is_suspend_ignored ||
+		    !master->bus->ops->is_suspend_ignored(master->bus))
 			return false;
 	}
 
