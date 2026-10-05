@@ -23,6 +23,7 @@
 #include <linux/module.h>
 #include <linux/soundwire/sdw.h>
 #include <linux/soundwire/sdw_intel.h>
+#include <linux/suspend.h>
 #include <sound/intel-dsp-config.h>
 #include <sound/intel-nhlt.h>
 #include <sound/soc-acpi-intel-ssp-common.h>
@@ -58,18 +59,64 @@ static int sdw_clock_stop_quirks = SDW_INTEL_CLK_STOP_BUS_RESET;
 module_param(sdw_clock_stop_quirks, int, 0444);
 MODULE_PARM_DESC(sdw_clock_stop_quirks, "SOF SoundWire clock stop quirks");
 
+static bool sdw_be_d0i3_compatible(struct snd_sof_dev *sdev,
+				    struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *be = snd_soc_substream_to_rtd(substream);
+	struct snd_soc_dpcm *dpcm;
+	int dir = substream->stream;
+
+	for_each_dpcm_fe(be, dir, dpcm) {
+		struct snd_soc_pcm_runtime *fe = dpcm->fe;
+		struct snd_pcm_substream *fe_substream;
+		struct snd_sof_pcm *spcm;
+
+		if (dpcm->state == SND_SOC_DPCM_LINK_STATE_FREE)
+			continue;
+
+		fe_substream = snd_soc_dpcm_get_substream(fe, dir);
+		if (!fe_substream || !fe_substream->runtime)
+			continue;
+
+		list_for_each_entry(spcm, &sdev->pcm_list, list) {
+			if (!strcmp(spcm->pcm.pcm_name, fe->dai_link->name))
+				break;
+		}
+		if (!list_entry_is_head(spcm, &sdev->pcm_list, list) &&
+		    spcm->stream[dir].d0i3_compatible)
+			return true;
+	}
+
+	return false;
+}
+
 static int sdw_params_stream(struct device *dev,
 			     struct sdw_intel_stream_params_data *params_data)
 {
 	struct snd_soc_dai *d = params_data->dai;
 	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(d, params_data->substream->stream);
+	struct snd_sof_dev *sdev;
+	struct sof_intel_hda_dev *hdev;
 	struct snd_sof_dai_config_data data = { 0 };
+	int ret;
 
 	if (!w) {
 		dev_err(dev, "%s widget not found, check amp link num in the topology\n",
 			d->name);
 		return -EINVAL;
 	}
+
+	sdev = widget_to_sdev(w);
+	hdev = sdev->pdata->hw_pdata;
+	if (hdev->sdw) {
+		ret = sdw_intel_set_link_d0i3_compatible(hdev->sdw,
+							 params_data->link_id,
+							 sdw_be_d0i3_compatible(sdev,
+									        params_data->substream));
+		if (ret < 0)
+			return ret;
+	}
+
 	data.dai_index = (params_data->link_id << 8) | d->id;
 	data.dai_data = params_data->alh_stream_id;
 	data.dai_node_id = data.dai_data;
@@ -82,6 +129,15 @@ static int sdw_params_free(struct device *dev, struct sdw_intel_stream_free_data
 	struct snd_soc_dai *d = free_data->dai;
 	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(d, free_data->substream->stream);
 	struct snd_sof_dev *sdev = widget_to_sdev(w);
+	struct sof_intel_hda_dev *hdev = sdev->pdata->hw_pdata;
+	int ret;
+
+	if (hdev->sdw) {
+		ret = sdw_intel_set_link_d0i3_compatible(hdev->sdw,
+							 free_data->link_id, false);
+		if (ret < 0)
+			return ret;
+	}
 
 	if (sdev->pdata->ipc_type == SOF_IPC_TYPE_4) {
 		struct snd_sof_widget *swidget = w->dobj.private;
@@ -108,6 +164,26 @@ struct sdw_intel_ops sdw_callback = {
 static int sdw_ace2x_params_stream(struct device *dev,
 				   struct sdw_intel_stream_params_data *params_data)
 {
+	struct snd_soc_dai *d = params_data->dai;
+	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(d, params_data->substream->stream);
+	struct snd_sof_dev *sdev;
+	struct sof_intel_hda_dev *hdev;
+	int ret;
+
+	if (!w)
+		return -EINVAL;
+
+	sdev = widget_to_sdev(w);
+	hdev = sdev->pdata->hw_pdata;
+	if (hdev->sdw) {
+		ret = sdw_intel_set_link_d0i3_compatible(hdev->sdw,
+							 params_data->link_id,
+							 sdw_be_d0i3_compatible(sdev,
+										params_data->substream));
+		if (ret < 0)
+			return ret;
+	}
+
 	return sdw_hda_dai_hw_params(params_data->substream,
 				     params_data->hw_params,
 				     params_data->dai,
@@ -118,6 +194,24 @@ static int sdw_ace2x_params_stream(struct device *dev,
 static int sdw_ace2x_free_stream(struct device *dev,
 				 struct sdw_intel_stream_free_data *free_data)
 {
+	struct snd_soc_dai *d = free_data->dai;
+	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(d, free_data->substream->stream);
+	struct snd_sof_dev *sdev;
+	struct sof_intel_hda_dev *hdev;
+	int ret;
+
+	if (!w)
+		return -EINVAL;
+
+	sdev = widget_to_sdev(w);
+	hdev = sdev->pdata->hw_pdata;
+	if (hdev->sdw) {
+		ret = sdw_intel_set_link_d0i3_compatible(hdev->sdw,
+							 free_data->link_id, false);
+		if (ret < 0)
+			return ret;
+	}
+
 	return sdw_hda_dai_hw_free(free_data->substream,
 				   free_data->dai,
 				   free_data->link_id);
@@ -125,6 +219,20 @@ static int sdw_ace2x_free_stream(struct device *dev,
 
 static int sdw_ace2x_trigger(struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
 {
+	struct snd_soc_dapm_widget *w = snd_soc_dai_get_widget(dai, substream->stream);
+	struct snd_sof_dev *sdev;
+
+	if (!w)
+		return -EINVAL;
+
+	sdev = widget_to_sdev(w);
+	if (pm_suspend_target_state == PM_SUSPEND_TO_IDLE &&
+	    sdw_be_d0i3_compatible(sdev, substream) &&
+	    (cmd == SNDRV_PCM_TRIGGER_SUSPEND ||
+	     cmd == SNDRV_PCM_TRIGGER_RESUME ||
+	     cmd == SNDRV_PCM_TRIGGER_START))
+		return 0;
+
 	return sdw_hda_dai_trigger(substream, cmd, dai);
 }
 

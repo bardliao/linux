@@ -380,6 +380,9 @@ sdw_intel_probe(struct sdw_intel_res *res);
 
 int sdw_intel_startup(struct sdw_intel_ctx *ctx);
 
+int sdw_intel_set_link_d0i3_compatible(struct sdw_intel_ctx *ctx,
+					       int link_id, bool enable);
+
 void sdw_intel_exit(struct sdw_intel_ctx *ctx);
 
 irqreturn_t sdw_intel_thread(int irq, void *dev_id);
