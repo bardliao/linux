@@ -1524,6 +1524,12 @@ static int _sdw_prepare_stream(struct sdw_stream_runtime *stream,
 
 		/* Program params */
 		ret = sdw_program_params(bus, true);
+
+#ifdef CONFIG_DEBUG_FS
+		if (bus->inject_prog_params_err)
+			ret = bus->inject_prog_params_err;
+#endif
+
 		if (ret < 0) {
 			dev_err(bus->dev, "Program params failed: %d\n", ret);
 			goto restore_params;

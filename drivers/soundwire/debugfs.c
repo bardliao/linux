@@ -84,6 +84,27 @@ static int sdw_root_peripherals_show(struct seq_file *s_file, void *data)
 }
 DEFINE_SHOW_ATTRIBUTE(sdw_root_peripherals);
 
+static int inject_prog_params_err_set(void *data, u64 val)
+{
+	struct sdw_bus *bus = data;
+
+	bus->inject_prog_params_err = (int)val;
+
+	return 0;
+}
+
+static int inject_prog_params_err_get(void *data, u64 *val)
+{
+	struct sdw_bus *bus = data;
+
+	*val = bus->inject_prog_params_err;
+
+	return 0;
+}
+DEFINE_DEBUGFS_ATTRIBUTE_SIGNED(inject_prog_params_err_fops,
+				 inject_prog_params_err_get,
+				 inject_prog_params_err_set, "%lld\n");
+
 void sdw_bus_debugfs_init(struct sdw_bus *bus)
 {
 	char name[16];
@@ -94,6 +115,15 @@ void sdw_bus_debugfs_init(struct sdw_bus *bus)
 	/* create the debugfs master-N */
 	snprintf(name, sizeof(name), "master-%d-%d", bus->controller_id, bus->link_id);
 	bus->debugfs = debugfs_create_dir(name, sdw_debugfs_root);
+
+	/*
+	 * fault-injection: non-zero value forces _sdw_prepare_stream() to
+	 * use it as the return value of sdw_program_params(), instead of
+	 * the value actually returned, so error-handling paths can be
+	 * exercised. Reset to 0 to disable the injection.
+	 */
+	debugfs_create_file("inject_prog_params_err", 0600, bus->debugfs, bus,
+			     &inject_prog_params_err_fops);
 }
 
 void sdw_bus_debugfs_exit(struct sdw_bus *bus)

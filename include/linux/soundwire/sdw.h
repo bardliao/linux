@@ -1066,6 +1066,7 @@ struct sdw_bus {
 	struct irq_domain *domain;
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *debugfs;
+	int inject_prog_params_err;
 #endif
 	bool multi_link;
 	bool is_present;
