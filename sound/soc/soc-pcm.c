@@ -2266,14 +2266,22 @@ int dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
 			be->dpcm[stream].state = SND_SOC_DPCM_STATE_START;
 			break;
 		case SNDRV_PCM_TRIGGER_RESUME:
-			if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_SUSPEND))
+			/*
+			 * Another FE may already have prepared or restarted the BE.
+			 * Count this FE as well, but only trigger the first user.
+			 */
+			if (be->dpcm[stream].state != SND_SOC_DPCM_STATE_SUSPEND &&
+			    be->dpcm[stream].state != SND_SOC_DPCM_STATE_PREPARE &&
+			    be->dpcm[stream].state != SND_SOC_DPCM_STATE_START)
 				goto next;
 
 			be->dpcm[stream].be_start++;
 			if (be->dpcm[stream].be_start != 1)
 				goto next;
 
-			ret = soc_pcm_trigger(be_substream, cmd);
+			ret = soc_pcm_trigger(be_substream,
+					     be->dpcm[stream].state == SND_SOC_DPCM_STATE_PREPARE ?
+					     SNDRV_PCM_TRIGGER_START : cmd);
 			if (ret) {
 				be->dpcm[stream].be_start--;
 				goto next;
@@ -2502,6 +2510,7 @@ static int dpcm_fe_dai_trigger(struct snd_pcm_substream *substream, int cmd)
 int dpcm_be_dai_prepare(struct snd_soc_pcm_runtime *fe, int stream)
 {
 	struct snd_soc_dpcm *dpcm;
+	unsigned long flags = 0;
 	int ret = 0;
 
 	for_each_dpcm_be(fe, stream, dpcm) {
@@ -2510,27 +2519,39 @@ int dpcm_be_dai_prepare(struct snd_soc_pcm_runtime *fe, int stream)
 		struct snd_pcm_substream *be_substream =
 			snd_soc_dpcm_get_substream(be, stream);
 
+		/*
+		 * Non-atomic prepare callbacks may sleep. Serialize them with
+		 * BE triggers using the stream mutex, not an atomic stream lock.
+		 */
+		if (be_substream->pcm->nonatomic)
+			snd_pcm_stream_lock_irqsave_nested(be_substream, flags);
+
 		/* is this op for this BE ? */
 		if (!snd_soc_dpcm_can_be_update(fe, be, stream))
-			continue;
+			goto next;
 
 		if (!snd_soc_dpcm_can_be_prepared(fe, be, stream))
-			continue;
+			goto next;
 
 		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_STOP) &&
 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_SUSPEND) &&
 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_PAUSED))
-			continue;
+			goto next;
 
 		dev_dbg(be->dev, "ASoC: prepare BE %s\n",
 			be->dai_link->name);
 
 		ret = __soc_pcm_prepare(be, be_substream);
 		if (ret < 0)
-			break;
+			goto next;
 
 		be->dpcm[stream].state = SND_SOC_DPCM_STATE_PREPARE;
+next:
+		if (be_substream->pcm->nonatomic)
+			snd_pcm_stream_unlock_irqrestore(be_substream, flags);
+		if (ret < 0)
+			break;
 	}
 
 	/*
