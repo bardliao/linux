@@ -388,10 +388,10 @@ int snd_sof_prepare(struct device *dev)
 	 */
 	if (sdev->fw_state == SOF_FW_CRASHED ||
 	    sdev->fw_state == SOF_FW_BOOT_FAILED)
-		return 0;
+		goto update_sdw;
 
 	if (!desc->use_acpi_target_states)
-		return 0;
+		goto update_sdw;
 
 #if defined(CONFIG_ACPI)
 	switch (acpi_target_system_state()) {
@@ -414,6 +414,10 @@ int snd_sof_prepare(struct device *dev)
 	}
 #endif
 
+update_sdw:
+	/* PRE-ordered capture backends receive SUSPEND before their frontends. */
+	sof_pcm_update_sdw_ignore_suspend(sdev);
+
 	return 0;
 }
 EXPORT_SYMBOL(snd_sof_prepare);
@@ -423,5 +427,7 @@ void snd_sof_complete(struct device *dev)
 	struct snd_sof_dev *sdev = dev_get_drvdata(dev);
 
 	sdev->system_suspend_target = SOF_SUSPEND_NONE;
+	/* Clear the completed or aborted suspend decision after controller resume. */
+	sof_pcm_update_sdw_ignore_suspend(sdev);
 }
 EXPORT_SYMBOL(snd_sof_complete);

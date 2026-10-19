@@ -547,10 +547,10 @@ snd_sof_pcm_platform_trigger(struct snd_sof_dev *sdev,
 static inline void
 snd_sof_pcm_platform_set_sdw_ignore_suspend(struct snd_sof_dev *sdev,
 					    struct snd_pcm_substream *substream,
-					    bool active)
+					    bool ignore_suspend)
 {
 	if (sof_ops(sdev) && sof_ops(sdev)->pcm_set_sdw_ignore_suspend)
-		sof_ops(sdev)->pcm_set_sdw_ignore_suspend(sdev, substream, active);
+		sof_ops(sdev)->pcm_set_sdw_ignore_suspend(sdev, substream, ignore_suspend);
 }
 
 /* Firmware loading. If the fw_filename argument is NULL, the firmware file set in the

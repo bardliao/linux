@@ -60,7 +60,7 @@ MODULE_PARM_DESC(sdw_clock_stop_quirks, "SOF SoundWire clock stop quirks");
 
 void hda_dsp_set_sdw_ignore_suspend(struct snd_sof_dev *sdev,
 				    struct snd_pcm_substream *substream,
-				    bool active)
+				    bool ignore_suspend)
 {
 	struct snd_soc_pcm_runtime *fe = snd_soc_substream_to_rtd(substream);
 	struct snd_soc_dpcm *be_link;
@@ -69,42 +69,12 @@ void hda_dsp_set_sdw_ignore_suspend(struct snd_sof_dev *sdev,
 	if (dir != SNDRV_PCM_STREAM_CAPTURE)
 		return;
 
+	snd_soc_dpcm_mutex_assert_held(fe);
+
 	for_each_dpcm_be(fe, dir, be_link) {
 		struct snd_soc_pcm_runtime *be = be_link->be;
-		struct snd_soc_dpcm *fe_link;
 		struct snd_soc_dai *dai;
-		bool ignore_suspend = false;
 		int i;
-
-		for_each_dpcm_fe(be, dir, fe_link) {
-			struct snd_soc_pcm_runtime *other_fe = fe_link->fe;
-			struct snd_pcm_substream *fe_substream;
-			struct snd_sof_pcm *spcm;
-			bool fe_active;
-
-			if (fe_link->state == SND_SOC_DPCM_LINK_STATE_FREE)
-				continue;
-
-			fe_substream = snd_soc_dpcm_get_substream(other_fe, dir);
-			if (!fe_substream || !fe_substream->runtime)
-				continue;
-
-			spcm = snd_sof_find_spcm_dai(sdev->component, other_fe);
-			if (!spcm || !spcm->stream[dir].d0i3_compatible ||
-			    spcm->stream[dir].dsp_max_burst_size_in_ms > 1)
-				continue;
-
-			if (other_fe == fe)
-				fe_active = active;
-			else
-				fe_active = spcm->stream[dir].suspend_ignored ||
-					other_fe->dpcm[dir].state == SND_SOC_DPCM_STATE_START;
-
-			if (fe_active) {
-				ignore_suspend = true;
-				break;
-			}
-		}
 
 		for_each_rtd_cpu_dais(be, i, dai) {
 			struct snd_soc_dapm_widget *w;
@@ -122,8 +92,14 @@ void hda_dsp_set_sdw_ignore_suspend(struct snd_sof_dev *sdev,
 				continue;
 
 			sdw_stream = snd_soc_dai_get_stream(dai, dir);
-			if (!IS_ERR_OR_NULL(sdw_stream))
+			if (!IS_ERR_OR_NULL(sdw_stream)) {
+				dev_dbg(sdev->dev,
+					"WoV-state: FE=%s BE=%s target=%d ignore_suspend=%d->%d sdw_state=%d\n",
+					fe->dai_link->name, be->dai_link->name,
+					sdev->system_suspend_target, sdw_stream->ignore_suspend,
+					ignore_suspend, sdw_stream->state);
 				sdw_stream->ignore_suspend = ignore_suspend;
+			}
 		}
 	}
 }
@@ -489,7 +465,7 @@ static inline void hda_dsp_sdw_process_mic_privacy(struct snd_sof_dev *sdev) { }
 
 void hda_dsp_set_sdw_ignore_suspend(struct snd_sof_dev *sdev,
 				    struct snd_pcm_substream *substream,
-				    bool active) { }
+				    bool ignore_suspend) { }
 
 #endif /* IS_ENABLED(CONFIG_SND_SOC_SOF_INTEL_SOUNDWIRE) */
 
