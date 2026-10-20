@@ -336,7 +336,8 @@ static int __maybe_unused hda_dai_trigger(struct snd_pcm_substream *substream, i
 		return -EINVAL;
 	hda_stream = hstream_to_sof_hda_stream(hext_stream);
 
-	if (cmd == SNDRV_PCM_TRIGGER_RESUME && hda_stream->suspend_ignored) {
+	if ((cmd == SNDRV_PCM_TRIGGER_RESUME || cmd == SNDRV_PCM_TRIGGER_START) &&
+	    hda_stream->suspend_ignored) {
 		hda_stream->suspend_ignored = false;
 		return 0;
 	}
