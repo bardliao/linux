@@ -2293,6 +2293,9 @@ static int __dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
 			be->dpcm[stream].state = SND_SOC_DPCM_STATE_START;
 			break;
 		case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+			if (!fe->dpcm[stream].fe_pause)
+				goto next;
+
 			if (!be->dpcm[stream].be_start &&
 			    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_START) &&
 			    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_PAUSED))
@@ -2308,6 +2311,8 @@ static int __dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
 			ret = soc_pcm_trigger(be_substream, cmd);
 			if (ret) {
 				be->dpcm[stream].be_start--;
+				fe->dpcm[stream].fe_pause = true;
+				be->dpcm[stream].be_pause++;
 				goto next;
 			}
 
@@ -2369,6 +2374,9 @@ static int __dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
 			be->dpcm[stream].state = SND_SOC_DPCM_STATE_SUSPEND;
 			break;
 		case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+			if (fe->dpcm[stream].fe_pause)
+				goto next;
+
 			if (be->dpcm[stream].state != SND_SOC_DPCM_STATE_START)
 				goto next;
 
@@ -2382,6 +2390,8 @@ static int __dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
 			ret = soc_pcm_trigger(be_substream, cmd);
 			if (ret) {
 				be->dpcm[stream].be_start++;
+				fe->dpcm[stream].fe_pause = false;
+				be->dpcm[stream].be_pause--;
 				goto next;
 			}
 
