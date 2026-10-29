@@ -2216,8 +2216,8 @@ out:
 	return soc_pcm_ret(fe, ret);
 }
 
-int dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
-			       int cmd)
+static int __dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
+				 int cmd, struct snd_soc_dpcm *stop_before)
 {
 	struct snd_soc_pcm_runtime *be;
 	bool pause_stop_transition;
@@ -2227,6 +2227,9 @@ int dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
 
 	for_each_dpcm_be(fe, stream, dpcm) {
 		struct snd_pcm_substream *be_substream;
+
+		if (dpcm == stop_before)
+			break;
 
 		be = dpcm->be;
 		be_substream = snd_soc_dpcm_get_substream(be, stream);
@@ -2387,10 +2390,27 @@ int dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream,
 		}
 next:
 		snd_pcm_stream_unlock_irqrestore(be_substream, flags);
-		if (ret)
+		if (ret) {
+			if (cmd == SNDRV_PCM_TRIGGER_RESUME) {
+				int rollback_ret;
+
+				rollback_ret = __dpcm_be_dai_trigger(fe, stream,
+								     SNDRV_PCM_TRIGGER_SUSPEND,
+								     dpcm);
+				if (rollback_ret < 0)
+					dev_err(fe->dev,
+						"failed to roll back BE resume after partial failure: %d\n",
+						rollback_ret);
+			}
 			break;
+		}
 	}
 	return soc_pcm_ret(fe, ret);
+}
+
+int dpcm_be_dai_trigger(struct snd_soc_pcm_runtime *fe, int stream, int cmd)
+{
+	return __dpcm_be_dai_trigger(fe, stream, cmd, NULL);
 }
 EXPORT_SYMBOL_GPL(dpcm_be_dai_trigger);
 
