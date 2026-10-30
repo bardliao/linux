@@ -5,6 +5,7 @@
  * Machine Driver for SKL+ platforms with DSP and iDisp, HDA Codecs
  */
 
+#include <linux/dmi.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <sound/core.h>
@@ -71,9 +72,21 @@ static void skl_set_hda_codec_autosuspend_delay(struct snd_soc_card *card)
 				       HDMI_IN_BE_ID,    \
 				       0)
 
+static const struct dmi_system_id skl_hda_quirk_table[] = {
+	{
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
+			DMI_EXACT_MATCH(DMI_PRODUCT_SKU, "0A5E"),
+		},
+		.driver_data = (void *)SOF_SSP_MASK_HDMI_CAPTURE(0x5),
+	},
+	{}
+};
+
 static unsigned long
 skl_hda_get_board_quirk(struct snd_soc_acpi_mach_params *mach_params)
 {
+	const struct dmi_system_id *dmi_id;
 	unsigned long board_quirk = 0;
 	int ssp_bt;
 
@@ -82,6 +95,10 @@ skl_hda_get_board_quirk(struct snd_soc_acpi_mach_params *mach_params)
 		board_quirk |= SOF_SSP_PORT_BT_OFFLOAD(ssp_bt) |
 				SOF_BT_OFFLOAD_PRESENT;
 	}
+
+	dmi_id = dmi_first_match(skl_hda_quirk_table);
+	if (dmi_id)
+		board_quirk |= (unsigned long)dmi_id->driver_data;
 
 	return board_quirk;
 }
