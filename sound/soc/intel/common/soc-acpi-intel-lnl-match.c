@@ -823,7 +823,7 @@ struct snd_soc_acpi_mach snd_soc_acpi_intel_lnl_sdw_machines[] = {
 		.link_mask = BIT(0),
 		.links = lnl_rt722_only,
 		.drv_name = "sof_sdw",
-		.sof_tplg_filename = "sof-lnl-rt722-l0.tplg",
+		.sof_tplg_filename = "sof-lnl-dummy.tplg",
 		.get_function_tplg_files = sof_sdw_get_tplg_files,
 	},
 	{
