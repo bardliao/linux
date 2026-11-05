@@ -812,6 +812,48 @@ static int hda_dai_suspend(struct hdac_bus *bus)
 	return 0;
 }
 
+/*
+ * A retained WoV BE gets no SUSPEND trigger when its PCM stays suspended into a
+ * D3 transition, so stop and release its link DMA here instead.
+ */
+static int hda_dai_release_retained_streams(struct snd_sof_dev *sdev)
+{
+	struct hdac_bus *bus = sof_to_bus(sdev);
+	struct hdac_stream *s;
+	int ret;
+
+	list_for_each_entry(s, &bus->stream_list, list) {
+		struct hdac_ext_stream *hext_stream = stream_to_hdac_ext_stream(s);
+		const struct hda_dai_widget_dma_ops *ops;
+		struct sof_intel_hda_stream *hda_stream;
+		struct snd_pcm_substream *substream;
+		struct snd_soc_dai *cpu_dai;
+
+		hda_stream = hstream_to_sof_hda_stream(hext_stream);
+		substream = hext_stream->link_substream;
+		if (!hda_stream->suspend_ignored || !substream)
+			continue;
+
+		cpu_dai = snd_soc_rtd_to_cpu(snd_soc_substream_to_rtd(substream), 0);
+		ops = hda_dai_get_ops(substream, cpu_dai);
+		if (!ops)
+			return -EINVAL;
+
+		/* The firmware pipelines are already freed, only the DMA kept running. */
+		if (ops->trigger) {
+			ret = ops->trigger(sdev, cpu_dai, substream, SNDRV_PCM_TRIGGER_SUSPEND);
+			if (ret < 0)
+				return ret;
+		}
+
+		ret = hda_link_dma_cleanup(substream, hext_stream, cpu_dai, true);
+		if (ret < 0)
+			return ret;
+	}
+
+	return 0;
+}
+
 static void ssp_set_dai_drv_ops(struct snd_sof_dev *sdev, struct snd_sof_dsp_ops *ops)
 {
 	const struct sof_intel_dsp_desc *chip;
@@ -1064,4 +1106,13 @@ int hda_dsp_dais_suspend(struct snd_sof_dev *sdev)
 #endif
 
 	return 0;
+}
+
+int hda_dsp_release_retained_streams(struct snd_sof_dev *sdev)
+{
+#if IS_ENABLED(CONFIG_SND_SOC_SOF_HDA_LINK)
+	return hda_dai_release_retained_streams(sdev);
+#else
+	return 0;
+#endif
 }

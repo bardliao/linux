@@ -821,6 +821,13 @@ static int hda_suspend(struct snd_sof_dev *sdev, bool runtime_suspend)
 
 	hda_codec_jack_wake_enable(sdev, runtime_suspend);
 
+	/* Retained WoV link DMA must not survive the D3 reset. */
+	if (!runtime_suspend) {
+		ret = hda_dsp_release_retained_streams(sdev);
+		if (ret < 0)
+			return ret;
+	}
+
 	/* power down all hda links */
 	hda_bus_ml_suspend(bus);
 
@@ -841,7 +848,6 @@ static int hda_suspend(struct snd_sof_dev *sdev, bool runtime_suspend)
 	hda_dsp_ctrl_ppcap_enable(sdev, false);
 	hda_dsp_ctrl_ppcap_int_enable(sdev, false);
 skip_dsp:
-
 	/* disable hda bus irq and streams */
 	hda_dsp_ctrl_stop_chip(sdev);
 
