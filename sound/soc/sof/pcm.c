@@ -66,6 +66,45 @@ void snd_sof_pcm_period_elapsed(struct snd_pcm_substream *substream)
 }
 EXPORT_SYMBOL(snd_sof_pcm_period_elapsed);
 
+static int sof_pcm_set_dai_ignore_suspend(struct snd_soc_pcm_runtime *rtd, int dir)
+{
+	struct snd_soc_dapm_widget_list *list;
+	struct snd_soc_dapm_widget *widget;
+	struct snd_soc_dai *dai;
+	bool found = false;
+	int i, j, ret;
+
+	for_each_rtd_cpu_dais(rtd, i, dai) {
+		bool dai_found = false;
+
+		widget = snd_soc_dai_get_widget(dai, dir);
+		if (!widget)
+			continue;
+
+		/* takes the DAPM mutex internally */
+		ret = snd_soc_dapm_dai_get_connected_widgets(dai, dir, &list, NULL);
+		if (ret < 0)
+			return ret;
+
+		snd_soc_dapm_mutex_lock(rtd->card);
+		for (j = 0; j < list->num_widgets; j++) {
+			if (list->widgets[j]->is_ep & SND_SOC_DAPM_EP_SOURCE) {
+				list->widgets[j]->ignore_suspend = 1;
+				dai_found = true;
+			}
+		}
+		if (dai_found) {
+			widget->ignore_suspend = 1;
+			found = true;
+		}
+		snd_soc_dapm_mutex_unlock(rtd->card);
+
+		snd_soc_dapm_dai_free_widgets(&list);
+	}
+
+	return found ? 0 : -ENODEV;
+}
+
 int
 sof_pcm_setup_connected_widgets(struct snd_sof_dev *sdev, struct snd_soc_pcm_runtime *rtd,
 				struct snd_sof_pcm *spcm, struct snd_pcm_hw_params *params,
@@ -464,8 +503,12 @@ static int sof_pcm_trigger(struct snd_soc_component *component,
 		    substream->stream == SNDRV_PCM_STREAM_CAPTURE &&
 		    spcm->stream[substream->stream].d0i3_compatible &&
 		    spcm->stream[substream->stream].dsp_max_burst_size_in_ms <= 1) {
-			spcm->stream[substream->stream].suspend_ignored = true;
-			return 0;
+			if (!sof_pcm_set_dai_ignore_suspend(rtd, substream->stream)) {
+				spcm->stream[substream->stream].suspend_ignored = true;
+				return 0;
+			}
+
+			spcm_dbg(spcm, substream->stream, "no mic endpoint to retain for WoV\n");
 		}
 		/* On suspend the DMA must be stopped in DSPless mode */
 		if (sdev->dspless_mode_selected)
