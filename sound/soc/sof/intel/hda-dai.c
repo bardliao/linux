@@ -283,21 +283,28 @@ static int __maybe_unused hda_dai_hw_params(struct snd_pcm_substream *substream,
 }
 
 /*
- * A retained WoV FE that is being resumed has already consumed its
- * suspend_ignored flag when the FE is triggered before the BE, but its
- * DPCM state is not updated until the trigger completes. Its PCM is still
- * SUSPENDED during the trigger.
+ * The FE retention flag is set by the FE trigger, which may run after the BE trigger, so
+ * it is not used here. A WoV FE which is retained is either running (its SUSPEND is
+ * being handled) or already suspended with its PCM still prepared. Its DPCM state is
+ * not updated until the trigger completes.
  */
-static bool hda_dai_fe_is_resuming(struct snd_soc_pcm_runtime *fe)
+static bool hda_dai_fe_retains(struct snd_sof_dev *sdev, struct snd_soc_pcm_runtime *fe)
 {
+	const int dir = SNDRV_PCM_STREAM_CAPTURE;
 	struct snd_pcm_substream *fe_substream;
+	struct snd_sof_pcm *spcm;
 
-	if (fe->dpcm[SNDRV_PCM_STREAM_CAPTURE].runtime_update != SND_SOC_DPCM_UPDATE_FE)
+	spcm = snd_sof_find_spcm_dai(sdev->component, fe);
+	if (!spcm || !spcm->stream[dir].d0i3_compatible ||
+	    spcm->stream[dir].dsp_max_burst_size_in_ms > 1)
 		return false;
 
-	fe_substream = snd_soc_dpcm_get_substream(fe, SNDRV_PCM_STREAM_CAPTURE);
+	if (fe->dpcm[dir].state == SND_SOC_DPCM_STATE_START)
+		return true;
 
-	return fe_substream && fe_substream->runtime &&
+	fe_substream = snd_soc_dpcm_get_substream(fe, dir);
+
+	return spcm->prepared[dir] && fe_substream && fe_substream->runtime &&
 	       fe_substream->runtime->state == SNDRV_PCM_STATE_SUSPENDED;
 }
 
@@ -305,23 +312,13 @@ static bool hda_dai_has_wov_fe(struct snd_sof_dev *sdev, struct snd_pcm_substrea
 {
 	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
 	struct snd_soc_dpcm *dpcm;
-	struct snd_sof_pcm *spcm;
 
 	if (substream->stream != SNDRV_PCM_STREAM_CAPTURE)
 		return false;
 
-	/*
-	 * Only retain the BE for a connected WoV capture FE that is running,
-	 * has already ignored its suspend trigger or is being resumed. An idle
-	 * WoV FE may still be connected to the BE.
-	 */
+	/* An idle WoV FE may still be connected to the BE, only retain for an active one. */
 	for_each_dpcm_fe(rtd, SNDRV_PCM_STREAM_CAPTURE, dpcm) {
-		spcm = snd_sof_find_spcm_dai(sdev->component, dpcm->fe);
-		if (spcm && spcm->stream[SNDRV_PCM_STREAM_CAPTURE].d0i3_compatible &&
-		    spcm->stream[SNDRV_PCM_STREAM_CAPTURE].dsp_max_burst_size_in_ms <= 1 &&
-		    (dpcm->fe->dpcm[SNDRV_PCM_STREAM_CAPTURE].state == SND_SOC_DPCM_STATE_START ||
-		     spcm->stream[SNDRV_PCM_STREAM_CAPTURE].suspend_ignored ||
-		     hda_dai_fe_is_resuming(dpcm->fe)))
+		if (hda_dai_fe_retains(sdev, dpcm->fe))
 			return true;
 	}
 
