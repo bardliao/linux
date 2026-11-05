@@ -90,11 +90,13 @@ static int sof_pcm_set_dai_ignore_suspend(struct snd_soc_pcm_runtime *rtd, int d
 		for (j = 0; j < list->num_widgets; j++) {
 			if (list->widgets[j]->is_ep & SND_SOC_DAPM_EP_SOURCE) {
 				list->widgets[j]->ignore_suspend = 1;
+				pr_debug("bard: %s set list %s ignore_suspend\n", __func__, list->widgets[j]->name);
 				dai_found = true;
 			}
 		}
 		if (dai_found) {
 			widget->ignore_suspend = 1;
+			pr_debug("bard: %s set %s ignore_suspend\n", __func__, widget->name);
 			found = true;
 		}
 		snd_soc_dapm_mutex_unlock(rtd->card);
