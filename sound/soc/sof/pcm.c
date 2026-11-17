@@ -330,6 +330,41 @@ int sof_pcm_free_all_streams(struct snd_sof_dev *sdev)
 	return 0;
 }
 
+/*
+ * The BEs of a suspended retained FE are in SUSPEND, or in PREPARE if the FE was prepared again
+ * without being started. Return true if all of them are in one of these states and no other FE
+ * is using them.
+ */
+static bool sof_pcm_fe_owns_retained_bes(struct snd_soc_pcm_runtime *fe, int stream)
+{
+	struct snd_soc_dpcm *dpcm, *fe_dpcm;
+	bool found = false;
+
+	for_each_dpcm_be(fe, stream, dpcm) {
+		struct snd_soc_pcm_runtime *be = dpcm->be;
+		int state = be->dpcm[stream].state;
+
+		if (state != SND_SOC_DPCM_STATE_SUSPEND && state != SND_SOC_DPCM_STATE_PREPARE)
+			return false;
+
+		for_each_dpcm_fe(be, stream, fe_dpcm) {
+			if (fe_dpcm->fe == fe)
+				continue;
+
+			switch (fe_dpcm->fe->dpcm[stream].state) {
+			case SND_SOC_DPCM_STATE_PREPARE:
+			case SND_SOC_DPCM_STATE_START:
+			case SND_SOC_DPCM_STATE_PAUSED:
+				return false;
+			}
+		}
+
+		found = true;
+	}
+
+	return found;
+}
+
 static int sof_pcm_hw_free(struct snd_soc_component *component,
 			   struct snd_pcm_substream *substream)
 {
@@ -350,12 +385,16 @@ static int sof_pcm_hw_free(struct snd_soc_component *component,
 
 	/*
 	 * ALSA sends no STOP for a suspended PCM, so the retained BEs are still running.
-	 * Resume them in the DPCM state machine to be able to STOP them before the FE frees
-	 * their pipelines.
+	 * Bring them to START in the DPCM state machine (PREPARE -> START, SUSPEND -> START) to be
+	 * able to STOP them before the FE frees their pipelines. Leave the BEs alone if another
+	 * FE is using them. START must come first, RESUME would make START count twice.
 	 */
 	if (spcm->prepared[substream->stream] &&
-	    spcm->stream[substream->stream].suspend_ignored) {
-		ret = dpcm_be_dai_trigger(rtd, substream->stream, SNDRV_PCM_TRIGGER_RESUME);
+	    spcm->stream[substream->stream].suspend_ignored &&
+	    sof_pcm_fe_owns_retained_bes(rtd, substream->stream)) {
+		ret = dpcm_be_dai_trigger(rtd, substream->stream, SNDRV_PCM_TRIGGER_START);
+		if (!ret)
+			ret = dpcm_be_dai_trigger(rtd, substream->stream, SNDRV_PCM_TRIGGER_RESUME);
 		if (!ret)
 			ret = dpcm_be_dai_trigger(rtd, substream->stream, SNDRV_PCM_TRIGGER_STOP);
 		if (ret < 0)
